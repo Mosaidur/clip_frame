@@ -80,7 +80,7 @@ class WelcomeScreen extends GetView<LanguageController> {
                       height: 60,
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => Get.toNamed(AppRoutes.HOME),
+                        onPressed: () => Get.toNamed(AppRoutes.login),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF262626),
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
