@@ -1,104 +1,123 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:stylish_bottom_bar/stylish_bottom_bar.dart';
 
 import 'homeController.dart';
 
-class HomePage extends StatefulWidget {
-  @override
-  _HomePageState createState() => _HomePageState();
-}
+class HomePage extends StatelessWidget {
+  final HomeController controller = Get.put(HomeController());
+  Shader linearGradient = const LinearGradient(
+    colors: <Color>[Color(0xFF4983F6), Color(0xFFC175F5), Color(0xFFFBACB7)],
+  ).createShader(const Rect.fromLTWH(0.0, 0.0, 50.0, 20.0));
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  int selectedIndex = 0;
-  bool isExpanded = false;
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  final List<Widget> pages = [
-    Center(child: Text("Dashboard Page")),
-    Center(child: Text("Post Page")),
-    Center(child: Text("Schedules Page")),
-    Center(child: Text("Profile Page")),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-  }
-
-  void toggleExpand() {
-    if (isExpanded) {
-      _controller.reverse();
-    } else {
-      _controller.forward();
-    }
-    setState(() {
-      isExpanded = !isExpanded;
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Widget buildFloatingOptions() {
-    return Positioned(
-      bottom: 70,
-      left: MediaQuery.of(context).size.width / 2 - 90,
-      child: SizeTransition(
-        sizeFactor: _animation,
-        axisAlignment: -1,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            floatingButton("Post", Icons.post_add),
-            SizedBox(width: 15),
-            floatingButton("Reels", Icons.movie),
-            SizedBox(width: 15),
-            floatingButton("Story", Icons.history_edu),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // Floating button widget
   Widget floatingButton(String label, IconData icon) {
     return Container(
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [Color(0xFFFF277F), Color(0xFF007CFE)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+        ],
       ),
       child: IconButton(
         icon: Icon(icon, color: Colors.white),
+
         onPressed: () {
-          print('$label clicked');
-          // Navigate to respective page if needed
+          // Show a snackbar instead of print for visible feedback
+          Get.snackbar(
+            label,
+            '$label button clicked!',
+            snackPosition: SnackPosition.TOP,
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.black54,
+            colorText: Colors.white,
+          );
         },
       ),
     );
   }
 
+  // Bottom nav item
+  Widget navItem(IconData icon, int index, String label) {
+    return Obx(() {
+      bool selected = controller.selectedIndex.value == index;
+      return GestureDetector(
+        onTap: () {
+          debugPrint('Nav item $label tapped, index: $index');
+          controller.changePage(index);
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: selected ? const Color(0xFF007CFE) : Colors.grey,
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? const Color(0xFF007CFE) : Colors.grey,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          pages[selectedIndex],
-          buildFloatingOptions(),
+          // Reactive page
+          Obx(() {
+            debugPrint('Building page: ${controller.selectedIndex.value}');
+            return controller.pages[controller.selectedIndex.value];
+          }),
+
+          // Animated floating buttons
+          AnimatedBuilder(
+            animation: controller.controller,
+            builder: (context, child) {
+              double radius =50; // distance from center FAB
+              double angleStep = 90; // degrees between buttons
+              List<IconData> icons = [Icons.post_add, Icons.movie, Icons.history_edu];
+              List<String> labels = ["Post", "Reels", "Story"];
+
+              return Stack(
+                children: List.generate(icons.length, (index) {
+                  // Convert angle to radians
+                  double angle = (angleStep * index - 00) * (3.14159 / 180);
+
+                  return Positioned(
+                    bottom: 30 + controller.animation.value * radius * sin(angle),
+                    left: Get.width / 2 - 30 + controller.animation.value * radius * cos(angle),
+                    child: Opacity(
+                      opacity: controller.animation.value,
+                      child:Column(
+                        children: [
+                          floatingButton(labels[index], icons[index]),
+                        ],
+                      )
+                    ),
+                  );
+                }),
+              );
+            },
+          ),
+
         ],
       ),
       bottomNavigationBar: Container(
@@ -106,14 +125,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
+          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 5)],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             navItem(Icons.dashboard, 0, "Dashboard"),
             navItem(Icons.note, 1, "Posts"),
-            SizedBox(width: 60), // space for central button
+            const SizedBox(width: 60), // Space for central FAB
             navItem(Icons.schedule, 2, "Schedules"),
             navItem(Icons.person, 3, "Profile"),
           ],
@@ -121,58 +140,52 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: GestureDetector(
-        onTap: toggleExpand,
-        child: Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFFFF277F), Color(0xFF007CFE)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        onTap: () {
+          debugPrint('FAB tapped, isExpanded: ${controller.isExpanded.value}');
+          controller.toggleExpand();
+        },
+        child: Obx(() {
+          return Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              gradient: controller.isExpanded.value
+                  ? const LinearGradient(
+                colors: [Color(0xFFFFFFFF), Color(0xFFFFFFFF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+                  : const LinearGradient(
+                colors: [Color(0xFFFF277F), Color(0xFF007CFE)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4)),
+              ],
+              border: Border.all(color: Colors.white, width: 2),
             ),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.add,
-            size: 35,
-            color: isExpanded
-                ? LinearGradient(
-              colors: [Color(0xFFFF277F), Color(0xFF007CFE)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ).createShader(Rect.fromLTWH(0, 0, 70, 70)) !=
-                null
-                ? Colors.white
-                : Colors.white
-                : Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget navItem(IconData icon, int index, String label) {
-    bool selected = selectedIndex == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedIndex = index;
-        });
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: selected ? Color(0xFF007CFE) : Colors.grey),
-          Text(
-            label,
-            style: TextStyle(
-              color: selected ? Color(0xFF007CFE) : Colors.grey,
-              fontSize: 12,
+            child: controller.isExpanded.value
+                ? ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(0xFFFF277F), Color(0xFF007CFE)
+                ],
+              ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+              child: const Icon(
+                Icons.add,
+                size: 50,
+                color: Colors.white, // this is fine with srcIn
+              ),
+            )
+                : const Icon(
+              Icons.add,
+              size: 50,
+              color: Colors.white,
             ),
-          ),
-        ],
+          );
+        })
       ),
     );
   }

@@ -1,22 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class HomeController extends GetxController {
-  var selectedIndex = 0.obs;
-  var isPopupVisible = false.obs;
+import 'dashboard/presenatation/screen/dashBoard.dart';
 
+class HomeController extends GetxController with GetSingleTickerProviderStateMixin {
+  // Reactive selected index
+  var selectedIndex = 0.obs;
+
+  // FAB expanded state
+  var isExpanded = false.obs;
+
+  // Animation controller for floating buttons
+  late AnimationController controller;
+  late Animation<double> animation;
+
+  // Pages for navigation
   final List<Widget> pages = [
-    Center(child: Text('Dashboard')),
-    Center(child: Text('Posts')),
-    Center(child: Text('Schedules')),
-    Center(child: Text('My Profile')),
+    DashBoardPage(),
+    const Center(child: Text("Posts Page")),
+    const Center(child: Text("Schedules Page")),
+    const Center(child: Text("Profile Page")),
   ];
 
-  void onItemTapped(int index) {
+  @override
+  void onInit() {
+    super.onInit();
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    animation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
+  }
+
+  // Toggle FAB expand/collapse
+  void toggleExpand() {
+    debugPrint('Toggling FAB: ${isExpanded.value} -> ${!isExpanded.value}');
+    if (isExpanded.value) {
+      controller.reverse();
+    } else {
+      controller.forward();
+    }
+    isExpanded.value = !isExpanded.value;
+  }
+
+  // Change bottom nav page
+  void changePage(int index) {
+    debugPrint('Changing page to index: $index');
     selectedIndex.value = index;
   }
 
-  void togglePopup() {
-    isPopupVisible.value = !isPopupVisible.value;
+  @override
+  void onClose() {
+    controller.dispose();
+    super.onClose();
   }
 }
