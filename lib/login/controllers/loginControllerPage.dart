@@ -1,3 +1,4 @@
+import 'package:clip_frame/Shared/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -21,7 +22,8 @@ class LoginController extends GetxController {
     if (email.isEmpty || password.isEmpty) {
       Get.snackbar('error'.tr, 'pleaseEnterEmailPassword'.tr);
     } else {
-      Get.snackbar('success'.tr, 'loggedInAs'.tr + email);
+      // Get.snackbar('success'.tr, 'loggedInAs'.tr + email);
+      Get.toNamed(AppRoutes.HOME);
     }
   }
 

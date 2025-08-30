@@ -1,147 +1,133 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../controllers/BusinessTypeSelectionController.dart';
 
 class BusinessTypeSelectionPage extends StatelessWidget {
-  final List<String> businessTypes = [
-    "Restaurants & Cafes",
-    "Retail Stores & Boutiques",
-    "Beauty Salons & Barbershops",
-    "Gyms & Fitness Studios",
-    "Local Academies (e.g., language, music, cooking)",
-  ];
+  final BusinessTypeSelectionController controller = Get.put(BusinessTypeSelectionController());
+  final TextEditingController customTypeController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-      // decoration: const BoxDecoration(
-      //   gradient: LinearGradient(
-      //     colors: [Color(0xFFFCE7F3), Color(0xFFE0EAFC)],
-      //     begin: Alignment.topCenter,
-      //     end: Alignment.bottomCenter,
-      //   ),
-      // ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // Ensure Column takes only the space it needs
-        children: [
-          // Title
-          const Text(
-            "Business Type Selection",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 5),
-          const Text(
-            "Tell us what makes your business unique.",
-            style: TextStyle(fontSize: 14, color: Colors.black54),
-          ),
-          const SizedBox(height: 20),
-          // Search
-          TextField(
-            decoration: InputDecoration(
-              hintText: "Search",
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
+    return SingleChildScrollView(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title
+            const Text(
+              "Business Type Selection",
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 5),
+            const Text(
+              "Tell us what makes your business unique.",
+              style: TextStyle(fontSize: 20, color: Colors.black54),
+            ),
+            const SizedBox(height: 20),
+            // Search
+            TextField(
+              decoration: InputDecoration(
+                hintText: "Search",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                fillColor: Colors.white,
+                filled: true,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Business Types (Containers)
+            Obx(() => Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: controller.businessTypes.map((type) {
+                final isSelected = controller.selectedBusinessTypes.contains(type);
+                return GestureDetector(
+                  onTap: () {
+                    controller.selectBusinessType(type);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(isSelected ? 0.5 : 0.3),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFFE91E63) : Colors.transparent,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      type,
+                      style: const TextStyle(color: Colors.black87),
+                    ),
+                  ),
+                );
+              }).toList(),
+            )),
+            const SizedBox(height: 10),
+            // Selection Count Indicator
+            Obx(() => Text(
+              "Selected: ${controller.selectedBusinessTypes.length}/3",
+              style: TextStyle(
+                fontSize: 16,
+                color: controller.selectedBusinessTypes.isEmpty ? Colors.red : Colors.black54,
+              ),
+            )),
+            const SizedBox(height: 15),
+            // Custom Add Field
+            Container(
+              decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
+                color: Colors.white.withOpacity(0.4),
               ),
-              fillColor: Colors.white,
-              filled: true,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Business Types (Chips)
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: businessTypes.map((type) {
-              return ChoiceChip(
-                label: Text(type),
-                selected: false,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                backgroundColor: Colors.white.withOpacity(0.05),
-                selectedColor: Colors.blue.shade100,
-                labelStyle: const TextStyle(color: Colors.black87),
-                onSelected: (_) {},
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 25),
-          // Custom Add Field
-          Container(
-            decoration: BoxDecoration(
-              borderRadius:  BorderRadius.circular(10),
-              color: Colors.white,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Add custom",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: customTypeController,
+                        decoration: InputDecoration(
+                          hintText: "Add custom",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          fillColor: Colors.white.withOpacity(0.0),
+                          filled: true,
                         ),
-                        fillColor: Colors.white,
-                        filled: true,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.pink,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      onPressed: () {
+                        final newType = customTypeController.text.trim();
+                        if (newType.isNotEmpty) {
+                          controller.addBusinessType(newType);
+                          customTypeController.clear();
+                        }
+                      },
+                      child: const Text("+ Add", style: TextStyle(color: Colors.white)),
                     ),
-                    onPressed: () {},
-                    child: const Text("+ Add", style: TextStyle(color: Colors.white)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 25), // Replaced Spacer with SizedBox
-          // Continue Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF007CFE),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
+                  ],
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              onPressed: () {},
-              child: const Text("Continue", style: TextStyle(color: Colors.white)),
             ),
-          ),
-          const SizedBox(height: 10),
-          // Skip Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withOpacity(0.05),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: () {},
-              child: const Text("SKIP", style: TextStyle(color: Colors.white)),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
+            const SizedBox(height: 25),
+          ],
+        ),
       ),
     );
   }

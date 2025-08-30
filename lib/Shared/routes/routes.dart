@@ -2,9 +2,11 @@ import 'package:get/get.dart';
 import 'package:clip_frame/photo_edit.dart';
 import 'package:clip_frame/video_edit.dart';
 
+import '../../features/HomeScreen.dart';
 import '../../login/bindings/login_binding.dart';
 import '../../login/presenatation/screen/login_page.dart';
-import '../../signUp screen/bindings/RegistrationProcessPage_binding.dart';
+import '../../signUp screen/bindings/RegistrationProcessBindings.dart';
+import '../../signUp screen/bindings/AudienceAndLanguageBinding.dart';
 import '../../signUp screen/bindings/SignUp_binding.dart';
 import '../../signUp screen/presenatation/screen/registrationProcessPage.dart';
 import '../../signUp screen/presenatation/screen/signup_page.dart';
@@ -39,13 +41,14 @@ class AppRoutes {
     GetPage(
       name: RegistrationProcess,
       page: () => RegistrationProcessPage(),
-      // binding: RegistrationProcessPageBindings(),
+      binding: RegistrationProcessBinding(),
     ),
 
+GetPage(name: HOME, page: () => HomePage()),
 
 
 
-    // GetPage(name: HOME, page: () => HomePage()),
+
     // GetPage(name: login, page: () => LoginScreen()),
     GetPage(name: PHOTO_EDIT, page: () => PhotoEditorPage()),
     GetPage(name: VIDEO_EDIT, page: () => VideoEditorPage()),
