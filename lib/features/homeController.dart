@@ -1,7 +1,11 @@
+import 'package:clip_frame/features/post/presenatation/screen/postCreationPage.dart';
+import 'package:clip_frame/features/schedule/presenatation/screen/schedule.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'dashboard/presenatation/screen/dashBoard.dart';
+import 'dashboard/presenatation/widgets/schedule_list.dart';
+import 'my_profile/presenatation/screen/MyProfileController.dart';
 
 class HomeController extends GetxController with GetSingleTickerProviderStateMixin {
   // Reactive selected index
@@ -17,9 +21,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   // Pages for navigation
   final List<Widget> pages = [
     DashBoardPage(),
-    const Center(child: Text("Posts Page")),
-    const Center(child: Text("Schedules Page")),
-    const Center(child: Text("Profile Page")),
+    PostCreationPage(),
+    ScheduleScreenPage(),
+    MyProfilePage(),
   ];
 
   @override

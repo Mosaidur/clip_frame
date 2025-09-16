@@ -78,47 +78,44 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // Add this line
       backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // Reactive page
-          Obx(() {
-            debugPrint('Building page: ${controller.selectedIndex.value}');
-            return controller.pages[controller.selectedIndex.value];
-          }),
-
-          // Animated floating buttons
-          AnimatedBuilder(
-            animation: controller.controller,
-            builder: (context, child) {
-              double radius =50; // distance from center FAB
-              double angleStep = 90; // degrees between buttons
-              List<IconData> icons = [Icons.post_add, Icons.movie, Icons.history_edu];
-              List<String> labels = ["Post", "Reels", "Story"];
-
-              return Stack(
-                children: List.generate(icons.length, (index) {
-                  // Convert angle to radians
-                  double angle = (angleStep * index - 00) * (3.14159 / 180);
-
-                  return Positioned(
-                    bottom: 30 + controller.animation.value * radius * sin(angle),
-                    left: Get.width / 2 - 30 + controller.animation.value * radius * cos(angle),
-                    child: Opacity(
-                      opacity: controller.animation.value,
-                      child:Column(
-                        children: [
-                          floatingButton(labels[index], icons[index]),
-                        ],
-                      )
-                    ),
-                  );
-                }),
-              );
-            },
-          ),
-
-        ],
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Obx(() {
+              debugPrint('Building page: ${controller.selectedIndex.value}');
+              return controller.pages[controller.selectedIndex.value];
+            }),
+            AnimatedBuilder(
+              animation: controller.controller,
+              builder: (context, child) {
+                double radius =50;
+                double angleStep = 90;
+                List<IconData> icons = [Icons.post_add, Icons.movie, Icons.history_edu];
+                List<String> labels = ["Post", "Reels", "Story"];
+        
+                return Stack(
+                  children: List.generate(icons.length, (index) {
+                    double angle = (angleStep * index - 0) * (3.14159 / 180);
+                    return Positioned(
+                      bottom: 30 + controller.animation.value * radius * sin(angle),
+                      left: Get.width / 2 - 30 + controller.animation.value * radius * cos(angle),
+                      child: Opacity(
+                        opacity: controller.animation.value,
+                        child: Column(
+                          children: [
+                            floatingButton(labels[index], icons[index]),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                );
+              },
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: Container(
         height: 70,

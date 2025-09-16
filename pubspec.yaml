@@ -50,6 +50,8 @@ dependencies:
   crop_your_image: ^2.0.0
   shared_preferences: ^2.5.3
   stylish_bottom_bar: ^1.1.1
+  overlapped_carousel: ^1.0.2
+  carousel_slider: ^5.1.1
 
 dev_dependencies:
   flutter_test:
