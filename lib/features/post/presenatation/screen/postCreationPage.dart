@@ -6,6 +6,7 @@ import '../widgets/PostListPage.dart';
 import '../widgets/allReelsInPostPage.dart';
 import '../widgets/reelContainer.dart';
 import '../widgets/storyListPage.dart';
+import 'CustomDrawer.dart';
 
 class PostCreationPage extends StatefulWidget {
   const PostCreationPage({Key? key}) : super(key: key);
@@ -85,35 +86,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text(
-                "Menu",
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text("Home"),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text("Settings"),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text("Logout"),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
+      drawer: CustomDrawerPage (),
       body: SafeArea(
         child: Container(
           height: double.infinity,

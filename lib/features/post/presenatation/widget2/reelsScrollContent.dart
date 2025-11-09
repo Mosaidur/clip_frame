@@ -2,6 +2,7 @@ import 'package:clip_frame/features/post/presenatation/widget2/MediaDisplayWidge
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../Screen_2/video_Highlight.dart';
 import 'customTabBar.dart';
 
 class ReelsScrollContnet extends StatelessWidget {
@@ -171,6 +172,10 @@ class ReelsScrollContnet extends StatelessWidget {
                       onPressed: () {
                         // Your action here
 
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => VideoHighlight(url: videoUrl ,)),
+                        );
 
 
                       },

@@ -1,6 +1,7 @@
 import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart';
 import 'package:flutter/material.dart';
 
+import '../Screen_2/post_highlight.dart';
 import '../widgets/postContent.dart';
 
 // Dummy profile image URL (replace with your logic)
@@ -180,6 +181,12 @@ class StoryScrollPage extends StatelessWidget {
                     return GestureDetector(
                       onTap: () {
                         print('Tapped on ${post['name']}');
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => PostHighlight(url: post['image'], contentType: 'Story' ,)),
+                        );
+
                       },
                       child: SizedBox(
                         width: itemWidth,

@@ -1,6 +1,8 @@
 import 'package:clip_frame/features/post/presenatation/widgets/postContent.dart';
 import 'package:flutter/material.dart';
 
+import '../Screen_2/post_highlight.dart';
+
 class StoryListPage extends StatelessWidget {
   const StoryListPage({super.key});
 
@@ -84,14 +86,24 @@ class StoryListPage extends StatelessWidget {
             width: itemWidth,
             height: itemHeight,
             child: Expanded(
-              child: PostContent(
-                width: itemWidth,
-                image: post['image'],
-                profileImage: post['profileImage'],
-                name: post['name'],
-                likeCount: post['likeCount'],
-                repostCount: post['repostCount'],
-                  padding: padding,
+              child: GestureDetector(
+                onTap: (){
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => PostHighlight(url: post['image'], contentType: 'Story' ,)),
+                  );
+
+                },
+                child: PostContent(
+                  width: itemWidth,
+                  image: post['image'],
+                  profileImage: post['profileImage'],
+                  name: post['name'],
+                  likeCount: post['likeCount'],
+                  repostCount: post['repostCount'],
+                    padding: padding,
+                ),
               ),
             ),
           );
