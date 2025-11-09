@@ -3,6 +3,9 @@ import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../Screen_2/post_highlight.dart';
+import '../Screen_2/video_Highlight.dart';
+
 class PostScrollContnet extends StatelessWidget {
   final String imageUrl;
   final String category;
@@ -172,6 +175,12 @@ class PostScrollContnet extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {
                         // Your action here
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => PostHighlight(url: imageUrl, contentType: 'Post' ,)),
+                        );
+
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF007CFE),
