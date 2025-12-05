@@ -32,12 +32,13 @@ dependencies:
     sdk: flutter
 #  gallery_saver: ^2.3.2
   get: ^4.6.6
-  image_picker: ^1.1.2
+  image_picker: ^1.0.8
   path_provider: ^2.1.5
-  ffmpeg_kit_flutter_new: ^3.2.0
+  ffmpeg_kit_flutter_new: ^4.1.0
   path: ^1.8.0
   permission_handler: ^12.0.1
   video_player: ^2.7.0
+  camera: ^0.10.5+9
   intl: any # Required for localization (AppLocalizations)
   flutter_localizations:
     sdk: flutter

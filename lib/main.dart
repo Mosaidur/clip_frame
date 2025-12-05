@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:clip_frame/splashScreen/controllers/language_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -7,8 +8,11 @@ import 'L10/AppTranslations.dart';
 import 'Shared/routes/routes.dart';
 import 'Shared/theme/AppTheme.dart';
 
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
 
   // Initialize the language controller
   Get.put(LanguageController(), permanent: true);

@@ -217,6 +217,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../Video Editing/VideoList.dart';
+
 class StepByStepPage extends StatelessWidget {
   const StepByStepPage({super.key});
 
@@ -345,7 +347,15 @@ class StepByStepPage extends StatelessWidget {
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+
+                        Navigator.push(
+                          context,
+                          // MaterialPageRoute(builder: (context) => StepByStepContentScreen()),
+                          MaterialPageRoute(builder: (context) => VideoListPage()),
+                        );
+
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
                         padding: const EdgeInsets.symmetric(
