@@ -109,54 +109,64 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
 
           // TOP BUTTONS
           Positioned(
-            top: 40,
-            left: 20,
-            right: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Close Button
-                IconButton(
-                  icon: const Icon(Icons.close,
-                      color: Colors.white, size: 32),
-                  onPressed: () => Navigator.pop(context),
-                ),
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Close Button
+                    IconButton(
+                      icon: const Icon(Icons.close,
+                          color: Colors.white, size: 32),
+                      onPressed: () => Navigator.pop(context),
+                    ),
 
-                // Flash Button
-                IconButton(
-                  icon: Icon(
-                    isFlashOn ? Icons.flash_on : Icons.flash_off,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  onPressed: toggleFlash,
-                ),
+                    // Flash Button
+                    IconButton(
+                      icon: Icon(
+                        isFlashOn ? Icons.flash_on : Icons.flash_off,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                      onPressed: toggleFlash,
+                    ),
 
-                // Switch Camera Button
-                IconButton(
-                  icon: const Icon(Icons.cameraswitch,
-                      color: Colors.white, size: 32),
-                  onPressed: switchCamera,
+                    // Switch Camera Button
+                    IconButton(
+                      icon: const Icon(Icons.cameraswitch,
+                          color: Colors.white, size: 32),
+                      onPressed: switchCamera,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
 
           // RECORD BUTTON
           Positioned(
-            bottom: 40,
+            bottom: 0,
             left: 0,
             right: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: isRecording ? stopRecording : startRecording,
-                child: Container(
-                  width: 85,
-                  height: 85,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isRecording ? Colors.red : Colors.white,
-                    border: Border.all(color: Colors.white, width: 6),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Center(
+                  child: GestureDetector(
+                    onTap: isRecording ? stopRecording : startRecording,
+                    child: Container(
+                      width: 85,
+                      height: 85,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isRecording ? Colors.red : Colors.white,
+                        border: Border.all(color: Colors.white, width: 6),
+                      ),
+                    ),
                   ),
                 ),
               ),

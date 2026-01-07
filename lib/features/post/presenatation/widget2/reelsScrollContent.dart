@@ -38,50 +38,52 @@ class ReelsScrollContnet extends StatelessWidget {
 
           /// Top Bar
           Positioned(
-            top: 50,
+            top: 0,
             left: 0,
             right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  /// Menu
-                  GestureDetector(
-                    onTap: () {
-                      Scaffold.of(context).openDrawer();
-                    },
-                    child: Container(
+            child: SafeArea(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    /// Menu
+                    GestureDetector(
+                      onTap: () {
+                        Scaffold.of(context).openDrawer();
+                      },
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black26,
+                        ),
+                        child: const Icon(Icons.menu_outlined, color: Colors.white),
+                      ),
+                    ),
+
+                    /// Profile Image
+                    Container(
                       width: 50,
                       height: 50,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.black26,
+                        color: Colors.grey,
                       ),
-                      child: const Icon(Icons.menu_outlined, color: Colors.white),
-                    ),
-                  ),
-
-                  /// Profile Image
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.grey,
-                    ),
-                    child: profileImageUrl == null || profileImageUrl!.isEmpty
-                        ? const Icon(Icons.person, size: 40, color: Colors.white)
-                        : ClipOval(
-                      child: Image.network(
-                        profileImageUrl!,
-                        fit: BoxFit.cover,
-                        width: 70,
-                        height: 70,
+                      child: profileImageUrl == null || profileImageUrl!.isEmpty
+                          ? const Icon(Icons.person, size: 40, color: Colors.white)
+                          : ClipOval(
+                        child: Image.network(
+                          profileImageUrl!,
+                          fit: BoxFit.cover,
+                          width: 70,
+                          height: 70,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -96,108 +98,108 @@ class ReelsScrollContnet extends StatelessWidget {
 
           /// Bottom Left Info Panel
           Positioned(
-            left: 20,
-            bottom: 30,
-            right: 20,
-            // width: double.infinity,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              width: MediaQuery.of(context).size.width  ,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Category & Format
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _infoRow("Category:", category),
-                      _infoRow("Format:", format),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-
-                  /// Title
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+            left: 0,
+            bottom: 0,
+            right: 0,
+            child: SafeArea(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// Category & Format
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _infoRow("Category:", category),
+                        _infoRow("Format:", format),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    const SizedBox(height: 5),
 
-                  /// Tags
-                  Text(
-                    tags.join(", "),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                    /// Title
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
 
-                  const SizedBox(height: 5),
+                    /// Tags
+                    Text(
+                      tags.join(", "),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
 
-                  /// Music Row
-                  Row(
-                    children: [
-                      const Icon(Icons.music_note,
-                          color: Colors.white, size: 14),
-                      const SizedBox(width: 5),
-                      Expanded(
-                        child: Text(
-                          musicTitle,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
+                    const SizedBox(height: 5),
+
+                    /// Music Row
+                    Row(
+                      children: [
+                        const Icon(Icons.music_note,
+                            color: Colors.white, size: 14),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            musicTitle,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                  ),
-
-                  /// Create Button
-                  const SizedBox(height: 15),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Your action here
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => VideoHighlight(url: videoUrl ,)),
-                        );
-
-
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF007CFE),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                      child: const Text(
-                        "Create this Reel",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      ],
                     ),
-                  )
 
-                ],
+                    /// Create Button
+                    const SizedBox(height: 15),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Your action here
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => VideoHighlight(url: videoUrl ,)),
+                          );
+
+
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF007CFE),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        child: const Text(
+                          "Create this Reel",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    )
+
+                  ],
+                ),
               ),
             ),
           ),

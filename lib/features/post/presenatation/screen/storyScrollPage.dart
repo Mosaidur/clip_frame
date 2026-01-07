@@ -91,16 +91,14 @@ class StoryScrollPage extends StatelessWidget {
             colors: [ Color(0xFFEBC894), Color(0xFFFFFFFF), Color(0xFFB49EF4)],
           ),
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 20,left: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 50,
-              ),
-              // Top Header
-              Container(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 20,left: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Header
+                Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -209,6 +207,7 @@ class StoryScrollPage extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+   );
   }
 }

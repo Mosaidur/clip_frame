@@ -273,37 +273,41 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 ),
 
                 // Tab bar
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: List.generate(tabs.length, (index) {
-                    bool isSelected = index == selectedIndex;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedIndex = index;
-                        });
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          color: isSelected ? const Color(0xFFFF277F) : Colors.white.withOpacity(0.0),
-                          border: Border.all(
-                            color: const Color(0xFFFF277F).withOpacity(0.0),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: List.generate(tabs.length, (index) {
+                      bool isSelected = index == selectedIndex;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedIndex = index;
+                          });
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30),
+                            color: isSelected ? const Color(0xFFFF277F) : Colors.white.withOpacity(0.0),
+                            border: Border.all(
+                              color: const Color(0xFFFF277F).withOpacity(0.0),
+                            ),
+                          ),
+                          child: Text(
+                            tabs[index],
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : const Color(0xFF6D6D73),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        child: Text(
-                          tabs[index],
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : const Color(0xFF6D6D73),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
+                      );
+                    }),
+                  ),
                 ),
 
                 // Content depending on selected tab
