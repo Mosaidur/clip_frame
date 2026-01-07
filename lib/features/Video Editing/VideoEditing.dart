@@ -680,7 +680,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   Widget _buildControlBar() {
     return Container(
       color: const Color(0xFFE6C99D), // Sandy color from design
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 2.h), // Extra tight
+      padding: EdgeInsets.symmetric(horizontal: 10.w), // Extra tight
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
