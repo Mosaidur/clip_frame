@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -42,6 +43,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   late VideoPlayerController _controller;
   bool initialized = false;
   int currentVideoIndex = 0; // Tracking the index for sequential playback
+  List<Duration> videoDurations = []; // Proportional timeline support
 
   // History stacks
   final List<EditAction> _history = [];
@@ -58,8 +60,30 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   void initState() {
     super.initState();
     videoList.addAll(widget.videos);
+    _initializeAllDurations();
     if (videoList.isNotEmpty) {
       _setCurrentFile(videoList.first, 0);
+    }
+  }
+
+  Future<void> _initializeAllDurations() async {
+    for (var file in videoList) {
+      final d = await _getVideoDuration(file);
+      setState(() {
+        videoDurations.add(d);
+      });
+    }
+  }
+
+  Future<Duration> _getVideoDuration(File file) async {
+    final vpc = VideoPlayerController.file(file);
+    try {
+      await vpc.initialize();
+      final duration = vpc.value.duration;
+      await vpc.dispose();
+      return duration;
+    } catch (e) {
+      return const Duration(seconds: 5); // Fallback
     }
   }
 
@@ -202,6 +226,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   void removeVideoAt(int index) {
+    if (index < videoDurations.length) videoDurations.removeAt(index);
     final removed = videoList.removeAt(index);
     if (currentFile?.path == removed.path) {
       if (videoList.isNotEmpty) _setCurrentFile(videoList.first, 0);
@@ -234,6 +259,12 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
+      // Update the sequence
+      final newDur = await _getVideoDuration(afterFile);
+      setState(() {
+        videoList[currentVideoIndex] = afterFile;
+        videoDurations[currentVideoIndex] = newDur;
+      });
       await _setCurrentFile(afterFile, currentVideoIndex);
     }
   }
@@ -292,6 +323,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
+      final newDur = await _getVideoDuration(afterFile);
+      setState(() {
+        videoList[currentVideoIndex] = afterFile;
+        videoDurations[currentVideoIndex] = newDur;
+      });
       await _setCurrentFile(afterFile, currentVideoIndex);
     }
   }
@@ -330,6 +366,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
+      // No duration change for filter usually, but kept for consistency
+      setState(() => videoList[currentVideoIndex] = afterFile);
       await _setCurrentFile(afterFile, currentVideoIndex);
     }
   }
@@ -399,6 +437,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
+      setState(() => videoList[currentVideoIndex] = afterFile);
       await _setCurrentFile(afterFile, currentVideoIndex);
     }
   }
@@ -445,6 +484,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
+      setState(() => videoList[currentVideoIndex] = afterFile);
       await _setCurrentFile(afterFile, currentVideoIndex);
     }
   }
@@ -468,6 +508,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
+      setState(() => videoList[currentVideoIndex] = afterFile);
       await _setCurrentFile(afterFile, currentVideoIndex);
     }
   }
@@ -679,8 +720,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
 
   Widget _buildControlBar() {
     return Container(
-      color: const Color(0xFFE6C99D), // Sandy color from design
-      padding: EdgeInsets.symmetric(horizontal: 10.w), // Extra tight
+      color: const Color(0xFFEBC894), 
+      padding: EdgeInsets.symmetric(horizontal: 10.w), 
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -731,21 +772,26 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildTimelineSection() {
-    String formattedTime = initialized ? _formatDuration(_controller.value.position) : "00:00";
-    String totalTime = (initialized && _controller.value.duration != null) 
-        ? _formatDuration(_controller.value.duration) 
-        : "00:00";
+    int totalMs = videoDurations.fold<int>(0, (p, c) => p + c.inMilliseconds);
+    int elapsedMs = 0;
+    for (int i = 0; i < currentVideoIndex; i++) {
+      if (videoDurations.length > i) elapsedMs += videoDurations[i].inMilliseconds;
+    }
+    int globalPosMs = initialized ? (elapsedMs + _controller.value.position.inMilliseconds) : 0;
+    
+    String formattedTime = _formatDuration(Duration(milliseconds: globalPosMs));
+    String totalTimeStr = _formatDuration(Duration(milliseconds: totalMs));
 
     return Column(
       children: [
         // Ruler/Timestamp
         Container(
-          color: const Color(0xFF1E2F4C), // Dark blue background for timeline ruler
+          color: const Color(0xFFF4E1C8),
           padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
           child: Row(
             children: [
               Text(
-                "$formattedTime / $totalTime",
+                "$formattedTime / $totalTimeStr",
                 style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               SizedBox(width: 15.w),
@@ -766,9 +812,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               // Cover thumbnail
               GestureDetector(
                 onTap: () async {
-                  if (initialized) {
-                    // Simple approach: Capture current frame using ffmpeg or just mark timestamp
-                    // For now, let's extract a frame at current position
+                  if (initialized){
                     final out = await _tempFilePath("_cover.jpg");
                     final pos = _controller.value.position.inSeconds;
                     final cmd = '-i "${currentFile!.path}" -ss $pos -vframes 1 "$out"';
@@ -778,7 +822,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                     if (res != null) {
                       setState(() {
                         coverImage = File(res);
-                      });
+                      }
+                      );
                     }
                   }
                 },
@@ -817,40 +862,105 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 ),
               ),
               SizedBox(width: 10.w),
-              // Video strip (mock) using Slider for scrubbing
               Expanded(
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
+                    // Visual list of all clips
                     Container(
-                      height: 35.h,
+                      height: 38.h,
                       decoration: BoxDecoration(
+                        color: Colors.black26,
                         borderRadius: BorderRadius.circular(4.r),
-                        image: const DecorationImage(
-                          image: AssetImage("assets/images/video_strip.png"),
-                          fit: BoxFit.cover,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4.r),
+                        child: Row(
+                          children: [
+                            for (int i = 0; i < videoList.length; i++)
+                              Expanded(
+                                flex: (videoDurations.length > i) 
+                                    ? videoDurations[i].inMilliseconds 
+                                    : 1, 
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: i == currentVideoIndex ? Colors.white : Colors.white24,
+                                      width: i == currentVideoIndex ? 2.w : 0.5.w,
+                                    ),
+                                    image: const DecorationImage(
+                                      image: AssetImage("assets/images/placeholder_video.png"),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // CapCut-style Plus Add button at the end
+                            // GestureDetector(
+                            //    onTap: () async {
+                            //      final XFile? pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
+                            //      if (pickedFile != null) {
+                            //        final file = File(pickedFile.path);
+                            //        final dur = await _getVideoDuration(file);
+                            //        setState(() {
+                            //          videoList.add(file);
+                            //          videoDurations.add(dur);
+                            //        });
+                            //      }
+                            //    },
+                            //    child: Container(
+                            //     width: 35.w,
+                            //     color: Colors.white,
+                            //     child: Icon(Icons.add, size: 20.r, color: Colors.black),
+                            //   ),
+                            // ),
+                          ],
                         ),
                       ),
                     ),
-                    if (initialized)
-                      SliderTheme(
+                    if (initialized && videoDurations.length == videoList.length) 
+                    (() {
+                      final totalMs = videoDurations.fold<int>(0, (p, c) => p + c.inMilliseconds);
+                      int elapsedMs = 0;
+                      for (int i = 0; i < currentVideoIndex; i++) {
+                        elapsedMs += videoDurations[i].inMilliseconds;
+                      }
+                      final globalPosMs = elapsedMs + _controller.value.position.inMilliseconds;
+
+                      return SliderTheme(
                         data: SliderTheme.of(context).copyWith(
-                          trackHeight: 35.h,
-                          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 2.r),
+                          trackHeight: 38.h,
+                          thumbShape: CustomPlayheadShape(height: 50.h), 
                           overlayShape: SliderComponentShape.noOverlay,
                           activeTrackColor: Colors.transparent,
                           inactiveTrackColor: Colors.transparent,
                         ),
                         child: Slider(
                           min: 0,
-                          max: _controller.value.duration.inMilliseconds.toDouble(),
-                          value: _controller.value.position.inMilliseconds.toDouble().clamp(0, _controller.value.duration.inMilliseconds.toDouble()),
-                          onChanged: (v) {
-                            _controller.seekTo(Duration(milliseconds: v.toInt()));
+                          max: totalMs.toDouble(),
+                          value: globalPosMs.toDouble().clamp(0, totalMs.toDouble()),
+                          onChanged: (v) async {
+                            double target = v;
+                            int accum = 0;
+                            for (int i = 0; i < videoList.length; i++) {
+                              int dur = videoDurations[i].inMilliseconds;
+                              if (target <= accum + dur) {
+                                // Fall in this clip
+                                int localMs = (target - accum).toInt();
+                                if (currentVideoIndex != i) {
+                                  await _setCurrentFile(videoList[i], i);
+                                }
+                                _controller.seekTo(Duration(milliseconds: localMs));
+                                break;
+                              }
+                              accum += dur;
+                            }
                             setState(() {});
                           },
                         ),
-                      ),
+                      );
+                    }())
+                    else const SizedBox.shrink(),
                   ],
                 ),
               ),
@@ -1067,6 +1177,40 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
           ],
         );
       },
+    );
+  }
+}
+
+class CustomPlayheadShape extends SliderComponentShape {
+  final double height;
+  CustomPlayheadShape({required this.height});
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) => Size(2.0, height);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required ui.TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final Canvas canvas = context.canvas;
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 2.0;
+    canvas.drawLine(
+      Offset(center.dx, center.dy - height / 2),
+      Offset(center.dx, center.dy + height / 2),
+      paint,
     );
   }
 }
