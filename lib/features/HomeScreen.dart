@@ -117,22 +117,25 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        height: 70,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 5)],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            navItem(Icons.dashboard, 0, "Dashboard"),
-            navItem(Icons.note, 1, "Posts"),
-            const SizedBox(width: 60), // Space for central FAB
-            navItem(Icons.schedule, 2, "Schedules"),
-            navItem(Icons.person, 3, "Profile"),
-          ],
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          height: 70,
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), // Added margin for better look
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 5)],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              navItem(Icons.dashboard, 0, "Dashboard"),
+              navItem(Icons.note, 1, "Posts"),
+              const SizedBox(width: 60), // Space for central FAB
+              navItem(Icons.schedule, 2, "Schedules"),
+              navItem(Icons.person, 3, "Profile"),
+            ],
+          ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

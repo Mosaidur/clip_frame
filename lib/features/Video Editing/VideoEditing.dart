@@ -109,7 +109,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     try {
       final session = await FFmpegKit.execute(cmd);
       final rc = await session.getReturnCode();
-      if (rc != null && rc.isValueSuccess()) {
+      if (rc != null && rc.isValueSuccess()){
         return outputPath;
       } else {
         debugPrint("FFmpeg failed. rc=$rc, cmd=$cmd");
