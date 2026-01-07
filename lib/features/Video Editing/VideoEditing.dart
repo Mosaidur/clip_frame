@@ -44,6 +44,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   bool initialized = false;
   int currentVideoIndex = 0; // Tracking the index for sequential playback
   List<Duration> videoDurations = []; // Proportional timeline support
+  List<File?> videoThumbnails = []; // Actual video thumbnails
 
   // History stacks
   final List<EditAction> _history = [];
@@ -66,12 +67,28 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     }
   }
 
+  Future<void> _generateThumbnail(File videoFile, int index) async {
+    final out = await _tempFilePath("_thumb_$index.jpg");
+    final cmd = '-i "${videoFile.path}" -ss 00:00:01 -vframes 1 -s 160x90 -f image2 "$out"';
+    final res = await _runFFmpeg(cmd, out);
+    if (res != null) {
+      setState(() {
+        if (index < videoThumbnails.length) {
+          videoThumbnails[index] = File(res);
+        }
+      });
+    }
+  }
+
   Future<void> _initializeAllDurations() async {
-    for (var file in videoList) {
+    for (int i = 0; i < videoList.length; i++) {
+      final file = videoList[i];
+      videoThumbnails.add(null); // Placeholder
       final d = await _getVideoDuration(file);
       setState(() {
         videoDurations.add(d);
       });
+      _generateThumbnail(file, i);
     }
   }
 
@@ -220,13 +237,18 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     if (x != null) {
       final f = File(x.path);
       videoList.add(f);
+      videoThumbnails.add(null);
+      final dur = await _getVideoDuration(f);
+      videoDurations.add(dur);
       await _setCurrentFile(f, videoList.length - 1);
+      _generateThumbnail(f, videoList.length - 1);
       setState(() {});
     }
   }
 
   void removeVideoAt(int index) {
     if (index < videoDurations.length) videoDurations.removeAt(index);
+    if (index < videoThumbnails.length) videoThumbnails.removeAt(index);
     final removed = videoList.removeAt(index);
     if (currentFile?.path == removed.path) {
       if (videoList.isNotEmpty) _setCurrentFile(videoList.first, 0);
@@ -266,6 +288,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         videoDurations[currentVideoIndex] = newDur;
       });
       await _setCurrentFile(afterFile, currentVideoIndex);
+      _generateThumbnail(afterFile, currentVideoIndex);
     }
   }
 
@@ -329,6 +352,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         videoDurations[currentVideoIndex] = newDur;
       });
       await _setCurrentFile(afterFile, currentVideoIndex);
+      _generateThumbnail(afterFile, currentVideoIndex);
     }
   }
 
@@ -369,6 +393,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       // No duration change for filter usually, but kept for consistency
       setState(() => videoList[currentVideoIndex] = afterFile);
       await _setCurrentFile(afterFile, currentVideoIndex);
+      _generateThumbnail(afterFile, currentVideoIndex);
     }
   }
 
@@ -543,39 +568,173 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Top Section (Header + Clip List)
-            _buildTopSection(),
+        child: OrientationBuilder(
+          builder: (context, orientation) {
+            if (orientation == Orientation.landscape) {
+              return _buildLandscapeLayout();
+            } else {
+              return _buildPortraitLayout();
+            }
+          },
+        ),
+      ),
+    );
+  }
 
-            // Video Player Area (Expanded)
-            _buildVideoPlayerSection(),
+  Widget _buildPortraitLayout() {
+    return Column(
+      children: [
+        // Top Section (Header + Clip List)
+        _buildTopSection(),
 
-            // Control Bar (Sandy)
-            _buildControlBar(),
+        // Video Player Area (Expanded)
+        _buildVideoPlayerSection(),
 
-            // Timeline & Save Button (Lavender)
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFE1D5FF),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30.r),
-                  topRight: Radius.circular(30.r),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildTimelineSection(),
-                  SizedBox(height: 5.h),
-                  _buildSaveButton(),
-                  SizedBox(height: 10.h),
-                ],
-              ),
+        // Control Bar (Sandy)
+        _buildControlBar(),
+
+        // Timeline & Save Button (Lavender)
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFE1D5FF),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30.r),
+              topRight: Radius.circular(30.r),
             ),
-            
-            // Editing Tools (Bottom)
-            _buildBottomActionBar(),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildTimelineSection(),
+              SizedBox(height: 5.h),
+              _buildSaveButton(),
+              SizedBox(height: 10.h),
+            ],
+          ),
+        ),
+
+        // Editing Tools (Bottom)
+        _buildBottomActionBar(),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeLayout() {
+    return Row(
+      children: [
+        // Left Column: Video Player and Timeline
+        Expanded(
+          flex: 3,
+          child: Container(
+            color: Colors.black,
+            child: Column(
+              children: [
+                Expanded(child: _buildVideoPlayerSection()),
+                _buildControlBar(),
+                Container(
+                  color: const Color(0xFFE1D5FF),
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                  child: _buildTimelineSection(),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Vertical Divider
+        Container(width: 1.w, color: Colors.grey[300]),
+        // Right Column: Controls, clips, and tools
+        Expanded(
+          flex: 2,
+          child: Container(
+            color: const Color(0xFFF8E9D2),
+            child: Column(
+              children: [
+                // Condensed Header
+                _buildLandscapeHeader(),
+                // Video Clip List (Grid-like scroll)
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20.r)),
+                    ),
+                    child: _buildClipListView(isLandscape: true),
+                  ),
+                ),
+                // Editing tools
+                _buildLandscapeTools(),
+                // Save Button
+                Container(
+                  color: Colors.transparent,
+                  padding: EdgeInsets.all(12.r),
+                  child: _buildSaveButton(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeHeader() {
+    return Padding(
+      padding: EdgeInsets.all(12.r),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: EdgeInsets.all(8.r),
+              decoration: const BoxDecoration(
+                color: Color(0xFFDCC8B0),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: 16.r, color: Colors.black),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Text(
+            "Video Editor",
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLandscapeTools() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 12.h),
+      color: Colors.transparent,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [
+             _actionIcon(Icons.crop_free_rounded, "Canvas", onTap: () async {
+              final txt = await _inputDialog("Canvas text", "Enter overlay text");
+              if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
+            }),
+            _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
+            _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => quickTrimUI()),
+            _actionIcon(Icons.splitscreen_rounded, "Split", onTap: () async {
+              final dur = _controller.value.duration;
+              final at = Duration(seconds: dur.inSeconds ~/ 2);
+              await splitVideoAt(at);
+            }),
+            _actionIcon(Icons.crop_rounded, "Crop", onTap: () async {
+              final crop = await _cropDialog();
+              if (crop != null) await cropVideo(x: crop[0], y: crop[1], w: crop[2], h: crop[3]);
+            }),
+            _actionIcon(Icons.speed_rounded, "Speed", onTap: () async {
+              final v = await _speedDialog();
+              if (v != null) await changeSpeed(v);
+            }),
+            _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () async {
+              final choice = await _filterChoiceDialog();
+              if (choice != null) await applyFilter(choice);
+            }),
           ],
         ),
       ),
@@ -627,61 +786,73 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               ),
             ),
           // Clip Thumbnails List
-          Container(
-            height: 80.h,
-            padding: EdgeInsets.symmetric(vertical: 10.h),
-            color: Colors.white, // White background for the clip list area
-            child: videoList.isEmpty
-                ? const Center(child: Text("No videos confirmed", style: TextStyle(color: Colors.grey)))
-                : ListView.separated(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: videoList.length,
-                    separatorBuilder: (_, __) => SizedBox(width: 12.w),
-                    itemBuilder: (context, i) {
-                      final f = videoList[i];
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          GestureDetector(
-                            onTap: () => _setCurrentFile(f, i),
-                            child: Container(
-                              width: 100.w,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300], // Fallback color
-                                borderRadius: BorderRadius.circular(10.r),
-                                border: currentFile?.path == f.path
-                                    ? Border.all(color: Colors.blue, width: 2.w)
-                                    : null,
-                                image: const DecorationImage(
-                                  image: AssetImage("assets/images/placeholder_video.png"),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: -6.h,
-                            right: -6.w,
-                            child: GestureDetector(
-                              onTap: () => removeVideoAt(i),
-                              child: Container(
-                                padding: EdgeInsets.all(4.r),
-                                decoration: const BoxDecoration(
-                                  color: Colors.pink,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.close, color: Colors.white, size: 10.r),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-          ),
+          _buildClipListView(),
         ],
       ),
+    );
+  }
+
+  Widget _buildClipListView({bool isLandscape = false}) {
+    return Container(
+      height: isLandscape ? null : 80.h,
+      padding: EdgeInsets.symmetric(vertical: 10.h),
+      color: Colors.transparent, // Inherit background from parent
+      child: videoList.isEmpty
+          ? const Center(child: Text("No videos confirmed", style: TextStyle(color: Colors.grey)))
+          : ListView.separated(
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              scrollDirection: Axis.horizontal,
+              itemCount: videoList.length,
+              separatorBuilder: (_, __) => SizedBox(width: 12.w),
+              itemBuilder: (context, i) {
+                final f = videoList[i];
+                return Center(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _setCurrentFile(f, i),
+                        child: Container(
+                          width: isLandscape ? 120.w : 100.w,
+                          height: isLandscape ? 70.h : 60.h,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300], // Fallback color
+                            borderRadius: BorderRadius.circular(10.r),
+                            border: currentFile?.path == f.path
+                                ? Border.all(color: Colors.blue, width: 2.w)
+                                : null,
+                            image: (i < videoThumbnails.length && videoThumbnails[i] != null)
+                                ? DecorationImage(
+                                    image: FileImage(videoThumbnails[i]!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : const DecorationImage(
+                                    image: AssetImage("assets/images/placeholder_video.png"),
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: -6.h,
+                        right: -6.w,
+                        child: GestureDetector(
+                          onTap: () => removeVideoAt(i),
+                          child: Container(
+                            padding: EdgeInsets.all(4.r),
+                            decoration: const BoxDecoration(
+                              color: Colors.pink,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.close, color: Colors.white, size: 10.r),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
     );
   }
 
@@ -792,12 +963,12 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             children: [
               Text(
                 "$formattedTime / $totalTimeStr",
-                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: Colors.black),
               ),
               SizedBox(width: 15.w),
               Expanded(
                 child: Text("00:00   .   00:02   .   00:04   .   00:06   .   00:07   .   00:08",
-                    style: TextStyle(fontSize: 10.sp, color: Colors.white70),
+                    style: TextStyle(fontSize: 10.sp, color: Color(0xFF9D9DA1)),
                     overflow: TextOverflow.ellipsis),
               ),
             ],
@@ -849,7 +1020,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                       children: [
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-                          color: Colors.black54,
+                          // color: Colors.black54,
                           child: Text("COVER",
                               style: TextStyle(
                                   color: Colors.white,
@@ -888,10 +1059,15 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                       color: i == currentVideoIndex ? Colors.white : Colors.white24,
                                       width: i == currentVideoIndex ? 2.w : 0.5.w,
                                     ),
-                                    image: const DecorationImage(
-                                      image: AssetImage("assets/images/placeholder_video.png"),
-                                      fit: BoxFit.cover,
-                                    ),
+                                    image: (i < videoThumbnails.length && videoThumbnails[i] != null)
+                                        ? DecorationImage(
+                                            image: FileImage(videoThumbnails[i]!),
+                                            fit: BoxFit.cover,
+                                          )
+                                        : const DecorationImage(
+                                            image: AssetImage("assets/images/placeholder_video.png"),
+                                            fit: BoxFit.cover,
+                                          ),
                                   ),
                                 ),
                               ),
@@ -974,7 +1150,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
           child: Container(
             height: 25.h,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.purple.withOpacity(0.3),
               borderRadius: BorderRadius.circular(5.r),
             ),
             child: Row(
