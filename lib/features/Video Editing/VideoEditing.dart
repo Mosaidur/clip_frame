@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -485,414 +486,439 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFEBC894), Color(0xFFFFFFFF), Color(0xFFB49EF4)],
-          ),
+          color: Color(0xFFF8E9D2), // Cream top color
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-
-                // Back button
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.5),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Horizontal list of videos (thumbnails) with remove X
-                SizedBox(
-                  height: 90,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: videoList.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      final f = videoList[i];
-                      return Stack(
-                        children: [
-                          GestureDetector(
-                            onTap: () => _setCurrentFile(f),
-                            child: Container(
-                              width: 140,
-                              decoration: BoxDecoration(
-                                color: Colors.black12,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  "Video ${i + 1}",
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () => removeVideoAt(i),
-                              child: Container(
-                                decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(4.0),
-                                  child: Icon(Icons.close, color: Colors.white, size: 16),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Main video player area and controls
-                if (currentFile != null && initialized)
-                  Expanded(
-                    child: Column(
-                      children: [
-                        // Video player
-                        Container(
-                          height: 100,
-                          child: AspectRatio(
-                            aspectRatio: _controller.value.aspectRatio,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: VideoPlayer(_controller),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        // Controls row: undo redo play/pause Done
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.undo),
-                                  onPressed: _history.isNotEmpty ? () => undo() : null,
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.redo),
-                                  onPressed: _redoStack.isNotEmpty ? () => redo() : null,
-                                ),
-                              ],
-                            ),
-
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: Icon(_controller.value.isPlaying ? Icons.pause : Icons.play_arrow),
-                                  onPressed: () {
-                                    setState(() {
-                                      _controller.value.isPlaying ? _controller.pause() : _controller.play();
-                                    });
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: () {
-                                    // Done button behaviour: could finalize or move to next step
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Done pressed")));
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEBC894),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Text("Done", style: TextStyle(color: Colors.black87)),
-                                  ),
-                                )
-                              ],
-                            )
-                          ],
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        // Timeline scale UI: shows video duration & zoom slider
-                        Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text("00:00", style: const TextStyle(fontSize: 12)),
-                                Text(_controller.value.duration != null ? _formatDuration(_controller.value.duration) : "00:00", style: const TextStyle(fontSize: 12)),
-                              ],
-                            ),
-
-                            Row(
-                              children: [
-                                const Text("Zoom:"),
-                                Expanded(
-                                  child: Slider(
-                                    min: 0.5,
-                                    max: 3.0,
-                                    value: timelineScale,
-                                    onChanged: (v) => setState(() => timelineScale = v),
-                                  ),
-                                )
-                              ],
-                            ),
-
-                            // Simple "one by one" video list (thumbnails scaled by timelineScale)
-                            SizedBox(
-                              height: 60,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: 1, // for now only current file; extend for timeline layers
-                                itemBuilder: (c, idx) {
-                                  return Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                                    width: 120 * timelineScale,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black12,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Center(child: Text("Clip")),
-                                  );
-                                },
-                              ),
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            // Add Video / Add Audio Layer Row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                ElevatedButton.icon(
-                                  onPressed: () async {
-                                    final XFile? x = await _picker.pickVideo(source: ImageSource.gallery);
-                                    if (x != null) {
-                                      final f = File(x.path);
-                                      // For simplicity, we will append/merge new video to current using concat (requires same codec)
-                                      // A real editor would create a timeline entry. Here we push a merged output.
-                                      if (currentFile == null) return;
-                                      final out = await _tempFilePath("_merged.mp4");
-                                      final listFile = await _tempFilePath("_concat.txt");
-                                      // create a concat list
-                                      final concatList = "file '${currentFile!.path}'\nfile '${f.path}'\n";
-                                      await File(listFile).writeAsString(concatList);
-                                      final cmd = '-f concat -safe 0 -i "$listFile" -c copy "$out"';
-                                      setState(() => isExporting = true);
-                                      final res = await _runFFmpeg(cmd, out);
-                                      setState(() => isExporting = false);
-                                      if (res != null) {
-                                        final afterFile = File(res);
-                                        _pushHistory(EditAction(type: EditType.merged, description: "Merged with another video", beforePath: currentFile!.path, afterPath: afterFile.path));
-                                        await _setCurrentFile(afterFile);
-                                      }
-                                    }
-                                  },
-                                  icon: const Icon(Icons.video_library),
-                                  label: const Text("Add Video"),
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.2), foregroundColor: Colors.white),
-                                ),
-                                ElevatedButton.icon(
-                                  onPressed: () async {
-                                    final XFile? x = await _picker.pickVideo(source: ImageSource.gallery);
-                                    // We accept audio as video for demo; for real app use audio picker
-                                    if (x != null) {
-                                      await addAudioLayer(File(x.path));
-                                    }
-                                  },
-                                  icon: const Icon(Icons.audiotrack),
-                                  label: const Text("Add Audio"),
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.2), foregroundColor: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        // Cover selection and Save
-                        Row(
-                          children: [
-                            // cover image change (for demo, choose a frame time)
-                            ElevatedButton(
-                              onPressed: () async {
-                                if (currentFile == null) return;
-                                final frameTime = Duration(seconds: (_controller.value.duration.inSeconds ~/ 2));
-                                final out = await _tempFilePath("_cover.jpg");
-                                final cmd = '-ss ${frameTime.inSeconds} -i "${currentFile!.path}" -frames:v 1 "$out"';
-                                setState(() => isExporting = true);
-                                final res = await _runFFmpeg(cmd, out);
-                                setState(() => isExporting = false);
-                                if (res != null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Cover saved: $res")));
-                                }
-                              },
-                              child: const Text("Change Cover"),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.2), foregroundColor: Colors.white),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: saveCurrentToGallery,
-                              child: const Text("Save"),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // Tools container (horizontal scroll of tool items)
-                        Container(
-                          height: 92,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            children: [
-                              _toolTile(Icons.brush, "Canvas", onTap: () async {
-                                // simple overlay text prompt
-                                final txt = await _inputDialog("Canvas text", "Enter overlay text");
-                                if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
-                              }),
-                              _toolTile(Icons.image_not_supported, "BG_remove", onTap: () {
-                                // use default green key
-                                removeBackground(keyColor: "0x00FF00");
-                              }),
-                              _toolTile(Icons.cut, "Trim", onTap: () => quickTrimUI()),
-                              _toolTile(Icons.content_cut, "Split", onTap: () async {
-                                // simple split at half
-                                final dur = _controller.value.duration;
-                                final at = Duration(seconds: dur.inSeconds ~/ 2);
-                                await splitVideoAt(at);
-                              }),
-                              _toolTile(Icons.crop, "Crop", onTap: () async {
-                                // show dialog to enter crop values
-                                final crop = await _cropDialog();
-                                if (crop != null) await cropVideo(x: crop[0], y: crop[1], w: crop[2], h: crop[3]);
-                              }),
-                              _toolTile(Icons.speed, "Speed", onTap: () async {
-                                // speed selection dialog
-                                final v = await _speedDialog();
-                                if (v != null) await changeSpeed(v);
-                              }),
-                              _toolTile(Icons.filter, "Filter", onTap: () async {
-                                final choice = await _filterChoiceDialog();
-                                if (choice != null) await applyFilter(choice);
-                              }),
-                            ],
-                          ),
-                        ),
-
-                        // History list preview with remove/undo per-item
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text("Edit History", style: TextStyle(fontWeight: FontWeight.bold)),
-                              Expanded(
-                                child: ListView.builder(
-                                  itemCount: _history.length,
-                                  itemBuilder: (c, idx) {
-                                    final h = _history[idx];
-                                    return ListTile(
-                                      title: Text(h.description),
-                                      subtitle: Text(DateFormat('HH:mm:ss').format(h.timestamp)),
-                                      trailing: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.restore_from_trash),
-                                            onPressed: () => removeHistoryAt(idx),
-                                          ),
-                                        ],
-                                      ),
-                                      onTap: () async {
-                                        // tap history to revert to that point (set current file to that afterPath)
-                                        final f = File(h.afterPath);
-                                        if (await f.exists()) {
-                                          await _setCurrentFile(f);
-                                        } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("File missing")));
-                                        }
-                                      },
-                                    );
-                                  },
-                                ),
-                              )
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                // no video loaded placeholder
-                  Expanded(
-                    child: Center(
-                      child: Text(videoList.isEmpty ? "No videos. Add one." : "Loading..."),
-                    ),
-                  ),
-
-                // status & spinner
-                if (isExporting) ...[
-                  const SizedBox(height: 8),
-                  Center(child: Column(children: const [CircularProgressIndicator(), SizedBox(height: 6)])),
-                ],
-                if (statusText.isNotEmpty) Text(statusText),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ----- small UI helpers -----
-  Widget _toolTile(IconData icon, String label, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 84,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: Colors.white),
+            // Top Section (Custom AppBar + Clips)
+            _buildTopSection(),
+
+            // Video Player Section (Resized compact)
+            _buildVideoPlayerSection(),
+
+            // Bottom Section (Controls + Timeline + Tools)
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD0C4F2), // Lavender bottom color
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30.r),
+                    topRight: Radius.circular(30.r),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      _buildControlBar(),
+                      _buildTimelineSection(),
+                      SizedBox(height: 15.h),
+                      _buildSaveButton(),
+                      SizedBox(height: 15.h),
+                      _buildBottomActionBar(),
+                      SizedBox(height: 20.h),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 6),
-            Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildTopSection() {
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Back Button
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: EdgeInsets.all(10.r),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFDCC8B0),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.arrow_back_ios_new_rounded, size: 18.r),
+                  ),
+                ),
+                // Title
+                Text(
+                  "Manual Video Edit",
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                // Menu Icon
+                Container(
+                  padding: EdgeInsets.all(10.r),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFACAAAA),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.grid_view_rounded, size: 18.r, color: Colors.black87),
+                ),
+              ],
+            ),
+            SizedBox(height: 15.h),
+            // Clip Thumbnails List
+            SizedBox(
+              height: 70.h,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: videoList.length,
+                separatorBuilder: (_, __) => SizedBox(width: 10.w),
+                itemBuilder: (context, i) {
+                  final f = videoList[i];
+                  return Stack(
+                    children: [
+                      GestureDetector(
+                        onTap: () => _setCurrentFile(f),
+                        child: Container(
+                          width: 100.w,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8.r),
+                            border: currentFile?.path == f.path
+                                ? Border.all(color: Colors.blue, width: 2.w)
+                                : null,
+                            image: const DecorationImage(
+                              image: AssetImage("assets/images/placeholder_video.png"),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.play_circle_fill,
+                              color: Colors.white.withOpacity(0.7),
+                              size: 24.r,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: GestureDetector(
+                          onTap: () => removeVideoAt(i),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.pink,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.close, color: Colors.white, size: 12.r),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPlayerSection() {
+    return Container(
+      width: double.infinity,
+      height: 200.h, // Compact height to prevent overflow
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (currentFile != null && initialized)
+            AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12.r),
+                child: VideoPlayer(_controller),
+              ),
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: const Center(child: Text("Loading video...")),
+            ),
+          // Fullscreen icon
+          Positioned(
+            bottom: 8.h,
+            right: 12.w,
+            child: Icon(Icons.fullscreen, color: Colors.white.withOpacity(0.8), size: 24.r),
+          ),
+          if (isExporting)
+            const Center(child: CircularProgressIndicator()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.undo, color: Colors.black54, size: 22.r),
+                onPressed: _history.isNotEmpty ? () => undo() : null,
+              ),
+              IconButton(
+                icon: Icon(Icons.redo, color: Colors.black54, size: 22.r),
+                onPressed: _redoStack.isNotEmpty ? () => redo() : null,
+              ),
+            ],
+          ),
+          IconButton(
+            icon: Icon(
+              initialized && _controller.value.isPlaying
+                  ? Icons.pause_rounded
+                  : Icons.play_arrow_rounded,
+              size: 36.r,
+              color: Colors.black,
+            ),
+            onPressed: () {
+              if (initialized) {
+                setState(() {
+                  _controller.value.isPlaying ? _controller.pause() : _controller.play();
+                });
+              }
+            },
+          ),
+          TextButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Done pressed")));
+            },
+            child: Text(
+              "DONE",
+              style: TextStyle(
+                color: Colors.black54,
+                fontWeight: FontWeight.bold,
+                fontSize: 12.sp,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineSection() {
+    String formattedTime = initialized ? _formatDuration(_controller.value.position) : "00:00";
+    String totalTime = (initialized && _controller.value.duration != null) 
+        ? _formatDuration(_controller.value.duration) 
+        : "00:00";
+
+    return Column(
+      children: [
+        // Ruler/Timestamp
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          child: Row(
+            children: [
+              Text(
+                "$formattedTime / $totalTime",
+                style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold),
+              ),
+              const Expanded(child: SizedBox()),
+              Text("00:00   .   00:02   .   00:04",
+                  style: TextStyle(fontSize: 8.sp, color: Colors.grey)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8.h),
+        // Timeline Track
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          child: Row(
+            children: [
+              // Cover thumbnail
+              Container(
+                width: 50.w,
+                height: 50.h,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6.r),
+                  image: const DecorationImage(
+                    image: AssetImage("assets/images/placeholder_video.png"),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("COVER", style: TextStyle(color: Colors.white, fontSize: 7.sp, fontWeight: FontWeight.bold)),
+                      Icon(Icons.edit, color: Colors.white, size: 8.r),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(width: 10.w),
+              // Video strip (mock) using Slider for scrubbing
+              Expanded(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      height: 35.h,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4.r),
+                        image: const DecorationImage(
+                          image: AssetImage("assets/images/video_strip.png"),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    if (initialized)
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 35.h,
+                          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 2.r),
+                          overlayShape: SliderComponentShape.noOverlay,
+                          activeTrackColor: Colors.transparent,
+                          inactiveTrackColor: Colors.transparent,
+                        ),
+                        child: Slider(
+                          min: 0,
+                          max: _controller.value.duration.inMilliseconds.toDouble(),
+                          value: _controller.value.position.inMilliseconds.toDouble().clamp(0, _controller.value.duration.inMilliseconds.toDouble()),
+                          onChanged: (v) {
+                            _controller.seekTo(Duration(milliseconds: v.toInt()));
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Music track
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
+          padding: EdgeInsets.only(left: 60.w), // Align with video strip
+          child: Container(
+            height: 25.h,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(5.r),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: 8.w),
+                Icon(Icons.music_note, size: 12.r, color: Colors.white),
+                SizedBox(width: 5.w),
+                Text("Add music", style: TextStyle(color: Colors.white, fontSize: 9.sp)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50.h,
+        child: ElevatedButton(
+          onPressed: saveCurrentToGallery,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF007BFF),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+            elevation: 0,
+          ),
+          child: Text(
+            "Save",
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActionBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [
+            _actionIcon(Icons.brush, "Canvas", onTap: () async {
+               final txt = await _inputDialog("Canvas text", "Enter overlay text");
+               if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
+            }),
+            _actionIcon(Icons.image_not_supported, "BG_remove", onTap: () => removeBackground()),
+            _actionIcon(Icons.cut, "Trim", onTap: () => quickTrimUI()),
+            _actionIcon(Icons.content_cut, "Split", onTap: () async {
+               final dur = _controller.value.duration;
+               final at = Duration(seconds: dur.inSeconds ~/ 2);
+               await splitVideoAt(at);
+            }),
+            _actionIcon(Icons.crop, "Crop", onTap: () async {
+               final crop = await _cropDialog();
+               if (crop != null) await cropVideo(x: crop[0], y: crop[1], w: crop[2], h: crop[3]);
+            }),
+            _actionIcon(Icons.speed, "Speed", onTap: () async {
+               final v = await _speedDialog();
+               if (v != null) await changeSpeed(v);
+            }),
+            _actionIcon(Icons.filter, "Filter", onTap: () async {
+               final choice = await _filterChoiceDialog();
+               if (choice != null) await applyFilter(choice);
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actionIcon(IconData icon, String label, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        child: Column(
+          children: [
+            Icon(icon, color: Colors.black54, size: 24.r),
+            SizedBox(height: 4.h),
+            Text(
+              label,
+              style: TextStyle(fontSize: 9.sp, color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Helper Dialogs ---
+  Widget _toolTile(IconData icon, String label, {VoidCallback? onTap}) {
+     return _actionIcon(icon, label, onTap: onTap);
+  }
+
 
   Future<String?> _inputDialog(String title, String hint) async {
     String val = "";
