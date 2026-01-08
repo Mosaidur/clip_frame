@@ -1242,7 +1242,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                   onChanged: (v) async {
                                     double target = v;
                                     int accum = 0;
-                                    for (int i = 0; i < videoList.length; i++) {
+                                    for (int i = 0; i < videoList.length; i++) { 
                                       int dur = videoDurations[i].inMilliseconds;
                                       if (target <= accum + dur) {
                                         int localMs = (target - accum).toInt();
