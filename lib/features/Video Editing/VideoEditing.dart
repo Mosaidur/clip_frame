@@ -876,8 +876,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
             }),
             _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
-            _actionIcon(Icons.delete_outline_rounded, "Delete", onTap: () => _deleteSelectedClip()),
-            _actionIcon(Icons.vertical_split_rounded, "Split", onTap: () async {
+            _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
+            _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
               if (initialized) {
                 await splitVideoAt(_controller.value.position);
               }
@@ -1416,8 +1416,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
             }),
             _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
-            _actionIcon(Icons.delete_outline_rounded, "Delete", onTap: () => _deleteSelectedClip()),
-            _actionIcon(Icons.vertical_split_rounded, "Split", onTap: () async {
+            _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
+            _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
               if (initialized) {
                 await splitVideoAt(_controller.value.position);
               }
@@ -1434,6 +1434,25 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               final choice = await _filterChoiceDialog();
               if (choice != null) await applyFilter(choice);
             }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actionCustomIcon(String assetPath, String label, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        child: Column(
+          children: [
+            Image.asset(assetPath, width: 24.r, height: 24.r, color: Colors.black54),
+            SizedBox(height: 4.h),
+            Text(
+              label,
+              style: TextStyle(fontSize: 9.sp, color: Colors.black54),
+            ),
           ],
         ),
       ),
