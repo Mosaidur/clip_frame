@@ -58,6 +58,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   String statusText = ""; // Restored
   File? coverImage; // New: to store selected cover frame
   final ScrollController timelineScrollController = ScrollController(); // New: for auto-scroll
+  
+  // Selection
+  int? selectedClipIndex;
 
   @override
   void initState() {
@@ -65,7 +68,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     videoList.addAll(widget.videos);
     _initializeAllDurations();
     if (videoList.isNotEmpty) {
-      _setCurrentFile(videoList.first, 0);
+      _setCurrentFile(videoList.first, 0, play: false);
     }
   }
 
@@ -162,7 +165,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     return "${dir.path}/$name$suffix";
   }
 
-  Future<void> _setCurrentFile(File f, int index) async {
+  Future<void> _setCurrentFile(File f, int index, {bool play = true}) async {
     try {
       currentFile = f;
       currentVideoIndex = index;
@@ -177,7 +180,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       setState(() {
         initialized = true;
       });
-      _controller.play();
+      if (play) _controller.play();
     } catch (e) {
       debugPrint("Error setting current file: $e");
     }
@@ -281,7 +284,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     // set current to beforePath
     final before = File(last.beforePath);
     if (before.existsSync()) {
-      await _setCurrentFile(before, currentVideoIndex);
+      await _setCurrentFile(before, currentVideoIndex, play: false);
       setState(() => statusText = "Undid: ${last.description}");
     } else {
       setState(() => statusText = "Cannot undo: file missing");
@@ -295,7 +298,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     _history.add(action);
     final after = File(action.afterPath);
     if (after.existsSync()) {
-      await _setCurrentFile(after, currentVideoIndex);
+      await _setCurrentFile(after, currentVideoIndex, play: false);
       setState(() => statusText = "Redid: ${action.description}");
     } else {
       setState(() => statusText = "Cannot redo: file missing");
@@ -352,44 +355,79 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   Future<void> trimVideo({required Duration start, required Duration end}) async {
     if (currentFile == null) return;
     final before = currentFile!;
-    final out = await _tempFilePath(".mp4");
-    final startSec = start.inSeconds;
-    final durArg = (end - start).inSeconds;
-    final cmd = '-i "${before.path}" -ss $startSec -t $durArg -c copy "$out"';
+    final out = await _tempFilePath("_trimmed_${DateTime.now().millisecondsSinceEpoch}.mp4");
+    
+    // Precise trim using re-encoding
+    // Use fractional seconds for precision
+    final startSec = start.inMilliseconds / 1000.0;
+    final durSec = (end - start).inMilliseconds / 1000.0;
+    
+    // -c:v libx264 -preset ultrafast guarantees frame accuracy at the cost of re-encoding
+    final cmd = '-i "${before.path}" -ss $startSec -t $durSec -c:v libx264 -preset ultrafast -c:a copy "$out"';
+    
     setState(() => isExporting = true);
     final result = await _runFFmpeg(cmd, out);
     setState(() => isExporting = false);
+    
     if (result != null) {
       final afterFile = File(result);
       _pushHistory(EditAction(
         type: EditType.trim,
-        description: "Trim ${start.toString()} - ${end.toString()}",
+        description: "Trim ${_formatDuration(start)} - ${_formatDuration(end)}",
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
+      
       // Update the sequence
       final newDur = await _getVideoDuration(afterFile);
       setState(() {
         videoList[currentVideoIndex] = afterFile;
         videoDurations[currentVideoIndex] = newDur;
+        // Regenerate visuals for this clip
+        videoFilmstrips[currentVideoIndex] = []; 
+        videoThumbnails[currentVideoIndex] = null;
       });
-      await _setCurrentFile(afterFile, currentVideoIndex);
+      
+      await _setCurrentFile(afterFile, currentVideoIndex, play: false);
       _generateThumbnail(afterFile, currentVideoIndex);
       _generateFilmstrip(afterFile, currentVideoIndex);
     }
   }
 
   // 2) Split video at position -> returns pair of paths (part1, part2)
-  Future<List<String>?> splitVideoAt(Duration at) async {
-    if (currentFile == null) return null;
-    final before = currentFile!;
-    final out1 = await _tempFilePath("_part1.mp4");
-    final out2 = await _tempFilePath("_part2.mp4");
-    final atSec = at.inSeconds;
+  // 2) Split video at position -> returns pair of paths (part1, part2)
+  Future<List<String>?> splitVideoAt(Duration globalPos) async {
+    // 1. Determine which clip we are in and the local timestamp
+    int accumMs = 0;
+    int targetIndex = -1;
+    Duration localPos = Duration.zero;
+
+    for (int i = 0; i < videoDurations.length; i++) {
+        int dur = videoDurations[i].inMilliseconds;
+        if (globalPos.inMilliseconds <= accumMs + dur) {
+            targetIndex = i;
+            localPos = globalPos - Duration(milliseconds: accumMs);
+            break;
+        }
+        accumMs += dur;
+    }
+
+    if (targetIndex == -1) targetIndex = videoList.length - 1;
+
+    final targetFile = videoList[targetIndex];
+    final out1 = await _tempFilePath("_part1_${DateTime.now().millisecondsSinceEpoch}.mp4");
+    final out2 = await _tempFilePath("_part2_${DateTime.now().millisecondsSinceEpoch}.mp4");
     
-    // Commands to split
-    final cmd1 = '-i "${before.path}" -ss 0 -t $atSec -c copy "$out1"';
-    final cmd2 = '-i "${before.path}" -ss $atSec -c copy "$out2"';
+    // Precise split using re-encoding for frame accuracy
+    // -ss before -i is faster seeking, but for split we want exactness.
+    // We use -c:v libx264 -preset ultrafast to be quick but accurate.
+    final ms = localPos.inMilliseconds / 1000.0;
+    
+    // Part 1: Start to split point
+    final cmd1 = '-i "${targetFile.path}" -t $ms -c:v libx264 -preset ultrafast -c:a copy "$out1"';
+    
+    // Part 2: Split point to end
+    final cmd2 = '-i "${targetFile.path}" -ss $ms -c:v libx264 -preset ultrafast -c:a copy "$out2"';
     
     setState(() => isExporting = true);
     final r1 = await _runFFmpeg(cmd1, out1);
@@ -400,34 +438,42 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       final part1 = File(r1);
       final part2 = File(r2);
 
-      _pushHistory(EditAction(
-        type: EditType.split,
-        description: "Split at ${_formatDuration(at)}",
-        beforePath: before.path,
-        afterPath: r1, 
-      ));
-
-      // Update the sequence: Replace current with part1, and insert part2 after
+      // Update lists
       final dur1 = await _getVideoDuration(part1);
       final dur2 = await _getVideoDuration(part2);
 
       setState(() {
-        videoList[currentVideoIndex] = part1;
-        videoDurations[currentVideoIndex] = dur1;
+        videoList[targetIndex] = part1;
+        videoDurations[targetIndex] = dur1;
+        videoThumbnails[targetIndex] = null; // will regen
+        videoFilmstrips[targetIndex] = [];   // will regen
         
-        videoList.insert(currentVideoIndex + 1, part2);
-        videoDurations.insert(currentVideoIndex + 1, dur2);
-        videoThumbnails.insert(currentVideoIndex + 1, null);
-        videoFilmstrips.insert(currentVideoIndex + 1, []);
+        videoList.insert(targetIndex + 1, part2);
+        videoDurations.insert(targetIndex + 1, dur2);
+        videoThumbnails.insert(targetIndex + 1, null);
+        videoFilmstrips.insert(targetIndex + 1, []);
+        
+        // If we split the current playing video, stay on the second part?
+        // Usually better to pause or set to split point.
+        currentVideoIndex = targetIndex + 1;
       });
 
-      // Refresh visuals for both
-      _generateThumbnail(part1, currentVideoIndex);
-      _generateFilmstrip(part1, currentVideoIndex);
-      _generateThumbnail(part2, currentVideoIndex + 1);
-      _generateFilmstrip(part2, currentVideoIndex + 1);
+      // Generate visuals
+      _generateThumbnail(part1, targetIndex);
+      _generateFilmstrip(part1, targetIndex);
+      
+      _generateThumbnail(part2, targetIndex + 1);
+      _generateFilmstrip(part2, targetIndex + 1);
 
-      await _setCurrentFile(part1, currentVideoIndex);
+      await _setCurrentFile(videoList[currentVideoIndex], currentVideoIndex, play: false);
+      _controller.seekTo(Duration.zero); 
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Split successful"), duration: Duration(milliseconds: 800)),
+        );
+      }
+      
       return [r1, r2];
     }
     return null;
@@ -830,8 +876,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
             }),
             _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
-            _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => quickTrimUI()),
-            _actionIcon(Icons.splitscreen_rounded, "Split", onTap: () async {
+            _actionIcon(Icons.delete_outline_rounded, "Delete", onTap: () => _deleteSelectedClip()),
+            _actionIcon(Icons.vertical_split_rounded, "Split", onTap: () async {
               if (initialized) {
                 await splitVideoAt(_controller.value.position);
               }
@@ -1247,7 +1293,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                       if (target <= accum + dur) {
                                         int localMs = (target - accum).toInt();
                                         if (currentVideoIndex != i) {
-                                          await _setCurrentFile(videoList[i], i);
+                                          await _setCurrentFile(videoList[i], i, play: false);
                                         }
                                         _controller.seekTo(Duration(milliseconds: localMs));
                                         break;
@@ -1317,6 +1363,45 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     );
   }
 
+  // Delete the currently selected clip (or current if none selected)
+  Future<void> _deleteSelectedClip() async {
+    int idx = selectedClipIndex ?? currentVideoIndex;
+    if (idx < 0 || idx >= videoList.length) return;
+
+    if (videoList.length <= 1) {
+       if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Cannot delete the only clip")),
+        );
+       }
+      return;
+    }
+
+    setState(() {
+      videoList.removeAt(idx);
+      videoDurations.removeAt(idx);
+      videoThumbnails.removeAt(idx);
+      if (idx < videoFilmstrips.length) {
+        videoFilmstrips.removeAt(idx);
+      }
+      
+      // Adjust currentVideoIndex
+      // If we deleted the clip BEFORE current, shift current down
+      if (idx < currentVideoIndex) {
+        currentVideoIndex--;
+      } 
+      // If we deleted the CURRENT clip, it now points to the "next" clip (which slid into this slot).
+      // If we deleted the LAST clip, we must clamp.
+      if (currentVideoIndex >= videoList.length) {
+        currentVideoIndex = videoList.length - 1;
+      }
+      
+      selectedClipIndex = null;
+    });
+
+    await _setCurrentFile(videoList[currentVideoIndex], currentVideoIndex, play: false);
+  }
+
   Widget _buildBottomActionBar() {
     return Container(
       color: Colors.white,
@@ -1331,8 +1416,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
             }),
             _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
-            _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => quickTrimUI()),
-            _actionIcon(Icons.splitscreen_rounded, "Split", onTap: () async {
+            _actionIcon(Icons.delete_outline_rounded, "Delete", onTap: () => _deleteSelectedClip()),
+            _actionIcon(Icons.vertical_split_rounded, "Split", onTap: () async {
               if (initialized) {
                 await splitVideoAt(_controller.value.position);
               }
