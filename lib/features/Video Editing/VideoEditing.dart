@@ -45,6 +45,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   int currentVideoIndex = 0; // Tracking the index for sequential playback
   List<Duration> videoDurations = []; // Proportional timeline support
   List<File?> videoThumbnails = []; // Actual video thumbnails
+  List<List<File>> videoFilmstrips = []; // New: Multiple thumbnails per clip for timeline
 
   // History stacks
   final List<EditAction> _history = [];
@@ -54,8 +55,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   bool isExporting = false;
   double timelineScale = 1.0; // zoom level for timeline
   final ImagePicker _picker = ImagePicker();
-  String statusText = "";
+  String statusText = ""; // Restored
   File? coverImage; // New: to store selected cover frame
+  final ScrollController timelineScrollController = ScrollController(); // New: for auto-scroll
 
   @override
   void initState() {
@@ -80,15 +82,57 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     }
   }
 
+  Future<void> _generateFilmstrip(File videoFile, int index) async {
+    final duration = await _getVideoDuration(videoFile);
+    final totalFrames = 8; // Extract 8 frames to cover the strip visuals
+    final interval = duration.inSeconds / totalFrames;
+    
+    // Create a directory for this clip's thumbs
+    final dir = await getTemporaryDirectory();
+    final thumbDir = Directory("${dir.path}/filmstrip_$index");
+    if (!await thumbDir.exists()) await thumbDir.create();
+
+    // ffmpeg fps filter: fps=1/interval will extract frames evenly
+    // we use a pattern for output
+    final outPattern = "${thumbDir.path}/thumb_%03d.jpg";
+    final fps = 1 / (interval > 0 ? interval : 1);
+    
+    // REDUCED RESOLUTION: 80:-1 to save memory (OOM fix)
+    final cmd = '-i "${videoFile.path}" -vf "fps=$fps,scale=80:-1" -vframes $totalFrames "$outPattern"';
+    
+    // We run this and then collect files
+    await FFmpegKit.execute(cmd);
+    
+    final List<File> thumbs = [];
+    for (int i = 1; i <= totalFrames; i++) {
+        final f = File("${thumbDir.path}/thumb_${i.toString().padLeft(3, '0')}.jpg");
+        if (await f.exists()) {
+            thumbs.add(f);
+        }
+    }
+
+    setState(() {
+      if (index < videoFilmstrips.length) {
+        videoFilmstrips[index] = thumbs;
+      } else {
+        // This shouldn't happen if initialized correctly, but safety first
+        while(videoFilmstrips.length <= index) videoFilmstrips.add([]);
+        videoFilmstrips[index] = thumbs;
+      }
+    });
+  }
+
   Future<void> _initializeAllDurations() async {
     for (int i = 0; i < videoList.length; i++) {
       final file = videoList[i];
       videoThumbnails.add(null); // Placeholder
+      videoFilmstrips.add([]); // Placeholder
       final d = await _getVideoDuration(file);
       setState(() {
         videoDurations.add(d);
       });
       _generateThumbnail(file, i);
+      _generateFilmstrip(file, i);
     }
   }
 
@@ -107,6 +151,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   @override
   void dispose() {
     _controller.dispose();
+    timelineScrollController.dispose();
     super.dispose();
   }
 
@@ -146,8 +191,46 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
           _setCurrentFile(videoList[currentVideoIndex + 1], currentVideoIndex + 1);
         }
       }
+      
+      // AUTO-SCROLL LOGIC
+      if (_controller.value.isPlaying) {
+        _syncScrollWithPlayback();
+      }
+      
       setState(() {}); // Update UI for position/duration
     }
+  }
+
+  void _syncScrollWithPlayback() {
+    if (!timelineScrollController.hasClients) return;
+    
+    // Calculate global position in ms
+    double elapsedMs = 0;
+    for (int i = 0; i < currentVideoIndex; i++) {
+      elapsedMs += videoDurations[i].inMilliseconds;
+    }
+    elapsedMs += _controller.value.position.inMilliseconds;
+    
+    // Convert ms to pixels (50px per second)
+    double targetX = (elapsedMs / 1000) * 50.w;
+    
+    // Center the playhead
+    double screenWidth = MediaQuery.of(context).size.width;
+    // The scrollable area is one part of the screen (Expanded).
+    // It starts at 80.w from the left edge of the screen.
+    // We want the playhead to stay roughly at the same position where it starts.
+    // Actually, in professional editors, the playhead often stays at a fixed "now" line.
+    
+    // Let's try to keep the playhead around the middle of the SCROLLABLE area
+    double scrollableAreaWidth = screenWidth - 80.w - 20.w; // accounting for 80.w left and 20.w right margin
+    double offset = targetX - (scrollableAreaWidth * 0.5); 
+    
+    if (offset < 0) offset = 0;
+    if (offset > timelineScrollController.position.maxScrollExtent) {
+        offset = timelineScrollController.position.maxScrollExtent;
+    }
+    
+    timelineScrollController.jumpTo(offset);
   }
 
   Future<int> _durationSeconds(File f) async {
@@ -238,10 +321,12 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       final f = File(x.path);
       videoList.add(f);
       videoThumbnails.add(null);
+      videoFilmstrips.add([]);
       final dur = await _getVideoDuration(f);
       videoDurations.add(dur);
       await _setCurrentFile(f, videoList.length - 1);
       _generateThumbnail(f, videoList.length - 1);
+      _generateFilmstrip(f, videoList.length - 1);
       setState(() {});
     }
   }
@@ -249,6 +334,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   void removeVideoAt(int index) {
     if (index < videoDurations.length) videoDurations.removeAt(index);
     if (index < videoThumbnails.length) videoThumbnails.removeAt(index);
+    if (index < videoFilmstrips.length) videoFilmstrips.removeAt(index);
     final removed = videoList.removeAt(index);
     if (currentFile?.path == removed.path) {
       if (videoList.isNotEmpty) _setCurrentFile(videoList.first, 0);
@@ -289,6 +375,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       });
       await _setCurrentFile(afterFile, currentVideoIndex);
       _generateThumbnail(afterFile, currentVideoIndex);
+      _generateFilmstrip(afterFile, currentVideoIndex);
     }
   }
 
@@ -299,23 +386,49 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     final out1 = await _tempFilePath("_part1.mp4");
     final out2 = await _tempFilePath("_part2.mp4");
     final atSec = at.inSeconds;
+    
+    // Commands to split
     final cmd1 = '-i "${before.path}" -ss 0 -t $atSec -c copy "$out1"';
     final cmd2 = '-i "${before.path}" -ss $atSec -c copy "$out2"';
+    
     setState(() => isExporting = true);
     final r1 = await _runFFmpeg(cmd1, out1);
     final r2 = await _runFFmpeg(cmd2, out2);
     setState(() => isExporting = false);
+    
     if (r1 != null && r2 != null) {
-      // push as a merged action (afterPath stores concatenated file path if needed)
+      final part1 = File(r1);
+      final part2 = File(r2);
+
       _pushHistory(EditAction(
         type: EditType.split,
-        description: "Split at ${at.toString()}",
+        description: "Split at ${_formatDuration(at)}",
         beforePath: before.path,
-        afterPath: out1, // we keep afterPath as first part for easy undo; you may track both externally
+        afterPath: r1, 
       ));
-      // For simplicity set current to part1
-      await _setCurrentFile(File(out1), currentVideoIndex);
-      return [out1, out2];
+
+      // Update the sequence: Replace current with part1, and insert part2 after
+      final dur1 = await _getVideoDuration(part1);
+      final dur2 = await _getVideoDuration(part2);
+
+      setState(() {
+        videoList[currentVideoIndex] = part1;
+        videoDurations[currentVideoIndex] = dur1;
+        
+        videoList.insert(currentVideoIndex + 1, part2);
+        videoDurations.insert(currentVideoIndex + 1, dur2);
+        videoThumbnails.insert(currentVideoIndex + 1, null);
+        videoFilmstrips.insert(currentVideoIndex + 1, []);
+      });
+
+      // Refresh visuals for both
+      _generateThumbnail(part1, currentVideoIndex);
+      _generateFilmstrip(part1, currentVideoIndex);
+      _generateThumbnail(part2, currentVideoIndex + 1);
+      _generateFilmstrip(part2, currentVideoIndex + 1);
+
+      await _setCurrentFile(part1, currentVideoIndex);
+      return [r1, r2];
     }
     return null;
   }
@@ -719,9 +832,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
             _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => quickTrimUI()),
             _actionIcon(Icons.splitscreen_rounded, "Split", onTap: () async {
-              final dur = _controller.value.duration;
-              final at = Duration(seconds: dur.inSeconds ~/ 2);
-              await splitVideoAt(at);
+              if (initialized) {
+                await splitVideoAt(_controller.value.position);
+              }
             }),
             _actionIcon(Icons.crop_rounded, "Crop", onTap: () async {
               final crop = await _cropDialog();
@@ -1034,110 +1147,124 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               ),
               SizedBox(width: 10.w),
               Expanded(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Visual list of all clips
-                    Container(
-                      height: 38.h,
-                      decoration: BoxDecoration(
-                        color: Colors.black26,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4.r),
-                        child: Row(
-                          children: [
-                            for (int i = 0; i < videoList.length; i++)
-                              Expanded(
-                                flex: (videoDurations.length > i) 
-                                    ? videoDurations[i].inMilliseconds 
-                                    : 1, 
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: i == currentVideoIndex ? Colors.white : Colors.white24,
-                                      width: i == currentVideoIndex ? 2.w : 0.5.w,
+                child: SingleChildScrollView(
+                  controller: timelineScrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Container(
+                    padding: EdgeInsets.zero,
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        // Visual list of all clips
+                        Container(
+                          height: 38.h,
+                          margin: EdgeInsets.zero,
+                          decoration: BoxDecoration(
+                            color: Colors.black26,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4.r),
+                            child: Row(
+                              children: [
+                                for (int i = 0; i < videoList.length; i++)
+                                  Container(
+                                    width: (videoDurations.length > i)
+                                        ? (videoDurations[i].inMilliseconds / 1000) * 50.w
+                                        : 100.w,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: i == currentVideoIndex ? Colors.white : Colors.white24,
+                                        width: i == currentVideoIndex ? 2.w : 0.5.w,
+                                      ),
                                     ),
-                                    image: (i < videoThumbnails.length && videoThumbnails[i] != null)
-                                        ? DecorationImage(
-                                            image: FileImage(videoThumbnails[i]!),
-                                            fit: BoxFit.cover,
+                                    child: (i < videoFilmstrips.length && videoFilmstrips[i].isNotEmpty)
+                                        ? Row(
+                                            children: videoFilmstrips[i]
+                                                .map((f) => Expanded(
+                                                      child: Image.file(
+                                                        f,
+                                                        fit: BoxFit.cover,
+                                                        height: double.infinity,
+                                                        cacheWidth: 80,
+                                                      ),
+                                                    ))
+                                                .toList(),
                                           )
-                                        : const DecorationImage(
-                                            image: AssetImage("assets/images/placeholder_video.png"),
+                                        : Image.asset(
+                                            "assets/images/placeholder_video.png",
                                             fit: BoxFit.cover,
+                                            cacheWidth: 80,
                                           ),
                                   ),
+                                GestureDetector(
+                                  onTap: addVideoFromPicker,
+                                  child: Container(
+                                    width: 40.w,
+                                    height: 38.h,
+                                    color: Colors.white10,
+                                    child: Icon(Icons.add, color: Colors.white, size: 20.r),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Playhead / Slider Layer
+                        if (initialized && videoDurations.length == videoList.length)
+                        Builder(builder: (context) {
+                          final totalMs = videoDurations.fold<int>(0, (p, c) => p + c.inMilliseconds);
+                          int elapsedMs = 0;
+                          for (int i = 0; i < currentVideoIndex; i++) {
+                            elapsedMs += videoDurations[i].inMilliseconds;
+                          }
+                          final globalPosMs = elapsedMs + _controller.value.position.inMilliseconds;
+                          double totalWidth = 0;
+                          for(var d in videoDurations) totalWidth += (d.inMilliseconds / 1000) * 50.w;
+
+                          return SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              trackHeight: 38.h,
+                              thumbShape: CustomPlayheadShape(height: 50.h),
+                              overlayShape: SliderComponentShape.noOverlay,
+                              activeTrackColor: Colors.transparent,
+                              inactiveTrackColor: Colors.transparent,
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.zero,
+                              child: SizedBox(
+                                width: totalWidth + 40.w,
+                                child: Slider(
+                                  min: 0,
+                                  max: totalMs.toDouble() > 0 ? totalMs.toDouble() : 1,
+                                  value: globalPosMs.toDouble().clamp(0, totalMs.toDouble() > 0 ? totalMs.toDouble() : 1),
+                                  onChanged: (v) async {
+                                    double target = v;
+                                    int accum = 0;
+                                    for (int i = 0; i < videoList.length; i++) {
+                                      int dur = videoDurations[i].inMilliseconds;
+                                      if (target <= accum + dur) {
+                                        int localMs = (target - accum).toInt();
+                                        if (currentVideoIndex != i) {
+                                          await _setCurrentFile(videoList[i], i);
+                                        }
+                                        _controller.seekTo(Duration(milliseconds: localMs));
+                                        break;
+                                      }
+                                      accum += dur;
+                                    }
+                                    setState(() {});
+                                  },
                                 ),
                               ),
-                            // CapCut-style Plus Add button at the end
-                            // GestureDetector(
-                            //    onTap: () async {
-                            //      final XFile? pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
-                            //      if (pickedFile != null) {
-                            //        final file = File(pickedFile.path);
-                            //        final dur = await _getVideoDuration(file);
-                            //        setState(() {
-                            //          videoList.add(file);
-                            //          videoDurations.add(dur);
-                            //        });
-                            //      }
-                            //    },
-                            //    child: Container(
-                            //     width: 35.w,
-                            //     color: Colors.white,
-                            //     child: Icon(Icons.add, size: 20.r, color: Colors.black),
-                            //   ),
-                            // ),
-                          ],
-                        ),
-                      ),
+                            ),
+                          );
+                        })
+                        else const SizedBox.shrink(),
+                      ],
                     ),
-                    if (initialized && videoDurations.length == videoList.length) 
-                    (() {
-                      final totalMs = videoDurations.fold<int>(0, (p, c) => p + c.inMilliseconds);
-                      int elapsedMs = 0;
-                      for (int i = 0; i < currentVideoIndex; i++) {
-                        elapsedMs += videoDurations[i].inMilliseconds;
-                      }
-                      final globalPosMs = elapsedMs + _controller.value.position.inMilliseconds;
-
-                      return SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          trackHeight: 38.h,
-                          thumbShape: CustomPlayheadShape(height: 50.h), 
-                          overlayShape: SliderComponentShape.noOverlay,
-                          activeTrackColor: Colors.transparent,
-                          inactiveTrackColor: Colors.transparent,
-                        ),
-                        child: Slider(
-                          min: 0,
-                          max: totalMs.toDouble(),
-                          value: globalPosMs.toDouble().clamp(0, totalMs.toDouble()),
-                          onChanged: (v) async {
-                            double target = v;
-                            int accum = 0;
-                            for (int i = 0; i < videoList.length; i++) {
-                              int dur = videoDurations[i].inMilliseconds;
-                              if (target <= accum + dur) {
-                                // Fall in this clip
-                                int localMs = (target - accum).toInt();
-                                if (currentVideoIndex != i) {
-                                  await _setCurrentFile(videoList[i], i);
-                                }
-                                _controller.seekTo(Duration(milliseconds: localMs));
-                                break;
-                              }
-                              accum += dur;
-                            }
-                            setState(() {});
-                          },
-                        ),
-                      );
-                    }())
-                    else const SizedBox.shrink(),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -1206,9 +1333,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
             _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => quickTrimUI()),
             _actionIcon(Icons.splitscreen_rounded, "Split", onTap: () async {
-              final dur = _controller.value.duration;
-              final at = Duration(seconds: dur.inSeconds ~/ 2);
-              await splitVideoAt(at);
+              if (initialized) {
+                await splitVideoAt(_controller.value.position);
+              }
             }),
             _actionIcon(Icons.crop_rounded, "Crop", onTap: () async {
               final crop = await _cropDialog();
