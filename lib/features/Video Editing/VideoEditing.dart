@@ -362,8 +362,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     final startSec = start.inMilliseconds / 1000.0;
     final durSec = (end - start).inMilliseconds / 1000.0;
     
-    // -c:v libx264 -preset ultrafast guarantees frame accuracy at the cost of re-encoding
-    final cmd = '-i "${before.path}" -ss $startSec -t $durSec -c:v libx264 -preset ultrafast -c:a copy "$out"';
+    // -ss before -i for FAST seeking. Re-encoding ensures accuracy.
+    // -movflags +faststart ensures playability immediately.
+    final cmd = '-ss $startSec -t $durSec -i "${before.path}" -c:v libx264 -preset ultrafast -movflags +faststart -c:a copy "$out"';
     
     setState(() => isExporting = true);
     final result = await _runFFmpeg(cmd, out);
@@ -395,24 +396,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   // 2) Split video at position -> returns pair of paths (part1, part2)
-  // 2) Split video at position -> returns pair of paths (part1, part2)
-  Future<List<String>?> splitVideoAt(Duration globalPos) async {
-    // 1. Determine which clip we are in and the local timestamp
-    int accumMs = 0;
-    int targetIndex = -1;
-    Duration localPos = Duration.zero;
-
-    for (int i = 0; i < videoDurations.length; i++) {
-        int dur = videoDurations[i].inMilliseconds;
-        if (globalPos.inMilliseconds <= accumMs + dur) {
-            targetIndex = i;
-            localPos = globalPos - Duration(milliseconds: accumMs);
-            break;
-        }
-        accumMs += dur;
-    }
-
-    if (targetIndex == -1) targetIndex = videoList.length - 1;
+  Future<List<String>?> splitVideoAt(int targetIndex, Duration localPos) async {
+    if (targetIndex < 0 || targetIndex >= videoList.length) return null;
 
     final targetFile = videoList[targetIndex];
     final out1 = await _tempFilePath("_part1_${DateTime.now().millisecondsSinceEpoch}.mp4");
@@ -423,11 +408,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     // We use -c:v libx264 -preset ultrafast to be quick but accurate.
     final ms = localPos.inMilliseconds / 1000.0;
     
-    // Part 1: Start to split point
-    final cmd1 = '-i "${targetFile.path}" -t $ms -c:v libx264 -preset ultrafast -c:a copy "$out1"';
+    // Part 1: Start to split point (fast)
+    final cmd1 = '-i "${targetFile.path}" -t $ms -c:v libx264 -preset ultrafast -movflags +faststart -c:a copy "$out1"';
     
-    // Part 2: Split point to end
-    final cmd2 = '-i "${targetFile.path}" -ss $ms -c:v libx264 -preset ultrafast -c:a copy "$out2"';
+    // Part 2: Split point to end (fast seek)
+    final cmd2 = '-ss $ms -i "${targetFile.path}" -c:v libx264 -preset ultrafast -movflags +faststart -c:a copy "$out2"';
     
     setState(() => isExporting = true);
     final r1 = await _runFFmpeg(cmd1, out1);
@@ -879,7 +864,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
             _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
               if (initialized) {
-                await splitVideoAt(_controller.value.position);
+                await splitVideoAt(currentVideoIndex, _controller.value.position);
               }
             }),
             _actionIcon(Icons.crop_rounded, "Crop", onTap: () async {
@@ -975,7 +960,6 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                           width: isLandscape ? 120.w : 100.w,
                           height: isLandscape ? 70.h : 60.h,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300], // Fallback color
                             borderRadius: BorderRadius.circular(10.r),
                             border: currentFile?.path == f.path
                                 ? Border.all(color: Colors.blue, width: 2.w)
@@ -985,11 +969,16 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                     image: FileImage(videoThumbnails[i]!),
                                     fit: BoxFit.cover,
                                   )
-                                : const DecorationImage(
-                                    image: AssetImage("assets/images/placeholder_video.png"),
-                                    fit: BoxFit.cover,
-                                  ),
+                                : null,
+                            color: (i < videoThumbnails.length && videoThumbnails[i] != null)
+                                ? null
+                                : Colors.grey[300], // Fallback color
                           ),
+                          child: (i < videoThumbnails.length && videoThumbnails[i] != null)
+                              ? null
+                              : const Center(
+                                  child: Icon(Icons.movie, color: Colors.white54),
+                                ),
                         ),
                       ),
                       Positioned(
@@ -1157,23 +1146,21 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                     }
                   }
                 },
-                child: Container(
-                  width: 50.w,
-                  height: 50.h,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6.r),
-                    border: Border.all(color: Colors.white, width: 1),
-                    image: coverImage != null
-                        ? DecorationImage(
-                            image: FileImage(coverImage!),
-                            fit: BoxFit.cover,
-                          )
-                        : const DecorationImage(
-                            image: AssetImage("assets/images/placeholder_video.png"),
-                            fit: BoxFit.cover,
-                          ),
-                  ),
-                  child: Center(
+                  child: Container(
+                    width: 50.w,
+                    height: 50.h,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6.r),
+                      border: Border.all(color: Colors.white, width: 1),
+                      image: coverImage != null
+                          ? DecorationImage(
+                              image: FileImage(coverImage!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      color: coverImage != null ? null : Colors.grey[300],
+                    ),
+                    child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -1238,10 +1225,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                                     ))
                                                 .toList(),
                                           )
-                                        : Image.asset(
-                                            "assets/images/placeholder_video.png",
-                                            fit: BoxFit.cover,
-                                            cacheWidth: 80,
+                                        : Container(
+                                            color: Colors.grey[300],
+                                            child: const Center(
+                                              child: Icon(Icons.movie, color: Colors.white54, size: 16),
+                                            ),
                                           ),
                                   ),
                                 GestureDetector(
@@ -1419,7 +1407,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
             _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
               if (initialized) {
-                await splitVideoAt(_controller.value.position);
+                await splitVideoAt(currentVideoIndex, _controller.value.position);
               }
             }),
             _actionIcon(Icons.crop_rounded, "Crop", onTap: () async {
