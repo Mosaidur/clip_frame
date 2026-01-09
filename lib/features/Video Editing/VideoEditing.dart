@@ -45,7 +45,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   int currentVideoIndex = 0; // Tracking the index for sequential playback
   List<Duration> videoDurations = []; // Proportional timeline support
   List<File?> videoThumbnails = []; // Actual video thumbnails
-  List<List<File>> videoFilmstrips = []; // New: Multiple thumbnails per clip for timeline
+  List<List<File>> videoFilmstrips = []; // Multiple thumbnails per clip for timeline
 
   // History stacks
   final List<EditAction> _history = [];
@@ -53,18 +53,43 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
 
   // UI state
   bool isExporting = false;
-  double timelineScale = 1.0; // zoom level for timeline
+  double timelineScale = 1.0; 
   final ImagePicker _picker = ImagePicker();
-  String statusText = ""; // Restored
-  File? coverImage; // New: to store selected cover frame
-  final ScrollController timelineScrollController = ScrollController(); // New: for auto-scroll
+  String statusText = ""; 
+  File? coverImage; 
+  
+  // Controllers
+  final ScrollController timelineScrollController = ScrollController();
+  final ScrollController _rulerScrollController = ScrollController();
   
   // Selection
   int? selectedClipIndex;
+  
+  // Scrolling
+  bool _isUserDragging = false;
+  bool _isAutoScrolling = false; 
+  DateTime _lastUserScrollTime = DateTime.now();
+
+  // Flexible Playhead
+  double _playheadOffset = 0; 
+  double get startPadding => 7.w;
 
   @override
   void initState() {
     super.initState();
+    // Initialize playhead at startPadding initially? 
+    // We need screen info. We'll set it in build or first frame post-build if needed.
+    // Or just default to a safe value. 
+    // .w depends on ScreenUtil init, usually safe in initState if ScreenUtilInit is up.
+    // But safely, let's init to 0 and set it to startPadding in logic if 0.
+    
+    // Sync Ruler with Timeline
+    timelineScrollController.addListener(() {
+      if (_rulerScrollController.hasClients) {
+        _rulerScrollController.jumpTo(timelineScrollController.offset);
+      }
+    });
+
     videoList.addAll(widget.videos);
     _initializeAllDurations();
     if (videoList.isNotEmpty) {
@@ -103,7 +128,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     // REDUCED RESOLUTION: 80:-1 to save memory (OOM fix)
     final cmd = '-i "${videoFile.path}" -vf "fps=$fps,scale=80:-1" -vframes $totalFrames "$outPattern"';
     
-    // We run this and then collect files
+    // We run this and then collect filesl
     await FFmpegKit.execute(cmd);
     
     final List<File> thumbs = [];
@@ -196,44 +221,53 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       }
       
       // AUTO-SCROLL LOGIC
+      // Only auto-scroll if user hasn't scrolled recently (e.g., last 100ms)
+      // and checking if scroll controller is actually attached.
       if (_controller.value.isPlaying) {
-        _syncScrollWithPlayback();
+         final timeSinceScroll = DateTime.now().difference(_lastUserScrollTime).inMilliseconds;
+         if (timeSinceScroll > 300) { // Allow 300ms buffer after user interaction stops
+            _syncScrollWithPlayback();
+         }
       }
       
-      setState(() {}); // Update UI for position/duration
+      // setState(() {}); // Update UI for position/duration - causing too many builds? 
+      // Optimized: Using StreamBuilder for time text instead of full setState loop
     }
   }
 
   void _syncScrollWithPlayback() {
     if (!timelineScrollController.hasClients) return;
     
+    // Ensure playhead is initialized
+    if (_playheadOffset == 0) _playheadOffset = startPadding;
+
     // Calculate global position in ms
     double elapsedMs = 0;
     for (int i = 0; i < currentVideoIndex; i++) {
-      elapsedMs += videoDurations[i].inMilliseconds;
+        if(i < videoDurations.length) elapsedMs += videoDurations[i].inMilliseconds;
     }
     elapsedMs += _controller.value.position.inMilliseconds;
     
     // Convert ms to pixels (50px per second)
-    double targetX = (elapsedMs / 1000) * 50.w;
+    double timePixels = (elapsedMs / 1000.0) * 50.w;
     
-    // Center the playhead
-    double screenWidth = MediaQuery.of(context).size.width;
-    // The scrollable area is one part of the screen (Expanded).
-    // It starts at 80.w from the left edge of the screen.
-    // We want the playhead to stay roughly at the same position where it starts.
-    // Actually, in professional editors, the playhead often stays at a fixed "now" line.
+    // ScrollOffset = TimePixels - (PlayheadPosition - ClipStartOffset)
+    // ClipStartOffset is at `startPadding` relative to screen when ScrollOffset=0.
+    // Relative distance from StartOfClips to Playhead = PlayheadScreenPos - StartOfClipsScreenPos
+    // We want `TimePixels` to equal that distance.
+    // PlayheadScreenPos = _playheadOffset.
+    // StartOfClipsScreenPos = startPadding - ScrollOffset.
+    // TimePixels = _playheadOffset - (startPadding - ScrollOffset)
+    // TimePixels = _playheadOffset - startPadding + ScrollOffset
+    // ScrollOffset = TimePixels - _playheadOffset + startPadding
     
-    // Let's try to keep the playhead around the middle of the SCROLLABLE area
-    double scrollableAreaWidth = screenWidth - 80.w - 20.w; // accounting for 80.w left and 20.w right margin
-    double offset = targetX - (scrollableAreaWidth * 0.5); 
+    double targetX = timePixels - _playheadOffset + startPadding;
     
-    if (offset < 0) offset = 0;
-    if (offset > timelineScrollController.position.maxScrollExtent) {
-        offset = timelineScrollController.position.maxScrollExtent;
-    }
+    // Clamp target to bounds? ScrollController handles safe clamping usually, but...
     
-    timelineScrollController.jumpTo(offset);
+    _isAutoScrolling = true; // Set flag before jump
+    timelineScrollController.jumpTo(targetX);
+    _isAutoScrolling = false; // Reset flag
   }
 
   Future<int> _durationSeconds(File f) async {
@@ -408,12 +442,15 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     // We use -c:v libx264 -preset ultrafast to be quick but accurate.
     final ms = localPos.inMilliseconds / 1000.0;
     
-    // OPTIMIZED: Use stream copy for INSTANT splitting (no re-encoding)
+    // RE-ENCODING for frame accuracy (fixes "copy instead of cut" issue)
+    // -pix_fmt yuv420p ensures compatibility with Android/iOS players
+    // Removed -preset ultrafast to avoid errors if default encoder is not libx264
+    
     // Part 1: Start to split point
-    final cmd1 = '-i "${targetFile.path}" -t $ms -c copy -avoid_negative_ts make_zero "$out1"';
+    final cmd1 = '-i "${targetFile.path}" -t $ms -pix_fmt yuv420p -y "$out1"';
     
     // Part 2: Split point to end
-    final cmd2 = '-ss $ms -i "${targetFile.path}" -c copy -avoid_negative_ts make_zero "$out2"';
+    final cmd2 = '-ss $ms -i "${targetFile.path}" -pix_fmt yuv420p -y "$out2"';
     
     setState(() => isExporting = true);
     final r1 = await _runFFmpeg(cmd1, out1);
@@ -562,14 +599,14 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 Slider(
                   min: 0,
                   max: total.inMilliseconds.toDouble(),
-                  value: start.inMilliseconds.toDouble().clamp(0, total.inMilliseconds.toDouble()),
+                  value: start.inMilliseconds.toDouble().clamp(0.0, total.inMilliseconds.toDouble()),
                   onChanged: (v) => setS(() => start = Duration(milliseconds: v.toInt())),
                 ),
                 Text("End: ${_formatDuration(end)}"),
                 Slider(
-                  min: 0,
+                  min: 0.0,
                   max: total.inMilliseconds.toDouble(),
-                  value: end.inMilliseconds.toDouble().clamp(0, total.inMilliseconds.toDouble()),
+                  value: end.inMilliseconds.toDouble().clamp(0.0, total.inMilliseconds.toDouble()),
                   onChanged: (v) => setS(() => end = Duration(milliseconds: v.toInt())),
                 ),
               ],
@@ -956,7 +993,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                     clipBehavior: Clip.none,
                     children: [
                       GestureDetector(
-                        onTap: () => _setCurrentFile(f, i),
+                        onTap: () {
+                             _setCurrentFile(f, i, play: false); // CapCut style: selecting doesn't auto-play
+                        },
                         child: Container(
                           width: isLandscape ? 120.w : 100.w,
                           height: isLandscape ? 70.h : 60.h,
@@ -1093,48 +1132,110 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
 
   Widget _buildTimelineSection() {
     int totalMs = videoDurations.fold<int>(0, (p, c) => p + c.inMilliseconds);
-    int elapsedMs = 0;
-    for (int i = 0; i < currentVideoIndex; i++) {
-      if (videoDurations.length > i) elapsedMs += videoDurations[i].inMilliseconds;
-    }
-    int globalPosMs = initialized ? (elapsedMs + _controller.value.position.inMilliseconds) : 0;
+    // int elapsedMs = 0;
+    // for (int i = 0; i < currentVideoIndex; i++) {
+    //   if (videoDurations.length > i) elapsedMs += videoDurations[i].inMilliseconds;
+    // }
+    // int globalPosMs = initialized ? (elapsedMs + _controller.value.position.inMilliseconds) : 0;
     
-    String formattedTime = _formatDuration(Duration(milliseconds: globalPosMs));
+    // String formattedTime = _formatDuration(Duration(milliseconds: globalPosMs));
     String totalTimeStr = _formatDuration(Duration(milliseconds: totalMs));
+    
+    // We need the screen width to calculate spacers
+    final screenWidth = MediaQuery.of(context).size.width;
+    final centerOffset = screenWidth / 2;
 
     return Column(
       children: [
-        // Ruler/Timestamp
+        // Total Time / Current Time Header (Static + Scrolling Ruler)
         Container(
           color: const Color(0xFFF4E1C8),
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
-          child: Row(
+          padding: EdgeInsets.symmetric(vertical: 5.h), // Removed horizontal padding to manage manually
+          child: Column(
             children: [
-              Text(
-                "$formattedTime / $totalTimeStr",
-                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: Colors.black),
+              // 1. Time Display
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                     StreamBuilder<void>(
+                      stream: Stream.periodic(const Duration(milliseconds: 100)),
+                      builder: (context, snapshot) {
+                        int current = 0;
+                        if(initialized) {
+                           int preDuration = 0;
+                           for(int i=0; i<currentVideoIndex; i++) preDuration += videoDurations[i].inMilliseconds;
+                           current = preDuration + _controller.value.position.inMilliseconds;
+                        }
+                        return Text(
+                          "${_formatDuration(Duration(milliseconds: current))} / $totalTimeStr",
+                          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: Colors.black),
+                        );
+                      }
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(width: 15.w),
-              Expanded(
-                child: Text("00:00   .   00:02   .   00:04   .   00:06   .   00:07   .   00:08",
-                    style: TextStyle(fontSize: 10.sp, color: Color(0xFF9D9DA1)),
-                    overflow: TextOverflow.ellipsis),
+              SizedBox(height: 5.h),
+              
+              // 2. Synchronized Scrollable Ruler
+              SizedBox(
+                height: 15.h,
+                child: SingleChildScrollView(
+                  controller: _rulerScrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(), // Scroll driven by timeline only
+                  child: Row(
+                    children: [
+                      // Offset calculation:
+                      // Timeline starts after Cover Button.
+                      // Cover Button Area: 20.w (Left Margin) + 50.w (Width) + 10.w (Right Margin) = 80.w
+                      // Inside Timeline: 7.w (startPadding).
+                      // Total from Left Edge: 87.w.
+                      // This ScrollView is full width.
+                      SizedBox(width: 87.w), 
+                      
+                      // Ticks (Same scale as video: 50.w = 1 sec)
+                      // We show ticks every 2s (100.w)
+                      Row(
+                        children: List.generate(((totalMs / 2000).ceil() + 2), (index) {
+                          return Container(
+                            width: 100.w, 
+                            alignment: Alignment.topLeft,
+                            child: Text(
+                              _formatDuration(Duration(seconds: index * 2)),
+                              style: TextStyle(color: const Color(0xFF9D9DA1), fontSize: 10.sp),
+                            ),
+                          );
+                        }),
+                      ),
+                      
+                      // End Padding matching layout builder
+                      // We don't have constraints here easily, relying on content width.
+                      // Add extra buffer.
+                      SizedBox(width: 500.w), 
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
         ),
         SizedBox(height: 8.h),
-        // Timeline Track
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w),
+        
+        // TIMELINE TRACK (Row: Fixed Cover + Expanded Stack)
+        SizedBox(
+          height: 130.h, 
           child: Row(
             children: [
-              // Cover thumbnail
+              // 1. Fixed "Cover" Button (Left Side)
               GestureDetector(
                 onTap: () async {
-                  if (initialized){
+                  if (initialized && currentFile != null){
                     final out = await _tempFilePath("_cover.jpg");
                     final pos = _controller.value.position.inSeconds;
+                    // Extract frame at current position
                     final cmd = '-i "${currentFile!.path}" -ss $pos -vframes 1 "$out"';
                     setState(() => isExporting = true);
                     final res = await _runFFmpeg(cmd, out);
@@ -1142,32 +1243,31 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                     if (res != null) {
                       setState(() {
                         coverImage = File(res);
-                      }
-                      );
+                      });
                     }
                   }
                 },
-                  child: Container(
-                    width: 50.w,
-                    height: 50.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6.r),
-                      border: Border.all(color: Colors.white, width: 1),
-                      image: coverImage != null
-                          ? DecorationImage(
-                              image: FileImage(coverImage!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                      color: coverImage != null ? null : Colors.grey[300],
-                    ),
-                    child: Center(
+                child: Container(
+                  width: 50.w,
+                  height: 50.h,
+                  margin: EdgeInsets.only(left: 20.w, right: 10.w),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6.r),
+                    border: Border.all(color: Colors.white, width: 1),
+                    image: coverImage != null
+                        ? DecorationImage(
+                            image: FileImage(coverImage!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                    color: coverImage != null ? null : Colors.grey[300],
+                  ),
+                  child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-                          // color: Colors.black54,
                           child: Text("COVER",
                               style: TextStyle(
                                   color: Colors.white,
@@ -1179,150 +1279,230 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                   ),
                 ),
               ),
-              SizedBox(width: 10.w),
+
+              // 2. Timeline Stack (Expanded)
               Expanded(
-                child: SingleChildScrollView(
-                  controller: timelineScrollController,
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: Container(
-                    padding: EdgeInsets.zero,
-                    child: Stack(
-                      alignment: Alignment.centerLeft,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (_playheadOffset == 0) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if(mounted) setState(() => _playheadOffset = startPadding);
+                      });
+                    }
+
+                    final double endPadding = constraints.maxWidth; 
+
+                    return Stack(
+                      alignment: Alignment.centerLeft, 
                       children: [
-                        // Visual list of all clips
-                        Container(
-                          height: 38.h,
-                          margin: EdgeInsets.zero,
-                          decoration: BoxDecoration(
-                            color: Colors.black26,
-                            borderRadius: BorderRadius.circular(4.r),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4.r),
-                            child: Row(
+                        // 1. Scrollable Content (Video + Music)
+                        NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            if (notification is ScrollUpdateNotification) {
+                              if (_isAutoScrolling) return true;
+
+                              _lastUserScrollTime = DateTime.now();
+                              
+                              if (videoList.isNotEmpty) {
+                                 final offset = notification.metrics.pixels;
+                                 
+                                 double pixelDist = offset + _playheadOffset - startPadding;
+                                 if (pixelDist < 0) pixelDist = 0;
+                                 
+                                 final double seconds = pixelDist / 50.w;
+                                 final int targetTotalMs = (seconds * 1000).toInt();
+                                 
+                                 // Seek Logic
+                                 int accumulated = 0;
+                                 for(int i=0; i<videoList.length; i++) {
+                                   int dur = videoDurations[i].inMilliseconds;
+                                   if (targetTotalMs <= accumulated + dur) {
+                                     if (currentVideoIndex != i) {
+                                       _setCurrentFile(videoList[i], i, play: false); 
+                                     }
+                                     int localMs = targetTotalMs - accumulated;
+                                     if (localMs < 0) localMs = 0;
+                                     if (localMs > dur) localMs = dur;
+                                     _controller.seekTo(Duration(milliseconds: localMs));
+                                     break;
+                                   }
+                                   accumulated += dur;
+                                 }
+                              }
+                            }
+                            return true;
+                          },
+                          child: SingleChildScrollView(
+                            controller: timelineScrollController,
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                for (int i = 0; i < videoList.length; i++)
-                                  Container(
-                                    width: (videoDurations.length > i)
-                                        ? (videoDurations[i].inMilliseconds / 1000) * 50.w
-                                        : 100.w,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: i == currentVideoIndex ? Colors.white : Colors.white24,
-                                        width: i == currentVideoIndex ? 2.w : 0.5.w,
+                                // Video Strip
+                                Row(
+                                  children: [
+                                    SizedBox(width: startPadding),
+                                    for (int i = 0; i < videoList.length; i++)
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            selectedClipIndex = i;
+                                          });
+                                        },
+                                        child: Container(
+                                          width: (videoDurations.length > i)
+                                              ? (videoDurations[i].inMilliseconds / 1000) * 50.w
+                                              : 100.w,
+                                          height: 60.h,
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: i == selectedClipIndex ? Colors.white : Colors.white24,
+                                              width: i == selectedClipIndex ? 2.w : 0.5.w,
+                                            ),
+                                            color: Colors.black38,
+                                          ),
+                                          child: (i < videoFilmstrips.length && videoFilmstrips[i].isNotEmpty)
+                                              ? Row(
+                                                  children: videoFilmstrips[i]
+                                                      .map((f) => Expanded(
+                                                            child: Image.file(
+                                                              f,
+                                                              fit: BoxFit.cover,
+                                                              height: double.infinity,
+                                                              cacheWidth: 80,
+                                                            ),
+                                                          ))
+                                                      .toList(),
+                                                )
+                                              : Container(
+                                                  color: Colors.grey[300],
+                                                  child: const Center(
+                                                    child: Icon(Icons.movie, color: Colors.white54, size: 16),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                    SizedBox(width: endPadding),
+                                  ],
+                                ),
+                                SizedBox(height: 5.h),
+                                // Music Track
+                                Row(
+                                  children: [
+                                    SizedBox(width: startPadding),
+                                    Container(
+                                      width: (totalMs / 1000) * 50.w, 
+                                      height: 25.h,
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(5.r),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(width: 8.w),
+                                          Icon(Icons.music_note, size: 12.r, color: Colors.white),
+                                          SizedBox(width: 5.w),
+                                          Text("Add music", style: TextStyle(color: Colors.white, fontSize: 9.sp)),
+                                        ],
                                       ),
                                     ),
-                                    child: (i < videoFilmstrips.length && videoFilmstrips[i].isNotEmpty)
-                                        ? Row(
-                                            children: videoFilmstrips[i]
-                                                .map((f) => Expanded(
-                                                      child: Image.file(
-                                                        f,
-                                                        fit: BoxFit.cover,
-                                                        height: double.infinity,
-                                                        cacheWidth: 80,
-                                                      ),
-                                                    ))
-                                                .toList(),
-                                          )
-                                        : Container(
-                                            color: Colors.grey[300],
-                                            child: const Center(
-                                              child: Icon(Icons.movie, color: Colors.white54, size: 16),
-                                            ),
-                                          ),
-                                  ),
-                                GestureDetector(
-                                  onTap: addVideoFromPicker,
-                                  child: Container(
-                                    width: 40.w,
-                                    height: 38.h,
-                                    color: Colors.white10,
-                                    child: Icon(Icons.add, color: Colors.white, size: 20.r),
-                                  ),
+                                    SizedBox(width: endPadding),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        // Playhead / Slider Layer
-                        if (initialized && videoDurations.length == videoList.length)
-                        Builder(builder: (context) {
-                          final totalMs = videoDurations.fold<int>(0, (p, c) => p + c.inMilliseconds);
-                          int elapsedMs = 0;
-                          for (int i = 0; i < currentVideoIndex; i++) {
-                            elapsedMs += videoDurations[i].inMilliseconds;
-                          }
-                          final globalPosMs = elapsedMs + _controller.value.position.inMilliseconds;
-                          double totalWidth = 0;
-                          for(var d in videoDurations) totalWidth += (d.inMilliseconds / 1000) * 50.w;
-
-                          return SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              trackHeight: 38.h,
-                              thumbShape: CustomPlayheadShape(height: 50.h),
-                              overlayShape: SliderComponentShape.noOverlay,
-                              activeTrackColor: Colors.transparent,
-                              inactiveTrackColor: Colors.transparent,
-                            ),
-                            child: Padding(
-                              padding: EdgeInsets.zero,
-                              child: SizedBox(
-                                width: totalWidth + 40.w,
-                                child: Slider(
-                                  min: 0,
-                                  max: totalMs.toDouble() > 0 ? totalMs.toDouble() : 1,
-                                  value: globalPosMs.toDouble().clamp(0, totalMs.toDouble() > 0 ? totalMs.toDouble() : 1),
-                                  onChanged: (v) async {
-                                    double target = v;
-                                    int accum = 0;
-                                    for (int i = 0; i < videoList.length; i++) { 
-                                      int dur = videoDurations[i].inMilliseconds;
-                                      if (target <= accum + dur) {
-                                        int localMs = (target - accum).toInt();
-                                        if (currentVideoIndex != i) {
-                                          await _setCurrentFile(videoList[i], i, play: false);
-                                        }
-                                        _controller.seekTo(Duration(milliseconds: localMs));
-                                        break;
-                                      }
-                                      accum += dur;
-                                    }
-                                    setState(() {});
-                                  },
-                                ),
+                        
+                        // 2. Playhead (Draggable)
+                        Positioned(
+                          left: _playheadOffset - 10.w, // Hitbox padding
+                          child: GestureDetector(
+                            onHorizontalDragStart: (details) {
+                              // Pause for smooth scrubbing
+                              if (_controller.value.isPlaying) {
+                                _controller.pause();
+                              }
+                            },
+                            onHorizontalDragUpdate: (details) {
+                              setState(() {
+                                _playheadOffset += details.delta.dx;
+                                // Clamp
+                                if (_playheadOffset < startPadding) _playheadOffset = startPadding;
+                                if (_playheadOffset > constraints.maxWidth - 20.w) _playheadOffset = constraints.maxWidth - 20.w;
+                              });
+                              
+                              // Seek Video on Drag
+                              // Same logic as scroll update
+                              if (videoList.isNotEmpty) {
+                                 double offset = timelineScrollController.hasClients ? timelineScrollController.offset : 0;
+                                 double pixelDist = offset + _playheadOffset - startPadding;
+                                 if (pixelDist < 0) pixelDist = 0;
+                                 
+                                 final double seconds = pixelDist / 50.w;
+                                 final int targetTotalMs = (seconds * 1000).toInt();
+                                 
+                                 int accumulated = 0;
+                                 for(int i=0; i<videoList.length; i++) {
+                                   int dur = videoDurations[i].inMilliseconds;
+                                   if (targetTotalMs <= accumulated + dur) {
+                                     int localMs = targetTotalMs - accumulated;
+                                     if (localMs < 0) localMs = 0;
+                                     if (localMs > dur) localMs = dur;
+                                     if (currentVideoIndex != i) _setCurrentFile(videoList[i], i, play: false);
+                                     _controller.seekTo(Duration(milliseconds: localMs));
+                                     break;
+                                   }
+                                   accumulated += dur;
+                                 }
+                              }
+                            },
+                            child: Container(
+                              color: Colors.transparent, // Hitbox
+                              width: 20.w, // Wider touch area
+                              height: 130.h, // Full height
+                              child: Stack(
+                                alignment: Alignment.topCenter,
+                                children: [
+                                  // Vertical Line
+                                  Container(
+                                    width: 1.5.w, // Slightly thinner line
+                                    height: double.infinity,
+                                    color: Colors.black, // Dark line as per image
+                                  ),
+                                  // Handle Head
+                                  Positioned(
+                                    top: 0,
+                                    child: Container(
+                                      width: 12.w,
+                                      height: 12.w,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(2.r),
+                                        border: Border.all(color: Colors.black, width: 1.5.w),
+                                      ),
+                                      child: Center(
+                                        child: Container(
+                                          width: 2.w,
+                                          height: 4.h,
+                                          color: Colors.transparent, // Empty center
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          );
-                        })
-                        else const SizedBox.shrink(),
+                          ),
+                        ),
                       ],
-                    ),
-                  ),
+                    );
+                  }
                 ),
               ),
             ],
-          ),
-        ),
-        // Music track
-        Container(
-          margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
-          padding: EdgeInsets.only(left: 60.w), // Align with video strip
-          child: Container(
-            height: 25.h,
-            decoration: BoxDecoration(
-              color: Colors.purple.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(5.r),
-            ),
-            child: Row(
-              children: [
-                SizedBox(width: 8.w),
-                Icon(Icons.music_note, size: 12.r, color: Colors.white),
-                SizedBox(width: 5.w),
-                Text("Add music", style: TextStyle(color: Colors.white, fontSize: 9.sp)),
-              ],
-            ),
           ),
         ),
       ],
