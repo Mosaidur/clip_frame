@@ -442,20 +442,35 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     // We use -c:v libx264 -preset ultrafast to be quick but accurate.
     final ms = localPos.inMilliseconds / 1000.0;
     
-    // RE-ENCODING for frame accuracy (fixes "copy instead of cut" issue)
-    // -pix_fmt yuv420p ensures compatibility with Android/iOS players
-    // Removed -preset ultrafast to avoid errors if default encoder is not libx264
+    // RE-ENCODING for frame accuracy
+    // Using -ss AFTER -i for slow but perfectly accurate seeking
+    // Explicitly using libx264 and aac to ensure valid encoding
     
-    // Part 1: Start to split point
-    final cmd1 = '-i "${targetFile.path}" -t $ms -pix_fmt yuv420p -y "$out1"';
+    // Part 1: Start to split point (Duration -t)
+    final cmd1 = '-i "${targetFile.path}" -t $ms -c:v libx264 -c:a aac -preset ultrafast -y "$out1"';
     
-    // Part 2: Split point to end
-    final cmd2 = '-ss $ms -i "${targetFile.path}" -pix_fmt yuv420p -y "$out2"';
+    // Part 2: Split point to end (Seek -ss)
+    // Placed -ss after -i to decode from start -> exact frame
+    final cmd2 = '-i "${targetFile.path}" -ss $ms -c:v libx264 -c:a aac -preset ultrafast -y "$out2"';
     
     setState(() => isExporting = true);
-    final r1 = await _runFFmpeg(cmd1, out1);
-    final r2 = await _runFFmpeg(cmd2, out2);
+    
+    String? r1, r2;
+    try {
+      r1 = await _runFFmpeg(cmd1, out1);
+      if (r1 != null) {
+        r2 = await _runFFmpeg(cmd2, out2);
+      }
+    } catch (e) {
+      debugPrint("Split error: $e");
+    }
+    
     setState(() => isExporting = false);
+    
+    if (r1 == null || r2 == null) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Split failed. Try again.")));
+      return null;
+    }
     
     if (r1 != null && r2 != null) {
       final part1 = File(r1);
@@ -1357,31 +1372,77 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                               : 100.w,
                                           height: 60.h,
                                           decoration: BoxDecoration(
-                                            border: Border.all(
-                                              color: i == selectedClipIndex ? Colors.white : Colors.white24,
-                                              width: i == selectedClipIndex ? 2.w : 0.5.w,
-                                            ),
+                                            border: i == selectedClipIndex
+                                                ? Border.all(color: Colors.cyanAccent, width: 2.5.w) // Thick Cyan Border
+                                                : Border.all(color: Colors.white24, width: 0.5.w),
+                                            borderRadius: BorderRadius.circular(6.r), // Rounded corners
                                             color: Colors.black38,
                                           ),
-                                          child: (i < videoFilmstrips.length && videoFilmstrips[i].isNotEmpty)
-                                              ? Row(
-                                                  children: videoFilmstrips[i]
-                                                      .map((f) => Expanded(
-                                                            child: Image.file(
-                                                              f,
-                                                              fit: BoxFit.cover,
-                                                              height: double.infinity,
-                                                              cacheWidth: 80,
-                                                            ),
-                                                          ))
-                                                      .toList(),
-                                                )
-                                              : Container(
-                                                  color: Colors.grey[300],
-                                                  child: const Center(
-                                                    child: Icon(Icons.movie, color: Colors.white54, size: 16),
+                                          child: Stack(
+                                            children: [
+                                              // Filmstrip Content
+                                              (i < videoFilmstrips.length && videoFilmstrips[i].isNotEmpty)
+                                                  ? ClipRRect(
+                                                    borderRadius: BorderRadius.circular(4.r),
+                                                    child: Row(
+                                                      children: videoFilmstrips[i]
+                                                          .map((f) => Expanded(
+                                                                child: Image.file(
+                                                                  f,
+                                                                  fit: BoxFit.cover,
+                                                                  height: double.infinity,
+                                                                  cacheWidth: 80,
+                                                                ),
+                                                              ))
+                                                          .toList(),
+                                                    ),
+                                                  )
+                                                  : Container(
+                                                      color: Colors.grey[300],
+                                                      child: const Center(
+                                                        child: Icon(Icons.movie, color: Colors.white54, size: 16),
+                                                      ),
+                                                    ),
+                                              
+                                              // Left Handle (Selected Only)
+                                              if (i == selectedClipIndex)
+                                                Positioned(
+                                                  left: 0,
+                                                  top: 6.h,
+                                                  bottom: 6.h,
+                                                  child: Container(
+                                                    width: 4.w,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.cyanAccent,
+                                                      borderRadius: BorderRadius.only(
+                                                        topRight: Radius.circular(4.r),
+                                                        bottomRight: Radius.circular(4.r),
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
+
+                                              // Right Handle (Selected Only)
+                                              if (i == selectedClipIndex)
+                                                Positioned(
+                                                  right: 0,
+                                                  top: 6.h,
+                                                  bottom: 6.h,
+                                                  child: Container(
+                                                    width: 4.w,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.cyanAccent,
+                                                      borderRadius: BorderRadius.only(
+                                                        topLeft: Radius.circular(4.r),
+                                                        bottomLeft: Radius.circular(4.r),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                
+                                               // Title / Action Overlay can go here 
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     SizedBox(width: endPadding),
