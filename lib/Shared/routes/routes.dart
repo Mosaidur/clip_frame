@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
 import 'package:clip_frame/photo_edit.dart';
+
 import 'package:clip_frame/video_edit.dart';
+import '../../features/video_editor/presentation/native_editor_page.dart';
 
 import '../../features/HomeScreen.dart';
 import '../../login/bindings/login_binding.dart';
@@ -51,6 +53,6 @@ GetPage(name: HOME, page: () => HomePage()),
 
     // GetPage(name: login, page: () => LoginScreen()),
     GetPage(name: PHOTO_EDIT, page: () => PhotoEditorPage()),
-    GetPage(name: VIDEO_EDIT, page: () => VideoEditorPage()),
+    GetPage(name: VIDEO_EDIT, page: () => NativeEditorPage()),
   ];
 }

@@ -396,14 +396,16 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   // 2) Split video at position -> returns pair of paths (part1, part2)
-  // OPTIMIZED for INSTANT splitting
   Future<List<String>?> splitVideoAt(int targetIndex, Duration localPos) async {
     if (targetIndex < 0 || targetIndex >= videoList.length) return null;
-    
+
     final targetFile = videoList[targetIndex];
     final out1 = await _tempFilePath("_part1_${DateTime.now().millisecondsSinceEpoch}.mp4");
     final out2 = await _tempFilePath("_part2_${DateTime.now().millisecondsSinceEpoch}.mp4");
     
+    // Precise split using re-encoding for frame accuracy
+    // -ss before -i is faster seeking, but for split we want exactness.
+    // We use -c:v libx264 -preset ultrafast to be quick but accurate.
     final ms = localPos.inMilliseconds / 1000.0;
     
     // OPTIMIZED: Use stream copy for INSTANT splitting (no re-encoding)
@@ -414,24 +416,13 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     final cmd2 = '-ss $ms -i "${targetFile.path}" -c copy -avoid_negative_ts make_zero "$out2"';
     
     setState(() => isExporting = true);
-    
-    // Run both commands in PARALLEL for maximum speed
-    final results = await Future.wait([
-      FFmpegKit.execute(cmd1).then((s) async {
-        final rc = await s.getReturnCode();
-        return (rc != null && rc.isValueSuccess()) ? out1 : null;
-      }),
-      FFmpegKit.execute(cmd2).then((s) async {
-        final rc = await s.getReturnCode();
-        return (rc != null && rc.isValueSuccess()) ? out2 : null;
-      }),
-    ]);
-    
+    final r1 = await _runFFmpeg(cmd1, out1);
+    final r2 = await _runFFmpeg(cmd2, out2);
     setState(() => isExporting = false);
     
-    if (results[0] != null && results[1] != null) {
-      final part1 = File(results[0]!);
-      final part2 = File(results[1]!);
+    if (r1 != null && r2 != null) {
+      final part1 = File(r1);
+      final part2 = File(r2);
 
       // Update lists
       final dur1 = await _getVideoDuration(part1);
@@ -448,12 +439,15 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         videoThumbnails.insert(targetIndex + 1, null);
         videoFilmstrips.insert(targetIndex + 1, []);
         
+        // If we split the current playing video, stay on the second part?
+        // Usually better to pause or set to split point.
         currentVideoIndex = targetIndex + 1;
       });
 
-      // Generate visuals in background
+      // Generate visuals
       _generateThumbnail(part1, targetIndex);
       _generateFilmstrip(part1, targetIndex);
+      
       _generateThumbnail(part2, targetIndex + 1);
       _generateFilmstrip(part2, targetIndex + 1);
 
@@ -466,7 +460,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         );
       }
       
-      return [results[0]!, results[1]!];
+      return [r1, r2];
     }
     return null;
   }

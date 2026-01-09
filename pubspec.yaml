@@ -38,6 +38,7 @@ dependencies:
   ffmpeg_kit_flutter_new: ^4.1.0
   path: ^1.8.0
   permission_handler: ^12.0.1
+  uuid: ^4.0.0
   video_player: ^2.7.0
   camera: ^0.10.5+9
   intl: any # Required for localization (AppLocalizations)
