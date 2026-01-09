@@ -74,6 +74,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   double _playheadOffset = 0; 
   double get startPadding => 7.w;
 
+  // New: Cropping State
+  bool _isCropping = false;
+  Rect _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8); // Normalized 0..1
+
   @override
   void initState() {
     super.initState();
@@ -642,25 +646,59 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     );
   }
 
-  // 6) Crop (x,y,w,h) - expects ints normalized to video resolution; we provide dialog to hard input simple crop
+  // 6) Crop (x,y,w,h) - expects ints normalized to video resolution
   Future<void> cropVideo({required int x, required int y, required int w, required int h}) async {
     if (currentFile == null) return;
     final before = currentFile!;
     final out = await _tempFilePath("_crop.mp4");
-    final cmd = '-i "${before.path}" -filter:v "crop=$w:$h:$x:$y" -c:a copy "$out"';
+    
+    // FFmpeg crop filter often requires even dimensions (divisible by 2) for many codecs (h264/yuv420p)
+    int finalW = (w ~/ 2) * 2;
+    int finalH = (h ~/ 2) * 2;
+    if (finalW < 2) finalW = 2;
+    if (finalH < 2) finalH = 2;
+
+    // Use libx264 and yuv420p for maximum compatibility. 
+    // -r 30: Forces constant frame rate 
+    // -tune fastdecode: Optimizes for mobile player playback
+    // -g 30: Ensures a keyframe every second (fixes laggy seeking)
+    final cmd = '-i "${before.path}" -vf "crop=$finalW:$finalH:$x:$y" -c:v libx264 -c:a aac -pix_fmt yuv420p -preset ultrafast -crf 23 -r 30 -tune fastdecode -g 30 -y "$out"';
+    
     setState(() => isExporting = true);
     final res = await _runFFmpeg(cmd, out);
     setState(() => isExporting = false);
+    
     if (res != null) {
       final afterFile = File(res);
       _pushHistory(EditAction(
         type: EditType.crop,
-        description: "Crop $w x $h @($x,$y)",
+        description: "Crop $finalW x $finalH @($x,$y)",
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
-      setState(() => videoList[currentVideoIndex] = afterFile);
-      await _setCurrentFile(afterFile, currentVideoIndex);
+      
+      setState(() {
+        videoList[currentVideoIndex] = afterFile;
+        // Reset visuals for this clip
+        if (currentVideoIndex < videoThumbnails.length) videoThumbnails[currentVideoIndex] = null;
+        if (currentVideoIndex < videoFilmstrips.length) videoFilmstrips[currentVideoIndex] = [];
+      });
+      
+      await _setCurrentFile(afterFile, currentVideoIndex, play: false);
+      _generateThumbnail(afterFile, currentVideoIndex);
+      _generateFilmstrip(afterFile, currentVideoIndex);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Crop applied successfully")),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Crop failed. Please try again.")),
+        );
+      }
     }
   }
 
@@ -920,9 +958,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 await splitVideoAt(currentVideoIndex, _controller.value.position);
               }
             }),
-            _actionIcon(Icons.crop_rounded, "Crop", onTap: () async {
-              final crop = await _cropDialog();
-              if (crop != null) await cropVideo(x: crop[0], y: crop[1], w: crop[2], h: crop[3]);
+            _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
+              setState(() {
+                _isCropping = true;
+                _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
+              });
             }),
             _actionIcon(Icons.speed_rounded, "Speed", onTap: () async {
               final v = await _speedDialog();
@@ -940,7 +980,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
 
   Widget _buildTopSection() {
     return Container(
-      constraints: BoxConstraints(minHeight: 120.h), // Reduced from 150.h
+      constraints: BoxConstraints(minHeight: 95.h), // Reduced from 120.h
       color: const Color(0xFFF8E9D2), // Cream background for header and clips
       child: Column(
         children: [
@@ -991,7 +1031,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
 
   Widget _buildClipListView({bool isLandscape = false}) {
     return Container(
-      height: isLandscape ? null : 80.h,
+      height: isLandscape ? null : 65.h, // Reduced from 80.h
       padding: EdgeInsets.symmetric(vertical: 10.h),
       color: Colors.transparent, // Inherit background from parent
       child: videoList.isEmpty
@@ -1012,10 +1052,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                              _setCurrentFile(f, i, play: false); // CapCut style: selecting doesn't auto-play
                         },
                         child: Container(
-                          width: isLandscape ? 120.w : 100.w,
-                          height: isLandscape ? 70.h : 60.h,
+                          width: isLandscape ? 120.w : 85.w,
+                          height: isLandscape ? 70.h : 45.h,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10.r),
+                            borderRadius: BorderRadius.circular(8.r),
                             border: currentFile?.path == f.path
                                 ? Border.all(color: Colors.blue, width: 2.w)
                                 : null,
@@ -1071,22 +1111,132 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               Center(
                 child: AspectRatio(
                   aspectRatio: _controller.value.aspectRatio,
-                  child: VideoPlayer(_controller),
+                  child: Stack(
+                    children: [
+                      VideoPlayer(_controller),
+                      if (_isCropping) _buildCropOverlay(),
+                    ],
+                  ),
                 ),
               )
             else
               const Center(child: CircularProgressIndicator(color: Colors.white)),
             
-            // Fullscreen icon
-            Positioned(
-              bottom: 8.h,
-              right: 12.w,
-              child: Icon(Icons.fullscreen, color: Colors.white, size: 20.r),
-            ),
+            // Fullscreen icon (hide when cropping)
+            if (!_isCropping)
+              Positioned(
+                bottom: 8.h,
+                right: 12.w,
+                child: Icon(Icons.fullscreen, color: Colors.white, size: 20.r),
+              ),
             
             if (isExporting)
               const Center(child: CircularProgressIndicator()),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCropOverlay() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
+
+        // Convert normalized _cropRect to pixels
+        final rect = Rect.fromLTWH(
+          _cropRect.left * w,
+          _cropRect.top * h,
+          _cropRect.width * w,
+          _cropRect.height * h,
+        );
+
+        return Stack(
+          children: [
+            // 1. Darkened areas outside the crop rect
+            GestureDetector(
+              onPanUpdate: (details) {
+                // Move the whole rect
+                setState(() {
+                   double dx = details.delta.dx / w;
+                   double dy = details.delta.dy / h;
+                   _cropRect = Rect.fromLTWH(
+                     (_cropRect.left + dx).clamp(0.0, 1.0 - _cropRect.width),
+                     (_cropRect.top + dy).clamp(0.0, 1.0 - _cropRect.height),
+                     _cropRect.width,
+                     _cropRect.height,
+                   );
+                });
+              },
+              child: CustomPaint(
+                size: Size(w, h),
+                painter: CropPainter(rect),
+              ),
+            ),
+            
+            // 2. Corner Handles
+            _buildCropHandle(rect.topLeft, (d) => _updateCropRect(d, w, h, isTop: true, isLeft: true)),
+            _buildCropHandle(rect.topRight, (d) => _updateCropRect(d, w, h, isTop: true, isLeft: false)),
+            _buildCropHandle(rect.bottomLeft, (d) => _updateCropRect(d, w, h, isTop: false, isLeft: true)),
+            _buildCropHandle(rect.bottomRight, (d) => _updateCropRect(d, w, h, isTop: false, isLeft: false)),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updateCropRect(Offset delta, double w, double h, {required bool isTop, required bool isLeft}) {
+    setState(() {
+      double dx = delta.dx / w;
+      double dy = delta.dy / h;
+      
+      double left = _cropRect.left;
+      double top = _cropRect.top;
+      double width = _cropRect.width;
+      double height = _cropRect.height;
+
+      if (isLeft) {
+        double newLeft = (left + dx).clamp(0.0, left + width - 0.1);
+        width += (left - newLeft);
+        left = newLeft;
+      } else {
+        width = (width + dx).clamp(0.1, 1.0 - left);
+      }
+
+      if (isTop) {
+        double newTop = (top + dy).clamp(0.0, top + height - 0.1);
+        height += (top - newTop);
+        top = newTop;
+      } else {
+        height = (height + dy).clamp(0.1, 1.0 - top);
+      }
+
+      _cropRect = Rect.fromLTWH(left, top, width, height);
+    });
+  }
+
+  Widget _buildCropHandle(Offset pos, Function(Offset) onDrag) {
+    return Positioned(
+      left: pos.dx - 15,
+      top: pos.dy - 15,
+      child: GestureDetector(
+        onPanUpdate: (details) => onDrag(details.delta),
+        child: Container(
+          width: 30,
+          height: 30,
+          color: Colors.transparent,
+          child: Center(
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -1237,11 +1387,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             ],
           ),
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 4.h), // Reduced from 8.h
         
         // TIMELINE TRACK (Row: Fixed Cover + Expanded Stack)
         SizedBox(
-          height: 130.h, 
+          height: 100.h, // Reduced from 130.h
           child: Row(
             children: [
               // 1. Fixed "Cover" Button (Left Side)
@@ -1370,7 +1520,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                           width: (videoDurations.length > i)
                                               ? (videoDurations[i].inMilliseconds / 1000) * 50.w
                                               : 100.w,
-                                          height: 60.h,
+                                          height: 50.h, // Reduced from 60.h
                                           decoration: BoxDecoration(
                                             border: i == selectedClipIndex
                                                 ? Border.all(color: Colors.cyanAccent, width: 2.5.w) // Thick Cyan Border
@@ -1523,7 +1673,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                             child: Container(
                               color: Colors.transparent, // Hitbox
                               width: 20.w, // Wider touch area
-                              height: 130.h, // Full height
+                              height: 100.h, // Reduced from 130.h to match track
                               child: Stack(
                                 alignment: Alignment.topCenter,
                                 children: [
@@ -1633,6 +1783,38 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildBottomActionBar() {
+    if (_isCropping) {
+      return Container(
+        color: Colors.white,
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: () => setState(() => _isCropping = false),
+              child: Text("Cancel", style: TextStyle(color: Colors.black54, fontSize: 16.sp)),
+            ),
+            Text("Crop Video", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
+            ElevatedButton(
+              onPressed: () async {
+                // Calculate pixel values
+                final size = _controller.value.size;
+                int x = (_cropRect.left * size.width).toInt();
+                int y = (_cropRect.top * size.height).toInt();
+                int w = (_cropRect.width * size.width).toInt();
+                int h = (_cropRect.height * size.height).toInt();
+                
+                setState(() => _isCropping = false);
+                await cropVideo(x: x, y: y, w: w, h: h);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+              child: const Text("Done"),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       color: Colors.white,
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
@@ -1652,9 +1834,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 await splitVideoAt(currentVideoIndex, _controller.value.position);
               }
             }),
-            _actionIcon(Icons.crop_rounded, "Crop", onTap: () async {
-              final crop = await _cropDialog();
-              if (crop != null) await cropVideo(x: crop[0], y: crop[1], w: crop[2], h: crop[3]);
+            _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
+               setState(() {
+                 _isCropping = true;
+                 _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
+               });
             }),
             _actionIcon(Icons.speed_rounded, "Speed", onTap: () async {
               final v = await _speedDialog();
@@ -1850,5 +2034,52 @@ class CustomPlayheadShape extends SliderComponentShape {
       paint,
     );
   }
+}
+
+class CropPainter extends CustomPainter {
+  final Rect rect;
+  CropPainter(this.rect);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black54;
+    final hole = rect;
+
+    // Draw 4 rectangles around the hole to darken the non-cropped area
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, hole.top), paint);
+    canvas.drawRect(Rect.fromLTWH(0, hole.bottom, size.width, (size.height - hole.bottom).clamp(0, size.height)), paint);
+    canvas.drawRect(Rect.fromLTWH(0, hole.top, hole.left, hole.height), paint);
+    canvas.drawRect(Rect.fromLTWH(hole.right, hole.top, (size.width - hole.right).clamp(0, size.width), hole.height), paint);
+
+    // Draw white border for the crop area
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawRect(hole, borderPaint);
+    
+    // Draw corner accents
+    final accentPaint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4;
+    
+    const double L = 15;
+    // Top-left
+    canvas.drawLine(hole.topLeft, hole.topLeft + const Offset(L, 0), accentPaint);
+    canvas.drawLine(hole.topLeft, hole.topLeft + const Offset(0, L), accentPaint);
+    // Top-right
+    canvas.drawLine(hole.topRight, hole.topRight + const Offset(-L, 0), accentPaint);
+    canvas.drawLine(hole.topRight, hole.topRight + const Offset(0, L), accentPaint);
+    // Bottom-left
+    canvas.drawLine(hole.bottomLeft, hole.bottomLeft + const Offset(L, 0), accentPaint);
+    canvas.drawLine(hole.bottomLeft, hole.bottomLeft + const Offset(0, -L), accentPaint);
+    // Bottom-right
+    canvas.drawLine(hole.bottomRight, hole.bottomRight + const Offset(-L, 0), accentPaint);
+    canvas.drawLine(hole.bottomRight, hole.bottomRight + const Offset(0, -L), accentPaint);
+  }
+
+  @override
+  bool shouldRepaint(CropPainter old) => old.rect != rect;
 }
 
