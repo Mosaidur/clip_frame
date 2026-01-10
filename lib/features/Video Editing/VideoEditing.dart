@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit_config.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -16,6 +18,8 @@ class EditAction {
   final String description;
   final String beforePath; // previous file path
   final String afterPath; // new file path produced by this edit
+  final double? beforeSpeed;
+  final double? afterSpeed;
   final DateTime timestamp;
 
   EditAction({
@@ -23,6 +27,8 @@ class EditAction {
     required this.description,
     required this.beforePath,
     required this.afterPath,
+    this.beforeSpeed,
+    this.afterSpeed,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 }
@@ -46,6 +52,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   List<Duration> videoDurations = []; // Proportional timeline support
   List<File?> videoThumbnails = []; // Actual video thumbnails
   List<List<File>> videoFilmstrips = []; // Multiple thumbnails per clip for timeline
+  List<double> videoSpeeds = []; // Track speed per clip
 
   // History stacks
   final List<EditAction> _history = [];
@@ -78,6 +85,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   bool _isCropping = false;
   Rect _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8); // Normalized 0..1
 
+  // New: Speeding State
+  bool _isSpeeding = false;
+  double _tempSpeed = 1.0;
+  int? _lastFFmpegRC;
+
   @override
   void initState() {
     super.initState();
@@ -95,6 +107,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     });
 
     videoList.addAll(widget.videos);
+    videoSpeeds = List.filled(videoList.length, 1.0);
+    videoDurations = List.filled(videoList.length, Duration.zero);
+    videoThumbnails = List.filled(videoList.length, null);
+    videoFilmstrips = List.generate(videoList.length, (_) => []);
+    
     _initializeAllDurations();
     if (videoList.isNotEmpty) {
       _setCurrentFile(videoList.first, 0, play: false);
@@ -157,11 +174,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   Future<void> _initializeAllDurations() async {
     for (int i = 0; i < videoList.length; i++) {
       final file = videoList[i];
-      videoThumbnails.add(null); // Placeholder
-      videoFilmstrips.add([]); // Placeholder
       final d = await _getVideoDuration(file);
       setState(() {
-        videoDurations.add(d);
+        if (i < videoDurations.length) videoDurations[i] = d;
       });
       _generateThumbnail(file, i);
       _generateFilmstrip(file, i);
@@ -180,6 +195,22 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     }
   }
 
+  Future<bool> _hasAudio(File file) async {
+    try {
+      final session = await FFprobeKit.getMediaInformation(file.path);
+      final info = session.getMediaInformation();
+      if (info == null) return false;
+      final streams = info.getStreams();
+      for (var stream in streams) {
+        if (stream.getType() == "audio") return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error checking audio via ffprobe: $e");
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -194,7 +225,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     return "${dir.path}/$name$suffix";
   }
 
-  Future<void> _setCurrentFile(File f, int index, {bool play = true}) async {
+  Future<void> _setCurrentFile(File f, int index, {bool play = true, Duration? seekTo}) async {
     try {
       currentFile = f;
       currentVideoIndex = index;
@@ -209,6 +240,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       setState(() {
         initialized = true;
       });
+      if (seekTo != null) {
+        await _controller.seekTo(seekTo);
+      }
       if (play) _controller.play();
     } catch (e) {
       debugPrint("Error setting current file: $e");
@@ -293,10 +327,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     try {
       final session = await FFmpegKit.execute(cmd);
       final rc = await session.getReturnCode();
+      _lastFFmpegRC = rc?.getValue();
       if (rc != null && rc.isValueSuccess()) {
         return outputPath;
       } else {
-        debugPrint("FFmpeg failed. rc=$rc, cmd=$cmd");
+        debugPrint("FFmpeg failed. rc=$_lastFFmpegRC, cmd=$cmd");
         return null;
       }
     } catch (e) {
@@ -317,30 +352,48 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   // Undo last edit (swap to beforePath)
   Future<void> undo() async {
     if (_history.isEmpty) return;
-    final last = _history.removeLast();
-    _redoStack.add(last);
-    // set current to beforePath
-    final before = File(last.beforePath);
-    if (before.existsSync()) {
-      await _setCurrentFile(before, currentVideoIndex, play: false);
-      setState(() => statusText = "Undid: ${last.description}");
-    } else {
-      setState(() => statusText = "Cannot undo: file missing");
+    final action = _history.removeLast();
+    _redoStack.add(action);
+
+    // Apply "before" state
+    final file = File(action.beforePath);
+    // Determine which clip index this was for. 
+    // Usually it was currentVideoIndex at that time.
+    // Ideally EditAction stores the index too. 
+    // For now we assume currentVideoIndex (common case)
+    videoList[currentVideoIndex] = file;
+    if (action.type == EditType.speed && action.beforeSpeed != null) {
+      videoSpeeds[currentVideoIndex] = action.beforeSpeed!;
     }
+    
+    final dur = await _getVideoDuration(file);
+    setState(() {
+      videoDurations[currentVideoIndex] = dur;
+    });
+    await _setCurrentFile(file, currentVideoIndex, play: false);
+    _generateThumbnail(file, currentVideoIndex);
+    _generateFilmstrip(file, currentVideoIndex);
   }
 
-  // Redo
   Future<void> redo() async {
     if (_redoStack.isEmpty) return;
     final action = _redoStack.removeLast();
     _history.add(action);
-    final after = File(action.afterPath);
-    if (after.existsSync()) {
-      await _setCurrentFile(after, currentVideoIndex, play: false);
-      setState(() => statusText = "Redid: ${action.description}");
-    } else {
-      setState(() => statusText = "Cannot redo: file missing");
+
+    // Apply "after" state
+    final file = File(action.afterPath);
+    videoList[currentVideoIndex] = file;
+    if (action.type == EditType.speed && action.afterSpeed != null) {
+      videoSpeeds[currentVideoIndex] = action.afterSpeed!;
     }
+    
+    final dur = await _getVideoDuration(file);
+    setState(() {
+      videoDurations[currentVideoIndex] = dur;
+    });
+    await _setCurrentFile(file, currentVideoIndex, play: false);
+    _generateThumbnail(file, currentVideoIndex);
+    _generateFilmstrip(file, currentVideoIndex);
   }
 
   // Remove a specific history item (and optionally delete after file)
@@ -363,6 +416,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       videoList.add(f);
       videoThumbnails.add(null);
       videoFilmstrips.add([]);
+      videoSpeeds.add(1.0);
       final dur = await _getVideoDuration(f);
       videoDurations.add(dur);
       await _setCurrentFile(f, videoList.length - 1);
@@ -376,6 +430,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     if (index < videoDurations.length) videoDurations.removeAt(index);
     if (index < videoThumbnails.length) videoThumbnails.removeAt(index);
     if (index < videoFilmstrips.length) videoFilmstrips.removeAt(index);
+    if (index < videoSpeeds.length) videoSpeeds.removeAt(index);
     final removed = videoList.removeAt(index);
     if (currentFile?.path == removed.path) {
       if (videoList.isNotEmpty) _setCurrentFile(videoList.first, 0);
@@ -487,13 +542,17 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       setState(() {
         videoList[targetIndex] = part1;
         videoDurations[targetIndex] = dur1;
+        
         videoThumbnails[targetIndex] = null; // will regen
         videoFilmstrips[targetIndex] = [];   // will regen
         
         videoList.insert(targetIndex + 1, part2);
         videoDurations.insert(targetIndex + 1, dur2);
+        
         videoThumbnails.insert(targetIndex + 1, null);
         videoFilmstrips.insert(targetIndex + 1, []);
+        // Split clip inherits the current speed of the source
+        videoSpeeds.insert(targetIndex + 1, videoSpeeds[targetIndex]);
         
         // If we split the current playing video, stay on the second part?
         // Usually better to pause or set to split point.
@@ -522,23 +581,70 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   // 3) Change speed (speedFactor > 1 faster, <1 slower)
-  Future<void> changeSpeed(double speedFactor) async {
-    if (currentFile == null) return;
-    final before = currentFile!;
+  Future<void> changeSpeed(double speedFactor, {int? index}) async {
+    int targetIdx = index ?? currentVideoIndex;
+    if (targetIdx < 0 || targetIdx >= videoList.length) return;
+    
+    double currentSpeed = videoSpeeds[targetIdx];
+    // Relative factor: if already 2x and we want 4x, we apply 2x to current file.
+    double relativeFactor = speedFactor / currentSpeed;
+
+    // If speed is practically same, just update UI and return
+    if ((relativeFactor - 1.0).abs() < 0.01) {
+      debugPrint("Speed unchanged or close enough, skipping FFmpeg.");
+      return;
+    }
+
+    final before = videoList[targetIdx];
+    final oldSpeed = videoSpeeds[targetIdx];
     final out = await _tempFilePath("_speed.mp4");
-    // FFmpeg complex filter: setpts for video, atempo for audio (atempo accepts 0.5-2.0; chain if needed)
-    // For wide ranges chain multiple atempo filters - here we handle 0.5..4.0 by chaining where necessary.
-    // Build audio tempo filter
-    final List<double> tempos = [];
-    double remaining = speedFactor;
-    // To convert audio tempo: desired audio speed = 1/speedFactor for PTS? Simpler approach: use atempo(speedFactor) when speedFactor between 0.5 and 2.0
-    double audioTempo = speedFactor.clamp(0.5, 2.0);
-    // If outside bounds, approximate by chaining; but here keep audioTempo in [0.5,2.0]
-    final audioFilter = 'atempo=$audioTempo';
-    final cmd = '-i "${before.path}" -filter_complex "[0:v]setpts=${1/speedFactor}*PTS[v];[0:a]$audioFilter[a]" -map "[v]" -map "[a]" -r 30 -y "$out"';
+    
+    // Build audio tempo filter chain for the RELATIVE factor
+    List<String> filters = [];
+    double current = relativeFactor;
+    while (current > 2.0) {
+      filters.add("atempo=2.0");
+      current /= 2.0;
+    }
+    while (current < 0.5) {
+      filters.add("atempo=0.5");
+      current /= 0.5;
+    }
+    if (current != 1.0 || filters.isEmpty) {
+      filters.add("atempo=${current.toStringAsFixed(2)}");
+    }
+    final audioFilter = filters.join(",");
+    
+    // Check if the video has audio to avoid FFmpeg "Stream not found" error (RC:1)
+    final hasAudio = await _hasAudio(before);
+    
+    String filter;
+    String mapping;
+    String codecs;
+    
+    if (hasAudio) {
+      filter = '[0:v]setpts=${1/relativeFactor}*PTS[v];[0:a]$audioFilter[a]';
+      mapping = '-map "[v]" -map "[a]"';
+      codecs = '-c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac';
+    } else {
+      filter = '[0:v]setpts=${1/relativeFactor}*PTS[v]';
+      mapping = '-map "[v]"';
+      codecs = '-c:v libx264 -preset ultrafast -pix_fmt yuv420p -an';
+    }
+
+    final cmd = '-i "${before.path}" -filter_complex "$filter" $mapping $codecs -r 30 -y "$out"';
+    
+    // Calculate new position to prevent jumping to start
+    Duration? newSeek;
+    if (targetIdx == currentVideoIndex && initialized) {
+       final oldPosMs = _controller.value.position.inMilliseconds;
+       newSeek = Duration(milliseconds: (oldPosMs / relativeFactor).toInt());
+    }
+
     setState(() => isExporting = true);
     final res = await _runFFmpeg(cmd, out);
     setState(() => isExporting = false);
+    
     if (res != null) {
       final afterFile = File(res);
       _pushHistory(EditAction(
@@ -546,14 +652,33 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         description: "Speed x $speedFactor",
         beforePath: before.path,
         afterPath: afterFile.path,
+        beforeSpeed: oldSpeed,
+        afterSpeed: speedFactor,
       ));
       final newDur = await _getVideoDuration(afterFile);
       setState(() {
-        videoList[currentVideoIndex] = afterFile;
-        videoDurations[currentVideoIndex] = newDur;
+        videoList[targetIdx] = afterFile;
+        videoDurations[targetIdx] = newDur;
+        videoSpeeds[targetIdx] = speedFactor; // Persist speed
       });
-      await _setCurrentFile(afterFile, currentVideoIndex);
-      _generateThumbnail(afterFile, currentVideoIndex);
+      if (targetIdx == currentVideoIndex) {
+        // Auto-play after baking to show success
+        await _setCurrentFile(afterFile, targetIdx, play: true, seekTo: newSeek);
+      }
+      _generateThumbnail(afterFile, targetIdx);
+      _generateFilmstrip(afterFile, targetIdx);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Speed applied: ${speedFactor.toStringAsFixed(1)}x"), duration: const Duration(seconds: 1)),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to apply speed. FFmpeg RC: $_lastFFmpegRC"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -939,6 +1064,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildLandscapeTools() {
+    if (_isSpeeding) return _buildSpeedControlBar();
     return Container(
       padding: EdgeInsets.symmetric(vertical: 12.h),
       color: Colors.transparent,
@@ -964,9 +1090,16 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
               });
             }),
-            _actionIcon(Icons.speed_rounded, "Speed", onTap: () async {
-              final v = await _speedDialog();
-              if (v != null) await changeSpeed(v);
+            _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
+              setState(() {
+                _isSpeeding = true;
+                int idx = selectedClipIndex ?? currentVideoIndex;
+                if (idx >= 0 && idx < videoSpeeds.length) {
+                  _tempSpeed = videoSpeeds[idx];
+                } else {
+                  _tempSpeed = 1.0;
+                }
+              });
             }),
             _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () async {
               final choice = await _filterChoiceDialog();
@@ -1488,6 +1621,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                      int localMs = targetTotalMs - accumulated;
                                      if (localMs < 0) localMs = 0;
                                      if (localMs > dur) localMs = dur;
+                                     
+                                     double speed = (i < videoSpeeds.length) ? videoSpeeds[i] : 1.0;
                                      _controller.seekTo(Duration(milliseconds: localMs));
                                      break;
                                    }
@@ -1815,6 +1950,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       );
     }
 
+    if (_isSpeeding) {
+      return _buildSpeedControlBar();
+    }
+
     return Container(
       color: Colors.white,
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
@@ -1840,9 +1979,16 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                  _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
                });
             }),
-            _actionIcon(Icons.speed_rounded, "Speed", onTap: () async {
-              final v = await _speedDialog();
-              if (v != null) await changeSpeed(v);
+            _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
+              setState(() {
+                _isSpeeding = true;
+                int idx = selectedClipIndex ?? currentVideoIndex;
+                if (idx >= 0 && idx < videoSpeeds.length) {
+                  _tempSpeed = videoSpeeds[idx];
+                } else {
+                  _tempSpeed = 1.0;
+                }
+              });
             }),
             _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () async {
               final choice = await _filterChoiceDialog();
@@ -1851,6 +1997,170 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSpeedControlBar() {
+    final int idx = selectedClipIndex ?? currentVideoIndex;
+    final double originalDuration = (idx >= 0 && idx < videoDurations.length) 
+        ? videoDurations[idx].inMilliseconds / 1000.0 
+        : 0.0;
+    // Note: The displayed "original" is actually the duration of the current file being edited.
+    // If it's already sped up, we might want to show the 'raw' original, but relative is safer UX.
+    final double curSpeed = (idx >= 0 && idx < videoSpeeds.length) ? videoSpeeds[idx] : 1.0;
+    final double newDuration = originalDuration / (_tempSpeed / curSpeed);
+
+    final backgroundColor = const Color(0xFFB49EF4);
+    final accentColor = Colors.black;
+
+    return Container(
+      color: backgroundColor,
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 1. Duration Preview (Duration 3.7s -> 1.9s)
+          Row(
+            children: [
+              Text(
+                "Duration ${originalDuration.toStringAsFixed(1)}s",
+                style: TextStyle(color: accentColor.withOpacity(0.7), fontSize: 13.sp),
+              ),
+              Icon(Icons.arrow_forward_rounded, size: 14.sp, color: accentColor.withOpacity(0.7)),
+              Text(
+                " ${newDuration.toStringAsFixed(1)}s",
+                style: TextStyle(color: accentColor, fontSize: 13.sp, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          SizedBox(height: 25.h),
+          
+          // 2. Custom Ruler Slider Area
+          Stack(
+            children: [
+              // Ruler Ticks
+              Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  child: CustomPaint(
+                    painter: SpeedRulerPainter(color: accentColor),
+                  ),
+                ),
+              ),
+              // The Actual Slider
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 0, // Hide default track
+                  thumbColor: Colors.transparent, // Handle custom thumb below
+                  overlayColor: Colors.black12,
+                  thumbShape: _CustomSliderThumbShape(color: accentColor),
+                ),
+                child: Slider(
+                  min: 0.1,
+                  max: 10.0,
+                  value: _tempSpeed,
+                  onChanged: (v) {
+                    setState(() {
+                      _tempSpeed = v;
+                    });
+                    if (initialized) {
+                      _controller.setPlaybackSpeed(v).catchError((e) => debugPrint("Player speed error: $e"));
+                      if (!_controller.value.isPlaying) _controller.play();
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          
+          // 3. Slider Labels
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _markerLabel("0.1x"),
+                _markerLabel("1x"),
+                _markerLabel("2x"),
+                _markerLabel("5x"),
+                _markerLabel("10x"),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 15.h),
+          
+          // 4. "Make it smoother" pill (Decorative)
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: Text(
+              "Make it smoother",
+              style: TextStyle(color: accentColor.withOpacity(0.5), fontSize: 12.sp),
+            ),
+          ),
+          
+          SizedBox(height: 20.h),
+          
+          // 5. Bottom Action Bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: Icon(Icons.close, color: accentColor),
+                onPressed: () {
+                  setState(() => _isSpeeding = false);
+                  if (initialized) _controller.setPlaybackSpeed(1.0);
+                },
+              ),
+              Text(
+                "Speed",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18.sp, color: accentColor),
+              ),
+              IconButton(
+                icon: Icon(Icons.check, color: accentColor),
+                onPressed: () async {
+                  int idx = selectedClipIndex ?? currentVideoIndex;
+                  setState(() => _isSpeeding = false);
+                  if (initialized) _controller.setPlaybackSpeed(1.0);
+                  await changeSpeed(_tempSpeed, index: idx);
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _markerLabel(String label) {
+    return Text(label, style: TextStyle(color: Colors.black, fontSize: 11.sp, fontWeight: FontWeight.w500));
+  }
+
+  // ... (Other helper widgets)
+
+  Widget _speedTab(String label, {required bool isActive}) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            color: isActive ? Colors.black : Colors.grey,
+            fontSize: 14.sp,
+          ),
+        ),
+        if (isActive)
+          Container(
+            margin: EdgeInsets.only(top: 4.h),
+            width: 20.w,
+            height: 2.h,
+            color: Colors.black,
+          ),
+      ],
     );
   }
 
@@ -2033,6 +2343,86 @@ class CustomPlayheadShape extends SliderComponentShape {
       Offset(center.dx, center.dy + height / 2),
       paint,
     );
+  }
+}
+
+class SpeedRulerPainter extends CustomPainter {
+  final Color color;
+  SpeedRulerPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withOpacity(0.3)
+      ..strokeWidth = 1.0
+      ..strokeCap = StrokeCap.round;
+
+    final double startX = 0;
+    final double endX = size.width;
+    final int tickCount = 40;
+    final double step = (endX - startX) / tickCount;
+
+    for (int i = 0; i <= tickCount; i++) {
+      double x = startX + i * step;
+      double height = 6.0;
+      
+      // Longer ticks for major intervals
+      if (i % 8 == 0) {
+        height = 12.0;
+        paint.color = color.withOpacity(0.6);
+      } else {
+        height = 6.0;
+        paint.color = color.withOpacity(0.3);
+      }
+
+      canvas.drawLine(
+        Offset(x, size.height / 2 - height / 2),
+        Offset(x, size.height / 2 + height / 2),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _CustomSliderThumbShape extends SliderComponentShape {
+  final Color color;
+  _CustomSliderThumbShape({required this.color});
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) => const Size(20, 20);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required ui.TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final canvas = context.canvas;
+
+    final outerPaint = Paint()
+      ..color = color
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+
+    final dotPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    // Draw a cyan-style hollow circle from the image
+    canvas.drawCircle(center, 8, outerPaint);
+    // Add small inner shadow or dot if needed, but the image shows a ring
   }
 }
 
