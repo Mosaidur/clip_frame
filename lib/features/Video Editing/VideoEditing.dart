@@ -956,8 +956,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         // Video Player Area (Expanded)
         _buildVideoPlayerSection(),
 
-        // Only show controls and timeline if not filtering
-        if (!_isFiltering) ...[
+        // Only show controls and timeline if no specialized tool is active
+        if (!_isFiltering && !_isSpeeding && !_isCropping) ...[
           // Control Bar (Sandy)
           _buildControlBar(),
 
@@ -984,9 +984,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
 
         // Editing Tools (Bottom)
         if (_isFiltering)
-          _buildFilterBottomSheet()
-        else
-          _buildBottomActionBar(),
+          _buildFilterBottomSheet(),
+
+        _buildBottomActionBar(),
       ],
     );
   }
@@ -1002,12 +1002,14 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             child: Column(
               children: [
                 Expanded(child: _buildVideoPlayerSection()),
-                _buildControlBar(),
-                Container(
-                  color: const Color(0xFFE1D5FF),
-                  padding: EdgeInsets.symmetric(vertical: 8.h),
-                  child: _buildTimelineSection(),
-                ),
+                if (!_isFiltering && !_isSpeeding && !_isCropping) ...[
+                  _buildControlBar(),
+                  Container(
+                    color: const Color(0xFFE1D5FF),
+                    padding: EdgeInsets.symmetric(vertical: 8.h),
+                    child: _buildTimelineSection(),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1024,15 +1026,23 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 // Condensed Header
                 _buildLandscapeHeader(),
                 // Video Clip List (Grid-like scroll)
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20.r)),
+                if (!_isFiltering && !_isSpeeding && !_isCropping)
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.only(topLeft: Radius.circular(20.r)),
+                      ),
+                      child: _buildClipListView(isLandscape: true),
                     ),
-                    child: _buildClipListView(isLandscape: true),
-                  ),
-                ),
+                  )
+                else
+                   // Give space for specialized tools
+                   const Spacer(),
+                
+                // Active tool overlay (e.g. Filter)
+                if (_isFiltering) _buildFilterBottomSheet(),
+
                 // Editing tools
                 _buildLandscapeTools(),
                 // Save Button
@@ -1076,51 +1086,75 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildLandscapeTools() {
-    if (_isSpeeding) return _buildSpeedControlBar();
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 12.h),
-      color: Colors.transparent,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: [
-             _actionIcon(Icons.crop_free_rounded, "Canvas", onTap: () async {
-              final txt = await _inputDialog("Canvas text", "Enter overlay text");
-              if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
-            }),
-            _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
-            _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
-            _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
-              if (initialized) {
-                await splitVideoAt(currentVideoIndex, _controller.value.position);
-              }
-            }),
-            _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
-              setState(() {
-                _isCropping = true;
-                _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
-              });
-            }),
-            _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
-              setState(() {
-                _isSpeeding = true;
-                int idx = selectedClipIndex ?? currentVideoIndex;
-                if (idx >= 0 && idx < videoSpeeds.length) {
-                  _tempSpeed = videoSpeeds[idx];
-                } else {
-                  _tempSpeed = 1.0;
-                }
-              });
-            }),
-            _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
-              setState(() {
-                _isFiltering = true;
-              });
-            }),
-          ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_isCropping)
+           // Horizontal bar for crop actions could go here, but for now we follow portrait's overlay style if needed.
+           // However, landscape is tight, so we'll just show the main toolbar.
+           // Actually, let's include the crop/speed bars if active.
+           const SizedBox.shrink(), // placeholder if we want to add specific landscape overlays
+
+        if (_isSpeeding) _buildSpeedControlBar(),
+
+        Container(
+          padding: EdgeInsets.symmetric(vertical: 12.h),
+          color: Colors.transparent,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                 _actionIcon(Icons.crop_free_rounded, "Canvas", onTap: () async {
+                  final txt = await _inputDialog("Canvas text", "Enter overlay text");
+                  if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
+                }),
+                _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
+                _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
+                _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
+                  if (initialized) {
+                    await splitVideoAt(currentVideoIndex, _controller.value.position);
+                  }
+                }),
+                _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
+                  setState(() {
+                    _isCropping = !_isCropping;
+                    if (_isCropping) {
+                      _isFiltering = false;
+                      _isSpeeding = false;
+                      _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
+                    }
+                  });
+                }, isActive: _isCropping),
+                _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
+                  setState(() {
+                    _isSpeeding = !_isSpeeding;
+                    if (_isSpeeding) {
+                      _isFiltering = false;
+                      _isCropping = false;
+                      int idx = selectedClipIndex ?? currentVideoIndex;
+                      if (idx >= 0 && idx < videoSpeeds.length) {
+                        _tempSpeed = videoSpeeds[idx];
+                      } else {
+                        _tempSpeed = 1.0;
+                      }
+                    }
+                  });
+                }, isActive: _isSpeeding),
+                _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
+                  setState(() {
+                    _isFiltering = !_isFiltering;
+                    if (_isFiltering) {
+                      _isCropping = false;
+                      _isSpeeding = false;
+                    }
+                  });
+                }, isActive: _isFiltering),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -1931,86 +1965,99 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildBottomActionBar() {
-    if (_isCropping) {
-      return Container(
-        color: Colors.white,
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () => setState(() => _isCropping = false),
-              child: Text("Cancel", style: TextStyle(color: Colors.black54, fontSize: 16.sp)),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_isCropping)
+          Container(
+            color: Colors.white,
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () => setState(() => _isCropping = false),
+                  child: Text("Cancel", style: TextStyle(color: Colors.black54, fontSize: 16.sp)),
+                ),
+                Text("Crop Video", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
+                ElevatedButton(
+                  onPressed: () async {
+                    final size = _controller.value.size;
+                    int x = (_cropRect.left * size.width).toInt();
+                    int y = (_cropRect.top * size.height).toInt();
+                    int w = (_cropRect.width * size.width).toInt();
+                    int h = (_cropRect.height * size.height).toInt();
+                    
+                    setState(() => _isCropping = false);
+                    await cropVideo(x: x, y: y, w: w, h: h);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                  child: const Text("Done"),
+                ),
+              ],
             ),
-            Text("Crop Video", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
-            ElevatedButton(
-              onPressed: () async {
-                // Calculate pixel values
-                final size = _controller.value.size;
-                int x = (_cropRect.left * size.width).toInt();
-                int y = (_cropRect.top * size.height).toInt();
-                int w = (_cropRect.width * size.width).toInt();
-                int h = (_cropRect.height * size.height).toInt();
-                
-                setState(() => _isCropping = false);
-                await cropVideo(x: x, y: y, w: w, h: h);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-              child: const Text("Done"),
+          ),
+
+        if (_isSpeeding) _buildSpeedControlBar(),
+
+        Container(
+          color: Colors.white,
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                _actionIcon(Icons.crop_free_rounded, "Canvas", onTap: () async {
+                  final txt = await _inputDialog("Canvas text", "Enter overlay text");
+                  if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
+                }),
+                _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
+                _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
+                _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
+                  if (initialized) {
+                    await splitVideoAt(currentVideoIndex, _controller.value.position);
+                  }
+                }),
+                _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
+                   setState(() {
+                     _isCropping = !_isCropping;
+                     if (_isCropping) {
+                       _isFiltering = false;
+                       _isSpeeding = false;
+                       _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
+                     }
+                   });
+                }, isActive: _isCropping),
+                _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
+                  setState(() {
+                    _isSpeeding = !_isSpeeding;
+                    if (_isSpeeding) {
+                      _isFiltering = false;
+                      _isCropping = false;
+                      int idx = selectedClipIndex ?? currentVideoIndex;
+                      if (idx >= 0 && idx < videoSpeeds.length) {
+                        _tempSpeed = videoSpeeds[idx];
+                      } else {
+                        _tempSpeed = 1.0;
+                      }
+                    }
+                  });
+                }, isActive: _isSpeeding),
+                _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
+                  setState(() {
+                    _isFiltering = !_isFiltering;
+                    if (_isFiltering) {
+                      _isCropping = false;
+                      _isSpeeding = false;
+                    }
+                  });
+                }, isActive: _isFiltering),
+              ],
             ),
-          ],
+          ),
         ),
-      );
-    }
-
-    if (_isSpeeding) {
-      return _buildSpeedControlBar();
-    }
-
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: [
-            _actionIcon(Icons.crop_free_rounded, "Canvas", onTap: () async {
-              final txt = await _inputDialog("Canvas text", "Enter overlay text");
-              if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
-            }),
-            _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
-            _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
-            _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
-              if (initialized) {
-                await splitVideoAt(currentVideoIndex, _controller.value.position);
-              }
-            }),
-            _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
-               setState(() {
-                 _isCropping = true;
-                 _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
-               });
-            }),
-            _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
-              setState(() {
-                _isSpeeding = true;
-                int idx = selectedClipIndex ?? currentVideoIndex;
-                if (idx >= 0 && idx < videoSpeeds.length) {
-                  _tempSpeed = videoSpeeds[idx];
-                } else {
-                  _tempSpeed = 1.0;
-                }
-              });
-            }),
-            _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
-              setState(() {
-                _isFiltering = true;
-              });
-            }),
-          ],
-        ),
-      ),
+      ],
     );
   }
 
@@ -2378,18 +2425,22 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     );
   }
 
-  Widget _actionCustomIcon(String assetPath, String label, {VoidCallback? onTap}) {
+  Widget _actionCustomIcon(String assetPath, String label, {VoidCallback? onTap, bool isActive = false}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12.w),
         child: Column(
           children: [
-            Image.asset(assetPath, width: 24.r, height: 24.r, color: Colors.black54),
+            Image.asset(assetPath, width: 24.r, height: 24.r, color: isActive ? Colors.black : Colors.black54),
             SizedBox(height: 4.h),
             Text(
               label,
-              style: TextStyle(fontSize: 9.sp, color: Colors.black54),
+              style: TextStyle(
+                fontSize: 9.sp, 
+                color: isActive ? Colors.black : Colors.black54,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              ),
             ),
           ],
         ),
@@ -2397,18 +2448,22 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     );
   }
 
-  Widget _actionIcon(IconData icon, String label, {VoidCallback? onTap}) {
+  Widget _actionIcon(IconData icon, String label, {VoidCallback? onTap, bool isActive = false}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12.w),
         child: Column(
           children: [
-            Icon(icon, color: Colors.black54, size: 24.r),
+            Icon(icon, color: isActive ? Colors.black : Colors.black54, size: 24.r),
             SizedBox(height: 4.h),
             Text(
               label,
-              style: TextStyle(fontSize: 9.sp, color: Colors.black54),
+              style: TextStyle(
+                fontSize: 9.sp, 
+                color: isActive ? Colors.black : Colors.black54,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              ),
             ),
           ],
         ),
