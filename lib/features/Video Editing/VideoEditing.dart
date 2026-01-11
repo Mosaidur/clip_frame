@@ -90,6 +90,12 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   double _tempSpeed = 1.0;
   int? _lastFFmpegRC;
 
+  // New: Filtering State
+  bool _isFiltering = false;
+  String _selectedFilterCategory = "Trending";
+  int _selectedFilterIndex = 1; // "VINTAGE" from the image
+  double _filterIntensity = 0.5;
+
   @override
   void initState() {
     super.initState();
@@ -950,31 +956,37 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         // Video Player Area (Expanded)
         _buildVideoPlayerSection(),
 
-        // Control Bar (Sandy)
-        _buildControlBar(),
+        // Only show controls and timeline if not filtering
+        if (!_isFiltering) ...[
+          // Control Bar (Sandy)
+          _buildControlBar(),
 
-        // Timeline & Save Button (Lavender)
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFE1D5FF),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30.r),
-              topRight: Radius.circular(30.r),
+          // Timeline & Save Button (Lavender)
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFE1D5FF),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30.r),
+                topRight: Radius.circular(30.r),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTimelineSection(),
+                SizedBox(height: 5.h),
+                _buildSaveButton(),
+                SizedBox(height: 10.h),
+              ],
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTimelineSection(),
-              SizedBox(height: 5.h),
-              _buildSaveButton(),
-              SizedBox(height: 10.h),
-            ],
-          ),
-        ),
+        ],
 
         // Editing Tools (Bottom)
-        _buildBottomActionBar(),
+        if (_isFiltering)
+          _buildFilterBottomSheet()
+        else
+          _buildBottomActionBar(),
       ],
     );
   }
@@ -1101,9 +1113,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 }
               });
             }),
-            _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () async {
-              final choice = await _filterChoiceDialog();
-              if (choice != null) await applyFilter(choice);
+            _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
+              setState(() {
+                _isFiltering = true;
+              });
             }),
           ],
         ),
@@ -1990,9 +2003,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 }
               });
             }),
-            _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () async {
-              final choice = await _filterChoiceDialog();
-              if (choice != null) await applyFilter(choice);
+            _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
+              setState(() {
+                _isFiltering = true;
+              });
             }),
           ],
         ),
@@ -2005,8 +2019,6 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     final double originalDuration = (idx >= 0 && idx < videoDurations.length) 
         ? videoDurations[idx].inMilliseconds / 1000.0 
         : 0.0;
-    // Note: The displayed "original" is actually the duration of the current file being edited.
-    // If it's already sped up, we might want to show the 'raw' original, but relative is safer UX.
     final double curSpeed = (idx >= 0 && idx < videoSpeeds.length) ? videoSpeeds[idx] : 1.0;
     final double newDuration = originalDuration / (_tempSpeed / curSpeed);
 
@@ -2019,7 +2031,6 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. Duration Preview (Duration 3.7s -> 1.9s)
           Row(
             children: [
               Text(
@@ -2034,11 +2045,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             ],
           ),
           SizedBox(height: 25.h),
-          
-          // 2. Custom Ruler Slider Area
           Stack(
             children: [
-              // Ruler Ticks
               Positioned.fill(
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12.w),
@@ -2047,11 +2055,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                   ),
                 ),
               ),
-              // The Actual Slider
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  trackHeight: 0, // Hide default track
-                  thumbColor: Colors.transparent, // Handle custom thumb below
+                  trackHeight: 0,
+                  thumbColor: Colors.transparent,
                   overlayColor: Colors.black12,
                   thumbShape: _CustomSliderThumbShape(color: accentColor),
                 ),
@@ -2072,8 +2079,6 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               ),
             ],
           ),
-          
-          // 3. Slider Labels
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 12.w),
             child: Row(
@@ -2087,10 +2092,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               ],
             ),
           ),
-          
           SizedBox(height: 15.h),
-          
-          // 4. "Make it smoother" pill (Decorative)
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             decoration: BoxDecoration(
@@ -2102,10 +2104,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               style: TextStyle(color: accentColor.withOpacity(0.5), fontSize: 12.sp),
             ),
           ),
-          
           SizedBox(height: 20.h),
-          
-          // 5. Bottom Action Bar
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -2136,11 +2135,226 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     );
   }
 
+  Widget _buildFilterBottomSheet() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5DAFB),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30.r),
+          topRight: Radius.circular(30.r),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildFilterHeader(),
+          SizedBox(height: 12.h), // Reduced from 20
+          _buildFilterCategories(),
+          SizedBox(height: 12.h), // Reduced from 20
+          _buildFilterPreviews(),
+          SizedBox(height: 16.h), // Reduced from 30
+          _buildFilterIntensitySlider(),
+          SizedBox(height: 16.h), // Reduced from 30
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterHeader() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0D6B1),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30.r),
+          topRight: Radius.circular(30.r),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: Icon(Icons.close, color: Colors.black54, size: 24.r),
+            onPressed: () => setState(() => _isFiltering = false),
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.refresh_rounded, color: Colors.black54, size: 24.r),
+                onPressed: () {
+                  setState(() {
+                    _filterIntensity = 0.5;
+                    _selectedFilterIndex = 0;
+                  });
+                },
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                "Filter",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.sp,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: Icon(Icons.check, color: Colors.black54, size: 24.r),
+            onPressed: () => setState(() => _isFiltering = false),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterCategories() {
+    final categories = ["Movies", "Trending", "Glitch", "Weather", "Vintage"];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      child: Row(
+        children: categories.map((cat) {
+          bool isSelected = _selectedFilterCategory == cat;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedFilterCategory = cat),
+            child: Padding(
+              padding: EdgeInsets.only(right: 24.w),
+              child: Column(
+                children: [
+                  Text(
+                    cat,
+                    style: TextStyle(
+                      color: isSelected ? const Color(0xFFFF2D78) : Colors.black54,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 14.sp,
+                    ),
+                  ),
+                  if (isSelected)
+                    Container(
+                      margin: EdgeInsets.only(top: 4.h),
+                      width: 24.w,
+                      height: 3.h,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF2D78),
+                        borderRadius: BorderRadius.circular(2.r),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildFilterPreviews() {
+    final filters = [
+      {"name": "DUAL", "color": Colors.green},
+      {"name": "VINTAGE", "color": Colors.orange},
+      {"name": "NEON", "color": Colors.blue},
+      {"name": "FILM", "color": Colors.purple},
+      {"name": "GLITCH", "color": Colors.red},
+    ];
+
+    return SizedBox(
+      height: 90.h,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        itemCount: filters.length,
+        itemBuilder: (context, index) {
+          bool isSelected = _selectedFilterIndex == index;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedFilterIndex = index),
+            child: Container(
+              width: 70.w,
+              margin: EdgeInsets.only(right: 12.w),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8.r),
+                border: isSelected
+                    ? Border.all(color: const Color(0xFFFF2D78), width: 2.w)
+                    : null,
+                color: Colors.grey[300],
+              ),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Icon(Icons.image, color: Colors.white54, size: 24.r),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: filters[index]["color"] as Color,
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(6.r),
+                          bottomRight: Radius.circular(6.r),
+                        ),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 2.h),
+                      child: Text(
+                        filters[index]["name"] as String,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilterIntensitySlider() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: Row(
+        children: [
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 4.h,
+                activeTrackColor: const Color(0xFFFF2D78),
+                inactiveTrackColor: Colors.white,
+                thumbColor: const Color(0xFFFF2D78),
+                overlayColor: const Color(0xFFFF2D78).withOpacity(0.2),
+                thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8.r),
+                trackShape: const RectangularSliderTrackShape(),
+              ),
+              child: Slider(
+                value: _filterIntensity,
+                onChanged: (v) => setState(() => _filterIntensity = v),
+              ),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Text(
+            "${(_filterIntensity * 100).toInt()}%",
+            style: TextStyle(
+              color: const Color(0xFFFF2D78),
+              fontWeight: FontWeight.bold,
+              fontSize: 14.sp,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _markerLabel(String label) {
     return Text(label, style: TextStyle(color: Colors.black, fontSize: 11.sp, fontWeight: FontWeight.w500));
   }
-
-  // ... (Other helper widgets)
 
   Widget _speedTab(String label, {required bool isActive}) {
     return Column(
@@ -2202,11 +2416,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     );
   }
 
-  // --- Helper Dialogs ---
   Widget _toolTile(IconData icon, String label, {VoidCallback? onTap}) {
      return _actionIcon(icon, label, onTap: onTap);
   }
-
 
   Future<String?> _inputDialog(String title, String hint) async {
     String val = "";
