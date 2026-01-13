@@ -93,8 +93,71 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   // New: Filtering State
   bool _isFiltering = false;
   String _selectedFilterCategory = "Trending";
-  int _selectedFilterIndex = 1; // "VINTAGE" from the image
+  int _selectedFilterIndex = 0; // "NONE"
   double _filterIntensity = 0.5;
+  int _initialFilterIndex = 0;
+  double _initialFilterIntensity = 0.5;
+
+  // Filter Data
+  final Map<String, List<Map<String, dynamic>>> _filterCategories = {
+    "Trending": [
+      {"name": "NONE", "image": "assets/images/edit_photo.png"},
+      {"name": "DUAL", "image": "assets/images/1.jpg"},
+      {"name": "POP", "image": "assets/images/2.jpg"},
+      {"name": "NEON", "image": "assets/images/filter_img1.png"},
+      {"name": "FILM", "image": "assets/images/5.jpg"},
+      {"name": "GLOW", "image": "assets/images/filter_img2.png"},
+      {"name": "VIBE", "image": "assets/images/7.jpg"},
+      {"name": "MOOD", "image": "assets/images/8.jpg"},
+      {"name": "VINTAGE", "image": "assets/images/9.png"},
+      {"name": "SOFT", "image": "assets/images/1.jpg"},
+    ],
+    "Glitch": [
+      {"name": "GLITCH", "image": "assets/images/2.jpg"},
+      {"name": "RGB", "image": "assets/images/filter_img3.png"},
+      {"name": "SHIFT", "image": "assets/images/5.jpg"},
+      {"name": "ERROR", "image": "assets/images/filter_img4.png"},
+      {"name": "PIXEL", "image": "assets/images/7.jpg"},
+      {"name": "NOISE", "image": "assets/images/8.jpg"},
+      {"name": "WARP", "image": "assets/images/9.png"},
+    ],
+    "Weather": [
+      {"name": "SUN", "image": "assets/images/1.jpg"},
+      {"name": "WARM", "image": "assets/images/2.jpg"},
+      {"name": "COOL", "image": "assets/images/3.jpg"},
+      {"name": "FOG", "image": "assets/images/5.jpg"},
+      {"name": "RAIN", "image": "assets/images/6.jpg"},
+      {"name": "SNOW", "image": "assets/images/7.jpg"},
+      {"name": "DUST", "image": "assets/images/8.jpg"},
+    ],
+    "Vintage": [
+      {"name": "VINT", "image": "assets/images/9.png"},
+      {"name": "SEPIA", "image": "assets/images/1.jpg"},
+      {"name": "RETRO", "image": "assets/images/2.jpg"},
+      {"name": "FADE", "image": "assets/images/3.jpg"},
+      {"name": "OLD", "image": "assets/images/5.jpg"},
+      {"name": "FILM2", "image": "assets/images/6.jpg"},
+      {"name": "BROWN", "image": "assets/images/7.jpg"},
+    ],
+    "Color / Pop": [
+      {"name": "POP2", "image": "assets/images/8.jpg"},
+      {"name": "BRIGHT", "image": "assets/images/9.png"},
+      {"name": "SAT", "image": "assets/images/1.jpg"},
+      {"name": "PASTEL", "image": "assets/images/filter_img5.png"},
+      {"name": "FRESH", "image": "assets/images/3.jpg"},
+      {"name": "BOOST", "image": "assets/images/5.jpg"},
+      {"name": "JUICY", "image": "assets/images/6.jpg"},
+    ],
+    "Moody": [
+      {"name": "DARK", "image": "assets/images/7.jpg"},
+      {"name": "SHADOW", "image": "assets/images/8.jpg"},
+      {"name": "NIGHT", "image": "assets/images/9.png"},
+      {"name": "BLUE", "image": "assets/images/1.jpg"},
+      {"name": "LOW", "image": "assets/images/2.jpg"},
+      {"name": "DEEP", "image": "assets/images/3.jpg"},
+      {"name": "SAD", "image": "assets/images/5.jpg"},
+    ],
+  };
 
   @override
   void initState() {
@@ -688,44 +751,544 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     }
   }
 
-  // 4) Apply simple filter (grayscale, sepia, negate)
-  Future<void> applyFilter(String name) async {
+  // 4) Apply filter (By global index)
+  Future<void> applyFilter(int filterIndex, double intensity) async {
     if (currentFile == null) return;
     final before = currentFile!;
-    final out = await _tempFilePath("_filter.mp4");
-    String vf;
+    final out = await _tempFilePath("_filter_${DateTime.now().millisecondsSinceEpoch}.mp4");
+
+    String vf = "";
+    final String name = _getFilterNameOfIndex(filterIndex);
+
+    // Map our real-time matrices to FFmpeg filters as closely as possible
     switch (name) {
-      case 'grayscale':
-        vf = 'hue=s=0';
+      // --- Trending ---
+      case "DUAL":
+        vf = 'eq=contrast=${1.0 + (0.3 * intensity)}:brightness=${0.05 * intensity}:saturation=${1.2 * intensity},hue=h=0:s=${1.0 + (0.2 * intensity)}';
         break;
-      case 'sepia':
-      // approximate sepia using colorchannelmixer
+      case "POP":
+        vf = 'eq=contrast=${1.2 * intensity}:saturation=${1.4 * intensity}:brightness=${0.05 * intensity}';
+        break;
+      case "NEON":
+        vf = 'hue=h=${interpolation(0, 90, intensity)}:s=${1.0 + intensity}';
+        break;
+      case "FILM":
+        vf = 'eq=contrast=${1.1 * intensity}:saturation=${0.9 * intensity}:gamma=${0.9 * intensity},hue=s=${0.8 * intensity}';
+        break;
+      case "GLOW":
+        vf = 'eq=brightness=${0.2 * intensity}:contrast=${0.8 * intensity},unsharp=5:5:1.0:5:5:0.0';
+        break;
+      case "VIBE":
+        vf = 'eq=contrast=${1.1 * intensity}:saturation=${1.1 * intensity}:gamma=${0.9 * intensity}';
+        break;
+      case "MOOD":
+        vf = 'eq=brightness=${-0.05 * intensity}:saturation=${0.9 * intensity}:gamma=${1.1 * intensity}';
+        break;
+      case "VINTAGE":
+      case "VINT":
+        vf = 'colorchannelmixer=${0.393 * intensity + (1-intensity)}:${0.769 * intensity}:${0.189 * intensity}:0:${0.349 * intensity}:${0.686 * intensity + (1-intensity)}:${0.168 * intensity}:0:${0.272 * intensity}:${0.534 * intensity}:${0.131 * intensity + (1-intensity)}';
+        break;
+      case "SOFT":
+        vf = 'eq=brightness=${0.05 * intensity}:contrast=${0.9 * intensity},boxblur=2:1';
+        break;
+
+      // --- Glitch ---
+      case "GLITCH":
+        vf = 'negate,hue=h=180:s=2';
+        break;
+      case "RGB":
+        vf = 'lutrgb=r=val*${1.0 + 0.2 * intensity}:g=val*${1.0 - 0.1 * intensity}:b=val*${1.0 + 0.1 * intensity}';
+        break;
+      case "SHIFT":
+        vf = 'chromashift=cbh=${20 * intensity}:crv=${20 * intensity}';
+        break;
+      case "ERROR":
+        vf = 'negate,eq=contrast=${2.0 * intensity}:brightness=${-0.1 * intensity}';
+        break;
+      case "PIXEL":
+        vf = 'scale=${(200 / intensity).toInt()}:-1,scale=iw:ih:flags=neighbor';
+        break;
+      case "NOISE":
+        vf = 'noise=alls=${(30 * intensity).toInt()}:allf=t+u';
+        break;
+      case "WARP":
+        vf = 'vignette=angle=${0.5 * intensity},lenscorrection=k1=${0.1 * intensity}:k2=${0.1 * intensity}';
+        break;
+
+      // --- Weather ---
+      case "SUN":
+        vf = 'eq=brightness=${0.1 * intensity}:contrast=${1.1 * intensity},hue=h=0:s=${1.2 * intensity}';
+        break;
+      case "WARM":
+        vf = 'eq=brightness=${0.05 * intensity},hue=h=30:s=${1.1 * intensity}';
+        break;
+      case "COOL":
+        vf = 'hue=h=200:s=${1.0 + 0.3 * intensity}';
+        break;
+      case "FOG":
+        vf = 'eq=contrast=${0.7 * intensity}:brightness=${0.2 * intensity}';
+        break;
+      case "RAIN":
+        vf = 'eq=brightness=${-0.1 * intensity}:contrast=${0.9 * intensity}:saturation=${0.6 * intensity},hue=h=210';
+        break;
+      case "SNOW":
+        vf = 'eq=brightness=${0.2 * intensity}:contrast=${1.1 * intensity}:saturation=${0.5 * intensity}';
+        break;
+      case "DUST":
+        vf = 'eq=contrast=${0.8 * intensity}:brightness=${0.1 * intensity},hue=s=${0.7 * intensity}';
+        break;
+
+      // --- Vintage ---
+      case "SEPIA":
         vf = 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131';
         break;
-      case 'negate':
-        vf = 'negate';
+      case "RETRO":
+        vf = 'curves=vintage,eq=saturation=${0.8 * intensity}';
         break;
+      case "FADE":
+        vf = 'eq=contrast=${0.8 * intensity}:brightness=${0.1 * intensity},hue=s=${0.8 * intensity}';
+        break;
+      case "OLD":
+        vf = 'noise=alls=${(20 * intensity).toInt()}:allf=t,eq=saturation=${0.5 * intensity}';
+        break;
+      case "FILM2":
+        vf = 'curves=film,eq=contrast=${1.1 * intensity}';
+        break;
+      case "BROWN":
+        vf = 'colorchannelmixer=1:0:0:0:0:0.9:0:0:0:0:0.8,eq=brightness=${0.05 * intensity}';
+        break;
+
+      // --- Color / Pop ---
+      case "POP2":
+        vf = 'eq=saturation=${1.8 * intensity}:contrast=${1.2 * intensity}';
+        break;
+      case "BRIGHT":
+        vf = 'eq=brightness=${0.3 * intensity}';
+        break;
+      case "SAT":
+        vf = 'eq=saturation=${2.0 * intensity}';
+        break;
+      case "PASTEL":
+        vf = 'eq=brightness=${0.2 * intensity}:saturation=${0.5 * intensity}:contrast=${0.8 * intensity}';
+        break;
+      case "FRESH":
+        vf = 'eq=saturation=${1.2 * intensity},hue=h=120:s=${1.1 * intensity}';
+        break;
+      case "BOOST":
+        vf = 'eq=contrast=${1.5 * intensity}:saturation=${1.2 * intensity}';
+        break;
+      case "JUICY":
+        vf = 'eq=saturation=${1.6 * intensity},hue=h=0:s=${1.3 * intensity}';
+        break;
+
+      // --- Moody ---
+      case "DARK":
+        vf = 'eq=brightness=${-0.2 * intensity}:saturation=${0.7 * intensity}';
+        break;
+      case "SHADOW":
+        vf = 'eq=gamma=0.7:contrast=${1.3 * intensity}';
+        break;
+      case "NIGHT":
+        vf = 'hue=h=240:s=${0.6 * intensity},eq=brightness=${-0.1 * intensity}:contrast=${1.2 * intensity}';
+        break;
+      case "BLUE":
+        vf = 'hue=h=220:s=${1.2 * intensity},eq=brightness=${-0.05 * intensity}';
+        break;
+      case "LOW":
+        vf = 'eq=brightness=${-0.4 * intensity}:contrast=${0.8 * intensity}';
+        break;
+      case "DEEP":
+        vf = 'eq=contrast=${1.6 * intensity}:gamma=0.8';
+        break;
+      case "SAD":
+        vf = 'eq=saturation=${0.4 * intensity}:brightness=${-0.05 * intensity}:contrast=${0.9 * intensity}';
+        break;
+
       default:
         vf = '';
     }
+
+    if (vf.isEmpty && name != "NONE") {
+       return;
+    }
+
     final cmd = vf.isEmpty
-        ? '-i "${before.path}" -c copy "$out"'
-        : '-i "${before.path}" -vf "$vf" -c:a copy "$out"';
+        ? '-i "${before.path}" -c copy -y "$out"'
+        : '-i "${before.path}" -vf "$vf" -c:v libx264 -preset ultrafast -c:a copy -y "$out"';
+
     setState(() => isExporting = true);
     final res = await _runFFmpeg(cmd, out);
     setState(() => isExporting = false);
+
     if (res != null) {
       final afterFile = File(res);
       _pushHistory(EditAction(
         type: EditType.filter,
-        description: "Filter $name",
+        description: "Filter $name applied with intensity $intensity",
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
-      // No duration change for filter usually, but kept for consistency
-      setState(() => videoList[currentVideoIndex] = afterFile);
-      await _setCurrentFile(afterFile, currentVideoIndex);
+      
+      setState(() {
+         videoList[currentVideoIndex] = afterFile;
+         if (currentVideoIndex < videoThumbnails.length) videoThumbnails[currentVideoIndex] = null;
+         if (currentVideoIndex < videoFilmstrips.length) videoFilmstrips[currentVideoIndex] = [];
+      });
+
+      await _setCurrentFile(afterFile, currentVideoIndex, play: false);
       _generateThumbnail(afterFile, currentVideoIndex);
+      _generateFilmstrip(afterFile, currentVideoIndex);
+    }
+  }
+
+  double interpolation(double start, double end, double t) {
+    return start + (end - start) * t;
+  }
+
+  List<double> _getInterpolatedFilterMatrix() {
+    final List<double> identity = [
+      1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 0.0, 1.0, 0.0,
+    ];
+
+    if (_selectedFilterIndex == 0) return identity;
+
+    final target = _getFilterMatrix(_selectedFilterIndex);
+    final result = List<double>.filled(20, 0.0);
+    
+    for (int i = 0; i < 20; i++) {
+      result[i] = identity[i] + (target[i] - identity[i]) * _filterIntensity;
+    }
+    
+    return result;
+  }
+
+  List<double> _getFilterMatrix(int index) {
+    final String name = _getFilterNameOfIndex(index);
+    switch (name) {
+      // --- Trending ---
+      case "DUAL":
+        return [
+          1.2, 0.1, 0.1, 0.0, 0.0,
+          0.1, 1.1, 0.1, 0.0, 0.0,
+          0.1, 0.1, 1.5, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "POP":
+        return [
+          1.5, 0.0, 0.0, 0.0, 0.0,
+          0.0, 1.3, 0.0, 0.0, 0.0,
+          0.0, 0.0, 1.2, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "NEON":
+        return [
+          1.5, 0.0, 0.0, 0.0, 0.0,
+          0.0, 0.0, 1.5, 0.0, 0.0,
+          0.0, 1.5, 0.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "FILM":
+        return [
+          0.9, 0.2, 0.0, 0.0, 0.0,
+          0.1, 0.9, 0.1, 0.0, 0.0,
+          0.0, 0.2, 0.8, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "GLOW":
+        return [
+          1.0, 0.0, 0.0, 0.0, 40.0,
+          0.0, 1.0, 0.0, 0.0, 40.0,
+          0.0, 0.0, 1.0, 0.0, 40.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "VIBE":
+        return [
+          1.1, 0.0, 0.0, 0.0, 10.0,
+          0.0, 1.0, 0.0, 0.0, 0.0,
+          0.0, 0.0, 0.9, 0.0, -10.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "MOOD":
+        return [
+          0.9, 0.0, 0.0, 0.0, -10.0,
+          0.0, 1.0, 0.0, 0.0, 0.0,
+          0.0, 0.0, 1.1, 0.0, 10.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "VINTAGE":
+      case "VINT":
+        return [
+          0.393, 0.769, 0.189, 0.0, 0.0,
+          0.349, 0.686, 0.168, 0.0, 0.0,
+          0.272, 0.534, 0.131, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "SOFT":
+        return [
+          1.0, 0.4, 0.4, 0.0, 0.0,
+          0.4, 1.0, 0.4, 0.0, 0.0,
+          0.4, 0.4, 1.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+
+      // --- Glitch ---
+      case "GLITCH":
+        return [
+          -1.0, 0.0, 0.0, 0.0, 255.0,
+          0.0, 1.0, 0.0, 0.0, 0.0,
+          0.0, 0.0, -1.0, 0.0, 255.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "RGB":
+        return [
+          1.0, 0.5, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.5, 0.0, 0.0,
+          0.5, 0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "SHIFT":
+        return [
+          1.0, 0.0, 0.2, 0.0, 0.0,
+          0.2, 1.0, 0.0, 0.0, 0.0,
+          0.0, 0.2, 1.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "ERROR":
+        return [
+          -1.0, -1.0, -1.0, 0.0, 255.0,
+          -1.0, -1.0, -1.0, 0.0, 255.0,
+          -1.0, -1.0, -1.0, 0.0, 255.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "PIXEL":
+        return [
+          1.0, 0.2, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.2, 0.0, 0.0,
+          0.2, 0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "NOISE":
+        return [
+          1.0, 0.0, 0.0, 0.0, 20.0,
+          0.0, 1.0, 0.0, 0.0, 20.0,
+          0.0, 0.0, 1.0, 0.0, 20.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "WARP":
+        return [
+          1.5, -0.5, 0.0, 0.0, 0.0,
+          0.0, 1.5, -0.5, 0.0, 0.0,
+          -0.5, 0.0, 1.5, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+
+      // --- Weather ---
+      case "SUN":
+        return [
+          1.1, 0.0, 0.0, 0.0, 30.0,
+          0.0, 1.0, 0.0, 0.0, 20.0,
+          0.0, 0.0, 0.9, 0.0, -10.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "WARM":
+        return [
+          1.2, 0.0, 0.0, 0.0, 20.0,
+          0.0, 1.1, 0.0, 0.0, 10.0,
+          0.0, 0.0, 0.9, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "COOL":
+        return [
+          0.9, 0.0, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.0, 0.0, 10.0,
+          0.0, 0.0, 1.2, 0.0, 20.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "FOG":
+        return [
+          0.8, 0.0, 0.0, 0.0, 50.0,
+          0.0, 0.8, 0.0, 0.0, 50.0,
+          0.0, 0.0, 0.8, 0.0, 50.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "RAIN":
+        return [
+          0.7, 0.0, 0.0, 0.0, 10.0,
+          0.0, 0.7, 0.0, 0.0, 10.0,
+          0.0, 0.0, 0.9, 0.0, 30.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "SNOW":
+        return [
+          1.2, 0.0, 0.0, 0.0, 40.0,
+          0.0, 1.2, 0.0, 0.0, 40.0,
+          0.0, 0.0, 1.3, 0.0, 50.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "DUST":
+        return [
+          1.0, 0.2, 0.2, 0.0, 10.0,
+          0.2, 1.0, 0.2, 0.0, 10.0,
+          0.2, 0.2, 0.8, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+
+      // --- Vintage ---
+      case "SEPIA":
+        return [
+          0.393, 0.769, 0.189, 0.0, 0.0,
+          0.349, 0.686, 0.168, 0.0, 0.0,
+          0.272, 0.534, 0.131, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "RETRO":
+        return [
+          1.0, 0.0, 0.0, 0.0, 30.0,
+          0.0, 0.8, 0.0, 0.0, 0.0,
+          0.0, 0.0, 1.2, 0.0, -20.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "FADE":
+        return [
+          0.9, 0.1, 0.1, 0.0, 20.0,
+          0.1, 0.9, 0.1, 0.0, 20.0,
+          0.1, 0.1, 0.9, 0.0, 20.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "OLD":
+        return [
+          0.7, 0.2, 0.1, 0.0, 30.0,
+          0.2, 0.7, 0.1, 0.0, 30.0,
+          0.1, 0.1, 0.7, 0.0, 30.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "FILM2":
+        return [
+          1.1, 0.1, -0.1, 0.0, 0.0,
+          0.0, 1.0, 0.0, 0.0, 0.0,
+          -0.1, 0.1, 1.1, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "BROWN":
+        return [
+          1.0, 0.0, 0.0, 0.0, 30.0,
+          0.0, 0.9, 0.0, 0.0, 15.0,
+          0.0, 0.0, 0.8, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+
+      // --- Color / Pop ---
+      case "POP2":
+        return [
+          1.6, -0.1, -0.1, 0.0, 0.0,
+          -0.1, 1.6, -0.1, 0.0, 0.0,
+          -0.1, -0.1, 1.6, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "BRIGHT":
+        return [
+          1.0, 0.0, 0.0, 0.0, 50.0,
+          0.0, 1.0, 0.0, 0.0, 50.0,
+          0.0, 0.0, 1.0, 0.0, 50.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "SAT":
+        return [
+          1.3, -0.15, -0.15, 0.0, 0.0,
+          -0.15, 1.3, -0.15, 0.0, 0.0,
+          -0.15, -0.15, 1.3, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "PASTEL":
+        return [
+          0.8, 0.1, 0.1, 0.0, 60.0,
+          0.1, 0.8, 0.1, 0.0, 60.0,
+          0.1, 0.1, 0.8, 0.0, 60.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "FRESH":
+        return [
+          1.0, 0.0, 0.0, 0.0, 0.0,
+          0.0, 1.2, 0.0, 0.0, 10.0,
+          0.0, 0.0, 1.2, 0.0, 10.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "BOOST":
+        return [
+          1.4, 0.0, 0.0, 0.0, -20.0,
+          0.0, 1.4, 0.0, 0.0, -20.0,
+          0.0, 0.0, 1.4, 0.0, -20.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "JUICY":
+        return [
+          1.5, 0.0, 0.0, 0.0, 20.0,
+          0.0, 1.2, 0.0, 0.0, 0.0,
+          0.0, 0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+
+      // --- Moody ---
+      case "DARK":
+        return [
+          0.6, 0.0, 0.0, 0.0, 0.0,
+          0.0, 0.6, 0.0, 0.0, 0.0,
+          0.0, 0.0, 0.6, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "SHADOW":
+        return [
+          1.2, 0.0, 0.0, 0.0, -50.0,
+          0.0, 1.2, 0.0, 0.0, -50.0,
+          0.0, 0.0, 1.2, 0.0, -50.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "NIGHT":
+        return [
+          0.5, 0.0, 0.0, 0.0, -20.0,
+          0.0, 0.5, 0.0, 0.0, -20.0,
+          0.0, 0.0, 0.8, 0.0, 10.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "BLUE":
+        return [
+          0.7, 0.0, 0.0, 0.0, 0.0,
+          0.0, 0.7, 0.0, 0.0, 0.0,
+          0.0, 0.0, 1.1, 0.0, 30.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "LOW":
+        return [
+          0.4, 0.0, 0.0, 0.0, 0.0,
+          0.0, 0.4, 0.0, 0.0, 0.0,
+          0.0, 0.0, 0.4, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "DEEP":
+        return [
+          1.5, 0.0, 0.0, 0.0, -40.0,
+          0.0, 1.5, 0.0, 0.0, -40.0,
+          0.0, 0.0, 1.5, 0.0, -40.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+      case "SAD":
+        return [
+          0.5, 0.2, 0.1, 0.0, -10.0,
+          0.1, 0.5, 0.1, 0.0, -10.0,
+          0.1, 0.2, 0.5, 0.0, -10.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+
+      default:
+        return [
+          1.0, 0.0, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.0, 0.0, 0.0,
+          0.0, 0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
     }
   }
 
@@ -948,116 +1511,109 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildPortraitLayout() {
-    return Column(
-      children: [
-        // Top Section (Header + Clip List)
-        _buildTopSection(),
+  return Column(
+    children: [
+      // Top Section (Header + Clip List)
+      _buildTopSection(),
 
-        // Video Player Area (Expanded)
-        _buildVideoPlayerSection(),
+      // Video Player Area (Expanded)
+      _buildVideoPlayerSection(),
 
-        // Only show controls and timeline if no specialized tool is active
-        if (!_isFiltering && !_isSpeeding && !_isCropping) ...[
-          // Control Bar (Sandy)
-          _buildControlBar(),
-
-          // Timeline & Save Button (Lavender)
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFE1D5FF),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(30.r),
-                topRight: Radius.circular(30.r),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildTimelineSection(),
-                SizedBox(height: 5.h),
-                _buildSaveButton(),
-                SizedBox(height: 10.h),
-              ],
+      // Toggle timeline/speed/filter visibility
+      if (!_isFiltering && !_isSpeeding && !_isCropping) ...[
+        // Default View: Control Bar + Timeline + Save
+        _buildControlBar(),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFE1D5FF),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30.r),
+              topRight: Radius.circular(30.r),
             ),
           ),
-        ],
-
-        // Editing Tools (Bottom)
-        if (_isFiltering)
-          _buildFilterBottomSheet(),
-
-        _buildBottomActionBar(),
-      ],
-    );
-  }
-
-  Widget _buildLandscapeLayout() {
-    return Row(
-      children: [
-        // Left Column: Video Player and Timeline
-        Expanded(
-          flex: 3,
-          child: Container(
-            color: Colors.black,
-            child: Column(
-              children: [
-                Expanded(child: _buildVideoPlayerSection()),
-                if (!_isFiltering && !_isSpeeding && !_isCropping) ...[
-                  _buildControlBar(),
-                  Container(
-                    color: const Color(0xFFE1D5FF),
-                    padding: EdgeInsets.symmetric(vertical: 8.h),
-                    child: _buildTimelineSection(),
-                  ),
-                ],
-              ],
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildTimelineSection(),
+              SizedBox(height: 5.h),
+              _buildSaveButton(),
+              SizedBox(height: 10.h),
+            ],
           ),
         ),
-        // Vertical Divider
-        Container(width: 1.w, color: Colors.grey[300]),
-        // Right Column: Controls, clips, and tools
-        Expanded(
-          flex: 2,
-          child: Container(
-            color: const Color(0xFFF8E9D2),
-            child: Column(
-              children: [
-                // Condensed Header
-                _buildLandscapeHeader(),
-                // Video Clip List (Grid-like scroll)
-                if (!_isFiltering && !_isSpeeding && !_isCropping)
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.only(topLeft: Radius.circular(20.r)),
-                      ),
-                      child: _buildClipListView(isLandscape: true),
-                    ),
-                  )
-                else
-                   // Give space for specialized tools
-                   const Spacer(),
-                
-                // Active tool overlay (e.g. Filter)
-                if (_isFiltering) _buildFilterBottomSheet(),
+      ],
 
-                // Editing tools
-                _buildLandscapeTools(),
-                // Save Button
+      _buildBottomActionBar(), // This now handles internal visibility of Filter, Speed, and Crop sheets
+    ],
+  );
+}
+
+  Widget _buildLandscapeLayout() {
+  return Row(
+    children: [
+      // Left Column: Video Player and Timeline
+      Expanded(
+        flex: 3,
+        child: Container(
+          color: Colors.black,
+          child: Column(
+            children: [
+              Expanded(child: _buildVideoPlayerSection()),
+              if (!_isFiltering && !_isSpeeding && !_isCropping) ...[
+                _buildControlBar(),
+                Container(
+                  color: const Color(0xFFE1D5FF),
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                  child: _buildTimelineSection(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      // Vertical Divider
+      Container(width: 1.w, color: Colors.grey[300]),
+      // Right Column: Controls, clips, and tools
+      Expanded(
+        flex: 2,
+        child: Container(
+          color: const Color(0xFFF8E9D2),
+          child: Column(
+            children: [
+              // Condensed Header
+              _buildLandscapeHeader(),
+              
+              // Video Clip List (Grid-like scroll)
+              if (!_isFiltering && !_isSpeeding && !_isCropping)
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20.r)),
+                    ),
+                    child: _buildClipListView(isLandscape: true),
+                  ),
+                )
+              else
+                 const Spacer(),
+              
+              // Editing tools (Handles internal Filter, Speed, Crop sheets)
+              _buildLandscapeTools(),
+
+              // Save Button (Only if not in specialized mode to save vertical space in landscape)
+              if (!_isFiltering && !_isSpeeding && !_isCropping)
                 Container(
                   color: Colors.transparent,
                   padding: EdgeInsets.all(12.r),
                   child: _buildSaveButton(),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildLandscapeHeader() {
     return Padding(
@@ -1086,77 +1642,78 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildLandscapeTools() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_isCropping)
-           // Horizontal bar for crop actions could go here, but for now we follow portrait's overlay style if needed.
-           // However, landscape is tight, so we'll just show the main toolbar.
-           // Actually, let's include the crop/speed bars if active.
-           const SizedBox.shrink(), // placeholder if we want to add specific landscape overlays
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (_isCropping)
+         const SizedBox.shrink(), 
 
-        if (_isSpeeding) _buildSpeedControlBar(),
+      if (_isSpeeding) _buildSpeedControlBar(),
 
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 12.h),
-          color: Colors.transparent,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                 _actionIcon(Icons.crop_free_rounded, "Canvas", onTap: () async {
-                  final txt = await _inputDialog("Canvas text", "Enter overlay text");
-                  if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
-                }),
-                _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
-                _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
-                _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
-                  if (initialized) {
-                    await splitVideoAt(currentVideoIndex, _controller.value.position);
+      if (_isFiltering) _buildFilterBottomSheet(),
+
+      Container(
+        padding: EdgeInsets.symmetric(vertical: 12.h),
+        color: Colors.transparent,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: [
+               _actionIcon(Icons.crop_free_rounded, "Canvas", onTap: () async {
+                final txt = await _inputDialog("Canvas text", "Enter overlay text");
+                if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
+              }),
+              _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
+              _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
+              _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
+                if (initialized) {
+                  await splitVideoAt(currentVideoIndex, _controller.value.position);
+                }
+              }),
+              _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
+                setState(() {
+                  _isCropping = !_isCropping;
+                  if (_isCropping) {
+                    _isFiltering = false;
+                    _isSpeeding = false;
+                    _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
                   }
-                }),
-                _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
-                  setState(() {
-                    _isCropping = !_isCropping;
-                    if (_isCropping) {
-                      _isFiltering = false;
-                      _isSpeeding = false;
-                      _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
+                });
+              }, isActive: _isCropping),
+              _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
+                setState(() {
+                  _isSpeeding = !_isSpeeding;
+                  if (_isSpeeding) {
+                    _isFiltering = false;
+                    _isCropping = false;
+                    int idx = selectedClipIndex ?? currentVideoIndex;
+                    if (idx >= 0 && idx < videoSpeeds.length) {
+                      _tempSpeed = videoSpeeds[idx];
+                    } else {
+                      _tempSpeed = 1.0;
                     }
-                  });
-                }, isActive: _isCropping),
-                _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
-                  setState(() {
-                    _isSpeeding = !_isSpeeding;
-                    if (_isSpeeding) {
-                      _isFiltering = false;
-                      _isCropping = false;
-                      int idx = selectedClipIndex ?? currentVideoIndex;
-                      if (idx >= 0 && idx < videoSpeeds.length) {
-                        _tempSpeed = videoSpeeds[idx];
-                      } else {
-                        _tempSpeed = 1.0;
-                      }
-                    }
-                  });
-                }, isActive: _isSpeeding),
-                _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
-                  setState(() {
-                    _isFiltering = !_isFiltering;
-                    if (_isFiltering) {
-                      _isCropping = false;
-                      _isSpeeding = false;
-                    }
-                  });
-                }, isActive: _isFiltering),
-              ],
-            ),
+                  }
+                });
+              }, isActive: _isSpeeding),
+              _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
+                setState(() {
+                  _isFiltering = !_isFiltering;
+                  if (_isFiltering) {
+                    _isCropping = false;
+                    _isSpeeding = false;
+                    _initialFilterIndex = _selectedFilterIndex;
+                    _initialFilterIntensity = _filterIntensity;
+                  }
+                });
+              }, isActive: _isFiltering),
+            ],
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildTopSection() {
     return Container(
@@ -1293,7 +1850,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                   aspectRatio: _controller.value.aspectRatio,
                   child: Stack(
                     children: [
-                      VideoPlayer(_controller),
+                      ColorFiltered(
+                        colorFilter: ColorFilter.matrix(_getInterpolatedFilterMatrix()),
+                        child: VideoPlayer(_controller),
+                      ),
                       if (_isCropping) _buildCropOverlay(),
                     ],
                   ),
@@ -1965,101 +2525,105 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildBottomActionBar() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_isCropping)
-          Container(
-            color: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () => setState(() => _isCropping = false),
-                  child: Text("Cancel", style: TextStyle(color: Colors.black54, fontSize: 16.sp)),
-                ),
-                Text("Crop Video", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
-                ElevatedButton(
-                  onPressed: () async {
-                    final size = _controller.value.size;
-                    int x = (_cropRect.left * size.width).toInt();
-                    int y = (_cropRect.top * size.height).toInt();
-                    int w = (_cropRect.width * size.width).toInt();
-                    int h = (_cropRect.height * size.height).toInt();
-                    
-                    setState(() => _isCropping = false);
-                    await cropVideo(x: x, y: y, w: w, h: h);
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-                  child: const Text("Done"),
-                ),
-              ],
-            ),
-          ),
-
-        if (_isSpeeding) _buildSpeedControlBar(),
-
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (_isCropping)
         Container(
           color: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                _actionIcon(Icons.crop_free_rounded, "Canvas", onTap: () async {
-                  final txt = await _inputDialog("Canvas text", "Enter overlay text");
-                  if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
-                }),
-                _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
-                _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
-                _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
-                  if (initialized) {
-                    await splitVideoAt(currentVideoIndex, _controller.value.position);
-                  }
-                }),
-                _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
-                   setState(() {
-                     _isCropping = !_isCropping;
-                     if (_isCropping) {
-                       _isFiltering = false;
-                       _isSpeeding = false;
-                       _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
-                     }
-                   });
-                }, isActive: _isCropping),
-                _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
-                  setState(() {
-                    _isSpeeding = !_isSpeeding;
-                    if (_isSpeeding) {
-                      _isFiltering = false;
-                      _isCropping = false;
-                      int idx = selectedClipIndex ?? currentVideoIndex;
-                      if (idx >= 0 && idx < videoSpeeds.length) {
-                        _tempSpeed = videoSpeeds[idx];
-                      } else {
-                        _tempSpeed = 1.0;
-                      }
-                    }
-                  });
-                }, isActive: _isSpeeding),
-                _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
-                  setState(() {
-                    _isFiltering = !_isFiltering;
-                    if (_isFiltering) {
-                      _isCropping = false;
-                      _isSpeeding = false;
-                    }
-                  });
-                }, isActive: _isFiltering),
-              ],
-            ),
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () => setState(() => _isCropping = false),
+                child: Text("Cancel", style: TextStyle(color: Colors.black54, fontSize: 16.sp)),
+              ),
+              Text("Crop Video", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
+              ElevatedButton(
+                onPressed: () async {
+                  final size = _controller.value.size;
+                  int x = (_cropRect.left * size.width).toInt();
+                  int y = (_cropRect.top * size.height).toInt();
+                  int w = (_cropRect.width * size.width).toInt();
+                  int h = (_cropRect.height * size.height).toInt();
+                  
+                  setState(() => _isCropping = false);
+                  await cropVideo(x: x, y: y, w: w, h: h);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                child: const Text("Done"),
+              ),
+            ],
           ),
         ),
-      ],
-    );
-  }
+
+      if (_isSpeeding) _buildSpeedControlBar(),
+
+      if (_isFiltering) _buildFilterBottomSheet(),
+
+      Container(
+        color: Colors.white,
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: [
+              _actionIcon(Icons.crop_free_rounded, "Canvas", onTap: () async {
+                final txt = await _inputDialog("Canvas text", "Enter overlay text");
+                if (txt != null && txt.trim().isNotEmpty) overlayText(txt.trim());
+              }),
+              _actionIcon(Icons.layers_clear_rounded, "BG", onTap: () => removeBackground()),
+              _actionIcon(Icons.content_cut_rounded, "Trim", onTap: () => _deleteSelectedClip()),
+              _actionCustomIcon("assets/images/split_icon.png", "Split", onTap: () async {
+                if (initialized) {
+                  await splitVideoAt(currentVideoIndex, _controller.value.position);
+                }
+              }),
+              _actionIcon(Icons.crop_rounded, "Crop", onTap: () {
+                 setState(() {
+                   _isCropping = !_isCropping;
+                   if (_isCropping) {
+                     _isFiltering = false;
+                     _isSpeeding = false;
+                     _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
+                   }
+                 });
+              }, isActive: _isCropping),
+              _actionIcon(Icons.speed_rounded, "Speed", onTap: () {
+                setState(() {
+                  _isSpeeding = !_isSpeeding;
+                  if (_isSpeeding) {
+                    _isFiltering = false;
+                    _isCropping = false;
+                    int idx = selectedClipIndex ?? currentVideoIndex;
+                    if (idx >= 0 && idx < videoSpeeds.length) {
+                      _tempSpeed = videoSpeeds[idx];
+                    } else {
+                      _tempSpeed = 1.0;
+                    }
+                  }
+                });
+              }, isActive: _isSpeeding),
+              _actionIcon(Icons.auto_awesome_motion_rounded, "Filter", onTap: () {
+                setState(() {
+                  _isFiltering = !_isFiltering;
+                  if (_isFiltering) {
+                    _isCropping = false;
+                    _isSpeeding = false;
+                    _initialFilterIndex = _selectedFilterIndex;
+                    _initialFilterIntensity = _filterIntensity;
+                  }
+                });
+              }, isActive: _isFiltering),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _buildSpeedControlBar() {
     final int idx = selectedClipIndex ?? currentVideoIndex;
@@ -2069,113 +2633,141 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     final double curSpeed = (idx >= 0 && idx < videoSpeeds.length) ? videoSpeeds[idx] : 1.0;
     final double newDuration = originalDuration / (_tempSpeed / curSpeed);
 
-    final backgroundColor = const Color(0xFFB49EF4);
-    final accentColor = Colors.black;
+    final backgroundColor = const Color(0xFFE5DAFB); // Matched with Filter Sheet
+    final headerColor = const Color(0xFFF0D6B1); // Matched with Filter Header
+    final accentColor = Colors.black87;
 
     return Container(
-      color: backgroundColor,
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30.r),
+          topRight: Radius.circular(30.r),
+        ),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Text(
-                "Duration ${originalDuration.toStringAsFixed(1)}s",
-                style: TextStyle(color: accentColor.withOpacity(0.7), fontSize: 13.sp),
+          // Header (Matched with Filter Header)
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            decoration: BoxDecoration(
+              color: headerColor,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30.r),
+                topRight: Radius.circular(30.r),
               ),
-              Icon(Icons.arrow_forward_rounded, size: 14.sp, color: accentColor.withOpacity(0.7)),
-              Text(
-                " ${newDuration.toStringAsFixed(1)}s",
-                style: TextStyle(color: accentColor, fontSize: 13.sp, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          SizedBox(height: 25.h),
-          Stack(
-            children: [
-              Positioned.fill(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w),
-                  child: CustomPaint(
-                    painter: SpeedRulerPainter(color: accentColor),
-                  ),
-                ),
-              ),
-              SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  trackHeight: 0,
-                  thumbColor: Colors.transparent,
-                  overlayColor: Colors.black12,
-                  thumbShape: _CustomSliderThumbShape(color: accentColor),
-                ),
-                child: Slider(
-                  min: 0.1,
-                  max: 10.0,
-                  value: _tempSpeed,
-                  onChanged: (v) {
-                    setState(() {
-                      _tempSpeed = v;
-                    });
-                    if (initialized) {
-                      _controller.setPlaybackSpeed(v).catchError((e) => debugPrint("Player speed error: $e"));
-                      if (!_controller.value.isPlaying) _controller.play();
-                    }
-                  },
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12.w),
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _markerLabel("0.1x"),
-                _markerLabel("1x"),
-                _markerLabel("2x"),
-                _markerLabel("5x"),
-                _markerLabel("10x"),
+                IconButton(
+                  icon: Icon(Icons.close, color: Colors.black54, size: 24.r),
+                  onPressed: () {
+                    setState(() => _isSpeeding = false);
+                    if (initialized) _controller.setPlaybackSpeed(1.0);
+                  },
+                ),
+                Text(
+                  "Speed",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.sp,
+                    color: Colors.black87,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.check, color: Colors.black54, size: 24.r),
+                  onPressed: () async {
+                    int idx = selectedClipIndex ?? currentVideoIndex;
+                    setState(() => _isSpeeding = false);
+                    if (initialized) _controller.setPlaybackSpeed(1.0);
+                    await changeSpeed(_tempSpeed, index: idx);
+                  },
+                ),
               ],
             ),
           ),
-          SizedBox(height: 15.h),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(20.r),
+          
+          Padding(
+            padding: EdgeInsets.all(20.r),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      "Duration ${originalDuration.toStringAsFixed(1)}s",
+                      style: TextStyle(color: accentColor.withOpacity(0.7), fontSize: 13.sp),
+                    ),
+                    Icon(Icons.arrow_forward_rounded, size: 14.sp, color: accentColor.withOpacity(0.7)),
+                    Text(
+                      " ${newDuration.toStringAsFixed(1)}s",
+                      style: TextStyle(color: accentColor, fontSize: 13.sp, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 25.h),
+                Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12.w),
+                        child: CustomPaint(
+                          painter: SpeedRulerPainter(color: accentColor),
+                        ),
+                      ),
+                    ),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 0,
+                        thumbColor: Colors.transparent,
+                        overlayColor: Colors.black12,
+                        thumbShape: _CustomSliderThumbShape(color: accentColor),
+                      ),
+                      child: Slider(
+                        min: 0.1,
+                        max: 10.0,
+                        value: _tempSpeed,
+                        onChanged: (v) {
+                          setState(() {
+                            _tempSpeed = v;
+                          });
+                          if (initialized) {
+                            _controller.setPlaybackSpeed(v).catchError((e) => debugPrint("Player speed error: $e"));
+                            if (!_controller.value.isPlaying) _controller.play();
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _markerLabel("0.1x"),
+                      _markerLabel("1x"),
+                      _markerLabel("2x"),
+                      _markerLabel("5x"),
+                      _markerLabel("10x"),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 15.h),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Text(
+                    "Make it smoother",
+                    style: TextStyle(color: accentColor.withOpacity(0.5), fontSize: 12.sp),
+                  ),
+                ),
+              ],
             ),
-            child: Text(
-              "Make it smoother",
-              style: TextStyle(color: accentColor.withOpacity(0.5), fontSize: 12.sp),
-            ),
-          ),
-          SizedBox(height: 20.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: Icon(Icons.close, color: accentColor),
-                onPressed: () {
-                  setState(() => _isSpeeding = false);
-                  if (initialized) _controller.setPlaybackSpeed(1.0);
-                },
-              ),
-              Text(
-                "Speed",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18.sp, color: accentColor),
-              ),
-              IconButton(
-                icon: Icon(Icons.check, color: accentColor),
-                onPressed: () async {
-                  int idx = selectedClipIndex ?? currentVideoIndex;
-                  setState(() => _isSpeeding = false);
-                  if (initialized) _controller.setPlaybackSpeed(1.0);
-                  await changeSpeed(_tempSpeed, index: idx);
-                },
-              ),
-            ],
           ),
         ],
       ),
@@ -2222,7 +2814,14 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         children: [
           IconButton(
             icon: Icon(Icons.close, color: Colors.black54, size: 24.r),
-            onPressed: () => setState(() => _isFiltering = false),
+            onPressed: () {
+              // Restore initial state (Cancel)
+              setState(() {
+                _selectedFilterIndex = _initialFilterIndex;
+                _filterIntensity = _initialFilterIntensity;
+                _isFiltering = false;
+              });
+            },
           ),
           Row(
             children: [
@@ -2248,7 +2847,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
           ),
           IconButton(
             icon: Icon(Icons.check, color: Colors.black54, size: 24.r),
-            onPressed: () => setState(() => _isFiltering = false),
+            onPressed: () {
+              applyFilter(_selectedFilterIndex, _filterIntensity);
+              setState(() => _isFiltering = false);
+            },
           ),
         ],
       ),
@@ -2256,12 +2858,11 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildFilterCategories() {
-    final categories = ["Movies", "Trending", "Glitch", "Weather", "Vintage"];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Row(
-        children: categories.map((cat) {
+        children: _filterCategories.keys.map((cat) {
           bool isSelected = _selectedFilterCategory == cat;
           return GestureDetector(
             onTap: () => setState(() => _selectedFilterCategory = cat),
@@ -2297,70 +2898,104 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   Widget _buildFilterPreviews() {
-    final filters = [
-      {"name": "DUAL", "color": Colors.green},
-      {"name": "VINTAGE", "color": Colors.orange},
-      {"name": "NEON", "color": Colors.blue},
-      {"name": "FILM", "color": Colors.purple},
-      {"name": "GLITCH", "color": Colors.red},
-    ];
+    final filters = _filterCategories[_selectedFilterCategory] ?? [];
 
     return SizedBox(
-      height: 90.h,
+      height: 100.h,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 16.w),
         itemCount: filters.length,
         itemBuilder: (context, index) {
-          bool isSelected = _selectedFilterIndex == index;
+          final filter = filters[index];
+          final String filterName = filter["name"];
+          bool isSelected = _getFilterNameOfIndex(_selectedFilterIndex) == filterName;
+          
           return GestureDetector(
-            onTap: () => setState(() => _selectedFilterIndex = index),
+            onTap: () {
+              setState(() {
+                _selectedFilterIndex = _getIndexOfFilterName(filterName);
+              });
+            },
             child: Container(
-              width: 70.w,
+              width: 80.w,
               margin: EdgeInsets.only(right: 12.w),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.r),
+                borderRadius: BorderRadius.circular(12.r),
                 border: isSelected
-                    ? Border.all(color: const Color(0xFFFF2D78), width: 2.w)
+                    ? Border.all(color: const ui.Color(0xFF007AFF), width: 2.w) // Blue selection as in image
                     : null,
-                color: Colors.grey[300],
               ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Icon(Icons.image, color: Colors.white54, size: 24.r),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: filters[index]["color"] as Color,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(6.r),
-                          bottomRight: Radius.circular(6.r),
-                        ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10.r),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Image.asset(
+                        filter["image"],
+                        fit: BoxFit.cover,
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 2.h),
-                      child: Text(
-                        filters[index]["name"] as String,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.bold,
+                    ),
+                    // Apply preview filter to the image icon if possible, but the asset itself represents the filter.
+                    // For better UX, we'll put a semi-transparent label at the bottom.
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 4.h),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                          ),
+                        ),
+                        child: Text(
+                          filterName,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
         },
       ),
     );
+  }
+
+  // Helper to map names to a global index for the simple matrix logic
+  int _getIndexOfFilterName(String name) {
+    const allFilters = [
+      "NONE", "DUAL", "POP", "NEON", "FILM", "GLOW", "VIBE", "MOOD", "VINTAGE", "SOFT",
+      "GLITCH", "RGB", "SHIFT", "ERROR", "PIXEL", "NOISE", "WARP",
+      "SUN", "WARM", "COOL", "FOG", "RAIN", "SNOW", "DUST",
+      "VINT", "SEPIA", "RETRO", "FADE", "OLD", "FILM2", "BROWN",
+      "POP2", "BRIGHT", "SAT", "PASTEL", "FRESH", "BOOST", "JUICY",
+      "DARK", "SHADOW", "NIGHT", "BLUE", "LOW", "DEEP", "SAD"
+    ];
+    return allFilters.indexOf(name).clamp(0, allFilters.length - 1);
+  }
+
+  String _getFilterNameOfIndex(int index) {
+    const allFilters = [
+      "NONE", "DUAL", "POP", "NEON", "FILM", "GLOW", "VIBE", "MOOD", "VINTAGE", "SOFT",
+      "GLITCH", "RGB", "SHIFT", "ERROR", "PIXEL", "NOISE", "WARP",
+      "SUN", "WARM", "COOL", "FOG", "RAIN", "SNOW", "DUST",
+      "VINT", "SEPIA", "RETRO", "FADE", "OLD", "FILM2", "BROWN",
+      "POP2", "BRIGHT", "SAT", "PASTEL", "FRESH", "BOOST", "JUICY",
+      "DARK", "SHADOW", "NIGHT", "BLUE", "LOW", "DEEP", "SAD"
+    ];
+    if (index >= 0 && index < allFilters.length) return allFilters[index];
+    return "NONE";
   }
 
   Widget _buildFilterIntensitySlider() {
