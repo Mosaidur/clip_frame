@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:gal/gal.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit_config.dart';
@@ -1414,6 +1415,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
+      setState(() => videoList[currentVideoIndex] = afterFile);
       await _setCurrentFile(afterFile, currentVideoIndex);
     }
   }
@@ -1467,21 +1469,89 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     }
   }
 
-  // 10) Save/export current file to permanent location
-  Future<void> saveCurrentToGallery() async {
-    if (currentFile == null) return;
-    final dir = await getTemporaryDirectory();
-    final out = "${dir.path}/export_${DateTime.now().millisecondsSinceEpoch}.mp4";
-    // For now we simply copy; more complicated transcoding can be done
-    setState(() => isExporting = true);
+  // 10) Save/export all clips as one video to Gallery
+  Future<void> exportAndSaveVideo() async {
+    if (videoList.isEmpty) return;
+
+    setState(() {
+      isExporting = true;
+      statusText = "Preparing export...";
+    });
+
+    String? finalOutputPath;
+
     try {
-      final newFile = await File(currentFile!.path).copy(out);
-      setState(() => statusText = "Saved: ${newFile.path}");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Saved: ${newFile.path}")));
+      if (videoList.length == 1) {
+        // Single video - just use it directly
+        finalOutputPath = videoList.first.path;
+      } else {
+        // Multiple videos - Concatenate
+        setState(() => statusText = "Merging clips...");
+        final dir = await getTemporaryDirectory();
+        final concatListFile = File("${dir.path}/concat_list.txt");
+        final out = "${dir.path}/merged_${DateTime.now().millisecondsSinceEpoch}.mp4";
+
+        // Create FFmpeg concat list
+        // Note: paths must be escaped for FFmpeg concat demuxer
+        final buffer = StringBuffer();
+        for (var f in videoList) {
+          buffer.writeln("file '${f.path}'");
+        }
+        await concatListFile.writeAsString(buffer.toString(), flush: true);
+
+        // Run Concat
+        // -safe 0: Allow unsafe file paths
+        // -c:v libx264 -c:a aac: Re-encode to ensure consistent format
+        final cmd = '-f concat -safe 0 -i "${concatListFile.path}" -c:v libx264 -c:a aac -preset ultrafast -y "$out"';
+        
+        final res = await _runFFmpeg(cmd, out);
+        if (res == null) {
+          throw Exception("Merge failed");
+        }
+        finalOutputPath = res;
+      }
+
+      // Save to Gallery using Gal
+      setState(() => statusText = "Saving to Gallery...");
+      if (finalOutputPath != null) {
+         final file = File(finalOutputPath);
+         if (!await file.exists()) {
+           throw Exception("Output file not found");
+         }
+         
+         // Explicit permission request
+         bool hasAccess = await Gal.hasAccess();
+         if (!hasAccess) {
+            hasAccess = await Gal.requestAccess();
+         }
+         
+         if (hasAccess) {
+            await Gal.putVideo(finalOutputPath, album: "ClipFrame");
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Saved to Gallery successfully!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+         } else {
+            throw Exception("Gallery access denied");
+         }
+      }
+
     } catch (e) {
-      setState(() => statusText = "Save failed");
+      debugPrint("Export error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text("Export failed: $e"), backgroundColor: Colors.red),
+        );
+      }
     } finally {
-      setState(() => isExporting = false);
+      setState(() {
+        isExporting = false;
+        statusText = "";
+      });
     }
   }
 
@@ -2469,7 +2539,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         width: double.infinity,
         height: 42.h,
         child: ElevatedButton(
-          onPressed: saveCurrentToGallery,
+          onPressed: isExporting ? null : exportAndSaveVideo,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0080FF), // Bright blue
             foregroundColor: Colors.white,
@@ -2477,7 +2547,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             elevation: 0,
           ),
           child: Text(
-            "Save",
+            "Save to Gallery",
             style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
           ),
         ),
