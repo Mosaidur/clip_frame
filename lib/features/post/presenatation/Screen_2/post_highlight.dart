@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as widget;
-
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import 'Content_Steps.dart';
+import 'photo_preview_screen.dart';
 
 class PostHighlight extends StatelessWidget {
   final String url ;
@@ -134,15 +136,15 @@ class PostHighlight extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: () {
-
+                    onPressed: () async {
                       if ((contentType ?? '').toLowerCase() == 'story') {
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => StepByStepPage()),
                         );
+                      } else {
+                        _showImageSourceSheet(context);
                       }
-
                     },
                     child: const Text(
                       "Start Creating",
@@ -159,6 +161,117 @@ class PostHighlight extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showImageSourceSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: EdgeInsets.all(24.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40.w,
+              height: 4.h,
+              margin: EdgeInsets.only(bottom: 20.h),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            Text(
+              "Select Image Source",
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 25.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildSourceOption(
+                  context,
+                  icon: Icons.camera_alt_rounded,
+                  label: "Camera",
+                  color: const Color(0xFF007AFF),
+                  source: ImageSource.camera,
+                ),
+                _buildSourceOption(
+                  context,
+                  icon: Icons.photo_library_rounded,
+                  label: "Gallery",
+                  color: const Color(0xFFFF2D78),
+                  source: ImageSource.gallery,
+                ),
+              ],
+            ),
+            SizedBox(height: 20.h),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSourceOption(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required ImageSource source,
+  }) {
+    return GestureDetector(
+      onTap: () async {
+        Navigator.pop(context);
+        final ImagePicker picker = ImagePicker();
+        final XFile? image = await picker.pickImage(
+          source: source,
+          maxWidth: 1080,
+          maxHeight: 1920,
+        );
+
+        if (image != null && context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PhotoPreviewScreen(
+                imagePath: image.path,
+              ),
+            ),
+          );
+        }
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 70.w,
+            height: 70.w,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(color: color.withOpacity(0.2), width: 1),
+            ),
+            child: Icon(icon, color: color, size: 32.r),
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }
