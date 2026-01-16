@@ -10,6 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
 
 /// ---- Models for History ----
 enum EditType { trim, split, crop, speed, filter, addAudio, replace, bgRemove, overlayText, merged }
@@ -1402,8 +1403,21 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     if (currentFile == null) return;
     final before = currentFile!;
     final out = await _tempFilePath("_addaudio.mp4");
-    // -shortest to finish with shortest stream; adjust mixing as needed
-    final cmd = '-i "${before.path}" -i "${audioFile.path}" -filter_complex "[1:a]volume=$volume[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2[aout]" -map 0:v -map "[aout]" -c:v copy -c:a aac -b:a 128k "$out"';
+    
+    final bool hasOriginalAudio = await _hasAudio(before);
+
+    String cmd;
+    if (hasOriginalAudio) {
+      // Mix existing audio [0:a] with new audio [1:a]
+      cmd = '-i "${before.path}" -i "${audioFile.path}" -filter_complex "[1:a]volume=$volume[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2[aout]" -map 0:v -map "[aout]" -c:v copy -c:a aac -b:a 128k -y "$out"';
+    } else {
+      // No existing audio, just map new audio [1:a] as the audio track
+      // We might want to loop it or just play it once. "duration=first" in amix handles duration in mixing, 
+      // here we might want -shortest if we want it to end with video, or just let it play.
+      // Usually editors want video length.
+      cmd = '-i "${before.path}" -i "${audioFile.path}" -filter_complex "[1:a]volume=$volume[aout]" -map 0:v -map "[aout]" -shortest -c:v copy -c:a aac -b:a 128k -y "$out"';
+    }
+
     setState(() => isExporting = true);
     final res = await _runFFmpeg(cmd, out);
     setState(() => isExporting = false);
@@ -1411,12 +1425,38 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       final afterFile = File(res);
       _pushHistory(EditAction(
         type: EditType.addAudio,
-        description: "Add audio ${audioFile.path}",
+        description: "Add audio ${audioFile.path.split('/').last}",
         beforePath: before.path,
         afterPath: afterFile.path,
       ));
-      setState(() => videoList[currentVideoIndex] = afterFile);
+      
+      final dur = await _getVideoDuration(afterFile);
+
+      setState(() {
+        videoList[currentVideoIndex] = afterFile;
+        videoDurations[currentVideoIndex] = dur;
+      });
       await _setCurrentFile(afterFile, currentVideoIndex);
+    }
+  }
+
+  Future<void> pickAndAddAudio() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        File audioFile = File(result.files.single.path!);
+        await addAudioLayer(audioFile);
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text("Audio layer added successfully!")),
+           );
+        }
+      }
+    } catch (e) {
+      debugPrint("Error picking audio: $e");
     }
   }
 
@@ -2415,20 +2455,23 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                 Row(
                                   children: [
                                     SizedBox(width: startPadding),
-                                    Container(
-                                      width: (totalMs / 1000) * 50.w, 
-                                      height: 25.h,
-                                      decoration: BoxDecoration(
-                                        color: Colors.purple.withOpacity(0.3),
-                                        borderRadius: BorderRadius.circular(5.r),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          SizedBox(width: 8.w),
-                                          Icon(Icons.music_note, size: 12.r, color: Colors.white),
-                                          SizedBox(width: 5.w),
-                                          Text("Add music", style: TextStyle(color: Colors.white, fontSize: 9.sp)),
-                                        ],
+                                    GestureDetector(
+                                      onTap: pickAndAddAudio,
+                                      child: Container(
+                                        width: (totalMs / 1000) * 50.w, 
+                                        height: 25.h,
+                                        decoration: BoxDecoration(
+                                          color: Colors.purple.withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(5.r),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(width: 8.w),
+                                            Icon(Icons.music_note, size: 12.r, color: Colors.white),
+                                            SizedBox(width: 5.w),
+                                            Text("Add music", style: TextStyle(color: Colors.white, fontSize: 9.sp)),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     SizedBox(width: endPadding),
