@@ -7,6 +7,32 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'caption_generator_screen.dart';
 
+class TextItem {
+  final String id;
+  String text;
+  Color color;
+  double fontSize;
+  Offset position;
+  TextAlign align;
+  double rotation; // In radians
+  String fontFamily;
+  String backgroundStyle; // 'none', 'box', 'highlight'
+  double opacity;
+
+  TextItem({
+    required this.id,
+    required this.text,
+    this.color = Colors.white,
+    this.fontSize = 28.0,
+    this.position = const Offset(0.5, 0.5),
+    this.align = TextAlign.center,
+    this.rotation = 0.0,
+    this.fontFamily = 'Inter',
+    this.backgroundStyle = 'none',
+    this.opacity = 1.0,
+  });
+}
+
 class PhotoPreviewScreen extends StatefulWidget {
   final String imagePath;
 
@@ -44,6 +70,11 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
   Rect cropRect = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0);
   String selectedCropRatio = "Free";
   int _rotation = 0; // 0, 1, 2, 3 (0, 90, 180, 270 degrees)
+  
+  // Text States
+  List<TextItem> textItems = [];
+  String? selectedTextId;
+  
   //how to work this const is rect from twm 
   final Map<String, List<Map<String, dynamic>>> filterCategories = {
     "Trending": [
@@ -250,6 +281,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
                           ),
                           if (activeTool == 'Crop') _buildCropOverlay(constraints),
                           if (activeTool == 'BG') _buildBGOverlay(),
+                          _buildTextOverlay(constraints),
                         ],
                       ),
                     ),
@@ -266,8 +298,8 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
 
   Widget _buildPreviewImage(BoxConstraints constraints) {
     // Match logic in _buildCropOverlay
-    double availW = constraints.maxWidth - 20.w;
-    double availH = constraints.maxHeight - 20.h;
+    double availW = (constraints.maxWidth - 20.w).clamp(0.1, double.infinity);
+    double availH = (constraints.maxHeight - 20.h).clamp(0.1, double.infinity);
     final renderSize = _getRenderedImageSize(availW, availH);
 
     Widget imageWidget = ColorFiltered(
@@ -471,7 +503,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
   }
 
   Widget _buildControlSection() {
-    bool isCustomMode = activeTool == 'Adjust' || activeTool == 'Crop' || activeTool == 'Filter';
+    bool isCustomMode = activeTool == 'Adjust' || activeTool == 'Crop' || activeTool == 'Filter' || activeTool == 'Text';
     return Container(
       padding: EdgeInsets.only(top: isCustomMode ? 0 : 10.h, bottom: isCustomMode ? 0 : 20.h),
       decoration: BoxDecoration(
@@ -482,10 +514,10 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (activeTool != null) ...[
             _buildToolControls(),
-            SizedBox(height: 15.h),
           ],
           if (activeTool == null) ...[
             Container(
@@ -559,7 +591,13 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
   Widget _buildToolControls() {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
-      child: _buildSpecificToolControls(),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: 380.h), // Slightly more height but will shrink to content
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: _buildSpecificToolControls(),
+        ),
+      ),
     );
   }
 
@@ -568,11 +606,390 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       case 'Filter': return _buildFilterControls();
       case 'Adjust': return _buildAdjustControls();
       case 'Crop': return _buildCropControls();
+      case 'Text': return _buildTextControls();
       case 'BG': return _buildBGControls();
       case 'Split': return _buildSplitTrimControls("Split");
       case 'Trim': return _buildSplitTrimControls("Trim");
       default: return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildTextControls() {
+    return Container(
+      key: const ValueKey('Text'),
+      child: Column(
+        children: [
+          _buildTextTopBar(),
+          Padding(
+            padding: EdgeInsets.all(20.r),
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: _addText,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 24.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF2D78),
+                      borderRadius: BorderRadius.circular(12.r),
+                      boxShadow: [
+                        BoxShadow(color: const Color(0xFFFF2D78).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_rounded, color: Colors.white, size: 20.sp),
+                        SizedBox(width: 8.w),
+                        Text("Add Text", style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+                if (selectedTextId != null) ...[
+                  SizedBox(height: 20.h),
+                  _buildTextEditOptions(),
+                ]
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextTopBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0D6B1), // Tan background
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30.r),
+          topRight: Radius.circular(30.r),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.close_rounded, color: Colors.black54, size: 24.r),
+            onPressed: () => setState(() {
+              activeTool = null;
+              selectedTextId = null;
+            }),
+          ),
+          Container(
+            height: 24.h,
+            width: 1.w,
+            color: Colors.black12,
+            margin: EdgeInsets.symmetric(horizontal: 4.w),
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh_rounded, color: Colors.black54, size: 24.r),
+            onPressed: () {
+              setState(() {
+                textItems.clear();
+                selectedTextId = null;
+              });
+            },
+          ),
+          Expanded(
+            child: Text(
+              "Text",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18.sp, 
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.check_rounded, color: Colors.black54, size: 24.r),
+            onPressed: () => setState(() {
+              activeTool = null;
+              selectedTextId = null;
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addText() {
+    final newItem = TextItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      text: "Tap to type",
+    );
+    setState(() {
+      textItems.add(newItem);
+      selectedTextId = newItem.id;
+    });
+    _showTextEditModal(newItem);
+  }
+
+  void _showTextEditModal(TextItem item) {
+    TextEditingController controller = TextEditingController(text: item.text);
+    final List<String> fonts = ['Inter', 'Roboto', 'Playfair Display', 'Oswald', 'Montserrat'];
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Dialog.fullscreen(
+              backgroundColor: Colors.black.withOpacity(0.85),
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                resizeToAvoidBottomInset: true,
+                appBar: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          item.text = controller.text;
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: Text("DONE", style: TextStyle(color: const Color(0xFFFF2D78), fontWeight: FontWeight.bold, fontSize: 16.sp)),
+                    ),
+                  ],
+                ),
+                body: SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height - AppBar().preferredSize.height - MediaQuery.of(context).padding.top),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          // Alignment and Style Indicators
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildAlignToggle(Icons.format_align_left_rounded, TextAlign.left, item, setModalState),
+                                  _buildAlignToggle(Icons.format_align_center_rounded, TextAlign.center, item, setModalState),
+                                  _buildAlignToggle(Icons.format_align_right_rounded, TextAlign.right, item, setModalState),
+                                  SizedBox(width: 20.w),
+                                  _buildBgStyleToggle(Icons.text_fields_rounded, 'none', item, setModalState),
+                                  _buildBgStyleToggle(Icons.check_box_outline_blank_rounded, 'box', item, setModalState),
+                                  _buildBgStyleToggle(Icons.highlight_rounded, 'highlight', item, setModalState),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20.w),
+                              child: Center(
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                                  decoration: item.backgroundStyle == 'none' ? null : BoxDecoration(
+                                    color: item.backgroundStyle == 'box' ? item.color.withOpacity(0.9) : item.color.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(8.r),
+                                  ),
+                                  child: TextField(
+                                    controller: controller,
+                                    autofocus: true,
+                                    textAlign: item.align,
+                                    style: TextStyle(
+                                      color: item.backgroundStyle == 'box' ? (item.color.computeLuminance() > 0.5 ? Colors.black : Colors.white) : item.color,
+                                      fontSize: 32.sp,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: item.fontFamily,
+                                    ),
+                                    maxLines: null,
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      hintText: "Enter text...",
+                                      hintStyle: TextStyle(color: Colors.white38),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Font Picker
+                          Container(
+                            height: 80.h,
+                            padding: EdgeInsets.only(bottom: 30.h),
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: EdgeInsets.symmetric(horizontal: 20.w),
+                              itemCount: fonts.length,
+                              itemBuilder: (context, index) {
+                                bool isSelected = item.fontFamily == fonts[index];
+                                return GestureDetector(
+                                  onTap: () => setModalState(() => item.fontFamily = fonts[index]),
+                                  child: Container(
+                                    margin: EdgeInsets.only(right: 15.w),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      fonts[index],
+                                      style: TextStyle(
+                                        color: isSelected ? const Color(0xFFFF2D78) : Colors.white70,
+                                        fontSize: 14.sp,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        fontFamily: fonts[index],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        );
+      },
+    );
+  }
+
+  Widget _buildAlignToggle(IconData icon, TextAlign alignment, TextItem item, StateSetter setModalState) {
+    bool isActive = item.align == alignment;
+    return IconButton(
+      icon: Icon(icon, color: isActive ? const Color(0xFFFF2D78) : Colors.white70, size: 22.sp),
+      onPressed: () => setModalState(() => item.align = alignment),
+    );
+  }
+
+  Widget _buildBgStyleToggle(IconData icon, String style, TextItem item, StateSetter setModalState) {
+    bool isActive = item.backgroundStyle == style;
+    return IconButton(
+      icon: Icon(icon, color: isActive ? const Color(0xFFFF2D78) : Colors.white70, size: 22.sp),
+      onPressed: () => setModalState(() => item.backgroundStyle = style),
+    );
+  }
+
+  Widget _buildTextEditOptions() {
+    final item = textItems.firstWhere((it) => it.id == selectedTextId);
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: 250.h),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text("Size & Rotation", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: Colors.black87))),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildQuickActionButton(Icons.flip_to_back_rounded, "Rotate", () {
+                      setState(() => item.rotation += 3.14159 / 4); // 45 deg
+                    }),
+                    SizedBox(width: 20.w),
+                    _buildQuickActionButton(Icons.delete_sweep_rounded, "Delete", () {
+                      setState(() {
+                        textItems.removeWhere((it) => it.id == selectedTextId);
+                        selectedTextId = null;
+                      });
+                    }, isDelete: true),
+                  ],
+                ),
+              ],
+            ),
+        SizedBox(height: 10.h),
+        SliderTheme(
+          data: SliderThemeData(
+            activeTrackColor: const Color(0xFFFF2D78),
+            inactiveTrackColor: Colors.black12,
+            thumbColor: const Color(0xFFFF2D78),
+            trackHeight: 2.h,
+          ),
+          child: Column(
+            children: [
+              Slider(
+                value: item.fontSize,
+                min: 10, max: 100,
+                onChanged: (v) => setState(() => item.fontSize = v),
+              ),
+              Slider(
+                value: item.opacity,
+                min: 0.1, max: 1.0,
+                onChanged: (v) => setState(() => item.opacity = v),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 10.h),
+        SizedBox(
+          height: 35.h,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              Colors.white, Colors.black, Colors.red, Colors.blue, Colors.green, Colors.yellow, Colors.purple, Colors.orange,
+              const Color(0xFFFF2D78), Colors.teal, Colors.cyan, Colors.indigo, Colors.lime, Colors.brown,
+            ].map((color) => GestureDetector(
+              onTap: () => setState(() => item.color = color),
+              child: Container(
+                width: 30.w, height: 30.w,
+                margin: EdgeInsets.only(right: 12.w),
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: item.color == color ? const Color(0xFFFF2D78) : Colors.black12, 
+                    width: item.color == color ? 2.w : 1.w,
+                  ),
+                ),
+              ),
+            )).toList(),
+          ),
+        ),
+        SizedBox(height: 20.h),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _showTextEditModal(item),
+              icon: Icon(Icons.edit_note_rounded, color: Colors.white, size: 20.sp),
+              label: Text("Edit Text", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.sp)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF007AFF),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 12.h),
+              ),
+            ),
+          ],
+        ),
+            ],
+          ),
+        ),
+      );
+    }
+
+  Widget _buildQuickActionButton(IconData icon, String label, VoidCallback onTap, {bool isDelete = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(10.r),
+            decoration: BoxDecoration(
+              color: isDelete ? Colors.red.withOpacity(0.1) : const Color(0xFF007AFF).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(icon, color: isDelete ? Colors.red : const Color(0xFF007AFF), size: 24.sp),
+          ),
+          SizedBox(height: 4.h),
+          Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w600, color: Colors.black54)),
+        ],
+      ),
+    );
   }
 
   Widget _buildFilterControls() {
@@ -774,7 +1191,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
             child: Column(
               children: [
                 _buildRulerSlider(),
-                SizedBox(height: 30.h),
+                SizedBox(height: 20.h),
                 _buildAdjustToolList(),
               ],
             ),
@@ -1222,8 +1639,8 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     if (_imageSize == null) return const SizedBox.shrink();
 
     // Available space (same as _buildPreviewImage container)
-    double availW = constraints.maxWidth - 20.w;
-    double availH = constraints.maxHeight - 20.h;
+    double availW = (constraints.maxWidth - 20.w).clamp(0.1, double.infinity);
+    double availH = (constraints.maxHeight - 20.h).clamp(0.1, double.infinity);
     
     final renderSize = _getRenderedImageSize(availW, availH);
     double renderW = renderSize.width;
@@ -1292,6 +1709,110 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     } else {
       return Size(availH * imgAspect, availH);
     }
+  }
+
+  Widget _buildTextOverlay(BoxConstraints constraints) {
+    if (_imageSize == null) return const SizedBox.shrink();
+
+    double availW = constraints.maxWidth - 20.w;
+    double availH = constraints.maxHeight - 20.h;
+    final renderSize = _getRenderedImageSize(availW, availH);
+
+    double offsetX = (availW - renderSize.width) / 2 + 10.w;
+    double offsetY = (availH - renderSize.height) / 2 + 10.h;
+
+    return Stack(
+      children: textItems.map((item) {
+        bool isSelected = selectedTextId == item.id;
+        
+        double x, y;
+        if (activeTool == 'Crop') {
+          x = offsetX + item.position.dx * renderSize.width;
+          y = offsetY + item.position.dy * renderSize.height;
+        } else {
+          double relX = (item.position.dx - cropRect.left) / cropRect.width;
+          double relY = (item.position.dy - cropRect.top) / cropRect.height;
+          
+          double containerW = cropRect.width * renderSize.width;
+          double containerH = cropRect.height * renderSize.height;
+          
+          x = (availW - containerW) / 2 + 10.w + relX * containerW;
+          y = (availH - containerH) / 2 + 10.h + relY * containerH;
+          
+          if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return const SizedBox.shrink();
+        }
+
+        return Positioned(
+          left: x - 60.w,
+          top: y - 40.h,
+          child: GestureDetector(
+            onScaleStart: (details) {
+              setState(() => selectedTextId = item.id);
+            },
+            onScaleUpdate: (details) {
+              setState(() {
+                selectedTextId = item.id;
+                
+                // 1. Handle Drag (Translation)
+                // Note: details.focalPointDelta is useful if we want to drag while scaling
+                // but we have onPanUpdate for simple drag. Let's use focalPoint for drag here too.
+                
+                double containerW = activeTool == 'Crop' ? renderSize.width : cropRect.width * renderSize.width;
+                double containerH = activeTool == 'Crop' ? renderSize.height : cropRect.height * renderSize.height;
+                
+                double dx = (details.focalPointDelta.dx / containerW) * (activeTool == 'Crop' ? 1.0 : cropRect.width);
+                double dy = (details.focalPointDelta.dy / containerH) * (activeTool == 'Crop' ? 1.0 : cropRect.height);
+
+                item.position = Offset(
+                  (item.position.dx + dx).clamp(0.0, 1.0),
+                  (item.position.dy + dy).clamp(0.0, 1.0),
+                );
+
+                // 2. Handle Rotation
+                if (details.rotation != 0) {
+                  item.rotation += details.rotation;
+                }
+
+                // 3. Handle Scaling (FontSize)
+                if (details.scale != 1.0) {
+                  item.fontSize = (item.fontSize * details.scale).clamp(10, 200);
+                }
+              });
+            },
+            onTap: () => setState(() => selectedTextId = item.id),
+            child: Transform.rotate(
+              angle: item.rotation,
+              child: Opacity(
+                opacity: item.opacity,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: item.backgroundStyle == 'none' ? Colors.transparent : (
+                      item.backgroundStyle == 'box' ? item.color.withOpacity(0.9) : item.color.withOpacity(0.4)
+                    ),
+                    borderRadius: BorderRadius.circular(6.r),
+                    border: isSelected ? Border.all(color: const Color(0xFFFF2D78), width: 1.5.w) : null,
+                  ),
+                  child: Text(
+                    item.text,
+                    textAlign: item.align,
+                    style: TextStyle(
+                      color: item.backgroundStyle == 'box' ? (item.color.computeLuminance() > 0.5 ? Colors.black : Colors.white) : item.color,
+                      fontSize: item.fontSize.sp,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: item.fontFamily,
+                      shadows: item.backgroundStyle == 'none' ? [
+                        Shadow(color: Colors.black26, blurRadius: 4.r, offset: const Offset(1, 1)),
+                      ] : null,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 
   Widget _buildBGOverlay() {
@@ -1401,6 +1922,64 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       
       Rect dstRect = Rect.fromLTWH(0, 0, srcRect.width, srcRect.height);
       cropCanvas.drawImageRect(filteredFull, srcRect, dstRect, ui.Paint());
+      
+      // 3. Draw text items
+      for (var item in textItems) {
+        final double scale = canvasW / 1.sw;
+        final textStyle = ui.TextStyle(
+          color: item.backgroundStyle == 'box' ? (item.color.computeLuminance() > 0.5 ? Colors.black : Colors.white) : item.color,
+          fontSize: item.fontSize * scale,
+          fontWeight: ui.FontWeight.bold,
+          fontFamily: item.fontFamily,
+          shadows: item.backgroundStyle == 'none' ? [
+            ui.Shadow(color: Colors.black26, blurRadius: 4 * scale, offset: Offset(scale, scale)),
+          ] : null,
+        );
+        
+        final paragraphStyle = ui.ParagraphStyle(
+          textAlign: item.align,
+          fontSize: item.fontSize * scale,
+        );
+        
+        final paragraphBuilder = ui.ParagraphBuilder(paragraphStyle)
+          ..pushStyle(textStyle)
+          ..addText(item.text);
+        
+        final paragraph = paragraphBuilder.build()
+          ..layout(ui.ParagraphConstraints(width: canvasW));
+        
+        double textX = (item.position.dx * canvasW) - srcRect.left;
+        double textY = (item.position.dy * canvasH) - srcRect.top;
+
+        cropCanvas.save();
+        // Move to the text position, rotate, then draw
+        cropCanvas.translate(textX, textY);
+        cropCanvas.rotate(item.rotation);
+        
+        // Account for Opacity
+        final paint = ui.Paint()..color = Colors.white.withOpacity(item.opacity);
+        cropCanvas.saveLayer(null, paint);
+
+        // Draw Background if needed
+        if (item.backgroundStyle != 'none') {
+          final bgPaint = ui.Paint()
+            ..color = item.backgroundStyle == 'box' ? item.color.withOpacity(0.9) : item.color.withOpacity(0.4)
+            ..style = ui.PaintingStyle.fill;
+          
+          // Estimate box size based on paragraph
+          final rect = Rect.fromLTWH(
+            -8 * scale, -4 * scale, 
+            paragraph.minIntrinsicWidth + 16 * scale, 
+            paragraph.height + 8 * scale
+          );
+          cropCanvas.drawRRect(RRect.fromRectAndRadius(rect, Radius.circular(6 * scale)), bgPaint);
+        }
+
+        cropCanvas.drawParagraph(paragraph, Offset.zero);
+        
+        cropCanvas.restore(); // Restore layer
+        cropCanvas.restore(); // Restore rotate/translate
+      }
       
       ui.Image finalImage = await cropRecorder.endRecording().toImage(
         srcRect.width.toInt().clamp(1, canvasW.toInt()), 
