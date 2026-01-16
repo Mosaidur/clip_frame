@@ -23,141 +23,143 @@ class PostHighlight extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFEBC894),
-              Color(0xFFFFFFFF),
-              Color(0xFFB49EF4),
-            ],
+      body: SafeArea(
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFEBC894),
+                Color(0xFFFFFFFF),
+                Color(0xFFB49EF4),
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.black87,
-                        size: 20,
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.black87,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  subTitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Image section with border
-                Container(
-                  height: 400,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blueAccent, width: 2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  clipBehavior: Clip.hardEdge,
-                  child: Image.network(
-                    url,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback image if network fails
-                      return Image.asset(
-                        url, // replace with your local image path
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    tips,
-                    textAlign: TextAlign.center,
+                  const SizedBox(height: 10),
+                  Text(
+                    title,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                ),
-                const SizedBox(height: 25),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF007AFF),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                  const SizedBox(height: 10),
+                  Text(
+                    subTitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      height: 1.4,
                     ),
-                    onPressed: () async {
-                      if ((contentType ?? '').toLowerCase() == 'story') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => StepByStepPage()),
+                  ),
+                  const SizedBox(height: 20),
+                  // Image section with border
+                  Container(
+                    height: 400,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.blueAccent, width: 2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    clipBehavior: Clip.hardEdge,
+                    child: Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback image if network fails
+                        return Image.asset(
+                          url, // replace with your local image path
+                          fit: BoxFit.cover,
                         );
-                      } else {
-                        _showImageSourceSheet(context);
-                      }
-                    },
-                    child: const Text(
-                      "Start Creating",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      tips,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black87,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 25),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF007AFF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () async {
+                        if ((contentType ?? '').toLowerCase() == 'story') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => StepByStepPage()),
+                          );
+                        } else {
+                          _showImageSourceSheet(context);
+                        }
+                      },
+                      child: const Text(
+                        "Start Creating",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),
@@ -169,7 +171,7 @@ class PostHighlight extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -200,14 +202,16 @@ class PostHighlight extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildSourceOption(
-                  context,
+                  context, // Root context
+                  sheetContext: sheetContext,
                   icon: Icons.camera_alt_rounded,
                   label: "Camera",
                   color: const Color(0xFF007AFF),
                   source: ImageSource.camera,
                 ),
                 _buildSourceOption(
-                  context,
+                  context, // Root context
+                  sheetContext: sheetContext,
                   icon: Icons.photo_library_rounded,
                   label: "Gallery",
                   color: const Color(0xFFFF2D78),
@@ -223,7 +227,8 @@ class PostHighlight extends StatelessWidget {
   }
 
   Widget _buildSourceOption(
-    BuildContext context, {
+    BuildContext rootContext, {
+    required BuildContext sheetContext,
     required IconData icon,
     required String label,
     required Color color,
@@ -231,7 +236,7 @@ class PostHighlight extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: () async {
-        Navigator.pop(context);
+        Navigator.pop(sheetContext);
         final ImagePicker picker = ImagePicker();
         final XFile? image = await picker.pickImage(
           source: source,
@@ -239,9 +244,9 @@ class PostHighlight extends StatelessWidget {
           maxHeight: 1920,
         );
 
-        if (image != null && context.mounted) {
+        if (image != null && rootContext.mounted) {
           Navigator.push(
-            context,
+            rootContext,
             MaterialPageRoute(
               builder: (context) => PhotoPreviewScreen(
                 imagePath: image.path,

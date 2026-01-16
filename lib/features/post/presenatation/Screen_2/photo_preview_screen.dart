@@ -244,7 +244,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
                             child: Center(
                               child: RepaintBoundary(
                                 key: _renderKey,
-                                child: _buildPreviewImage(),
+                                child: _buildPreviewImage(constraints),
                               ),
                             ),
                           ),
@@ -264,14 +264,51 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     );
   }
 
-  Widget _buildPreviewImage() {
+  Widget _buildPreviewImage(BoxConstraints constraints) {
+    // Match logic in _buildCropOverlay
+    double availW = constraints.maxWidth - 20.w;
+    double availH = constraints.maxHeight - 20.h;
+    final renderSize = _getRenderedImageSize(availW, availH);
+
     Widget imageWidget = ColorFiltered(
-      colorFilter: ColorFilter.matrix(_getCombinedMatrix()),
+      colorFilter: ui.ColorFilter.matrix(_getCombinedMatrix()),
       child: Image.file(
         File(widget.imagePath),
         fit: BoxFit.contain,
       ),
     );
+
+    Widget content;
+    if (activeTool == 'Crop') {
+      content = imageWidget;
+    } else {
+      // Calculate translation to center the cropped area in the preview
+      double translateX = (0.5 - (cropRect.left + cropRect.width / 2)) * renderSize.width;
+      double translateY = (0.5 - (cropRect.top + cropRect.height / 2)) * renderSize.height;
+
+      content = Center(
+        child: Container(
+          width: cropRect.width * renderSize.width,
+          height: cropRect.height * renderSize.height,
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: translateX + (cropRect.width * renderSize.width / 2) - (renderSize.width / 2),
+                top: translateY + (cropRect.height * renderSize.height / 2) - (renderSize.height / 2),
+                width: renderSize.width,
+                height: renderSize.height,
+                child: imageWidget,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
@@ -284,12 +321,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       clipBehavior: Clip.hardEdge,
       child: RotatedBox(
         quarterTurns: _rotation,
-        child: activeTool == 'Crop'
-            ? imageWidget
-            : ClipRect(
-                clipper: _CropClipper(cropRect),
-                child: imageWidget,
-              ),
+        child: content,
       ),
     );
   }
