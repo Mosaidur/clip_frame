@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'schedule_post_screen.dart';
 
 class CaptionGeneratorScreen extends StatefulWidget {
   final String imagePath;
@@ -275,7 +276,12 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
       width: double.infinity,
       height: 55.h,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SchedulePostScreen(imagePath: widget.imagePath)),
+          );
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF007AFF),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
