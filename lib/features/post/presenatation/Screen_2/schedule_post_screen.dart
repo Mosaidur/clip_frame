@@ -144,9 +144,14 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF3E5D8), Color(0xFFFFFFFF), Color(0xFFDCD4F2)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFEFE2C2), // Soft tan/yellow top
+              Color(0xFFF7F7F7), // Neutral middle
+              Color(0xFFE5DDF9), // Light purple bottom
+            ],
+            stops: [0.0, 0.4, 1.0],
           ),
         ),
         child: SafeArea(
@@ -159,13 +164,14 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                 SizedBox(height: 30.h),
                 Text(
                   "Schedule Your Post",
-                  style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8.h),
-                Text(
-                  "Select platform ad pick the best time to publish.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13.sp, color: Colors.black54),
+                  style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                SizedBox(height: 10.h),
+                Text(
+                  "Select platform ad pick the best time to\npublish.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14.sp, color: Colors.black45, height: 1.4),
                 ),
                 SizedBox(height: 30.h),
                 _buildPlatformChips(),
@@ -210,33 +216,48 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       alignment: WrapAlignment.center,
       spacing: 12.w,
       runSpacing: 12.h,
-      children: platforms.map((p) {
-        bool isSelected = selectedPlatform == p;
-        return GestureDetector(
-          onTap: () => setState(() => selectedPlatform = p),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(20.r),
-              border: Border.all(color: isSelected ? const Color(0xFF007AFF) : Colors.transparent),
-              boxShadow: isSelected ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10.r)] : [],
+      children: [
+        _buildPlatformChip("Facebook", Icons.facebook, const Color(0xFF1877F2)),
+        _buildPlatformChip("Instagram", Icons.camera_alt, const Color(0xFFE4405F)),
+        _buildPlatformChip("Tiktok", Icons.music_note, Colors.black),
+      ],
+    );
+  }
+
+  Widget _buildPlatformChip(String name, IconData icon, Color color) {
+    bool isSelected = selectedPlatform == name;
+    return GestureDetector(
+      onTap: () => setState(() => selectedPlatform = name),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25.r),
+          border: Border.all(color: isSelected ? color : Colors.transparent, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10.r,
+              offset: const Offset(0, 4),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                   p == "Facebook" ? Icons.facebook : (p == "Instagram" ? Icons.camera_alt : Icons.music_note),
-                  color: isSelected ? const Color(0xFF007AFF) : Colors.black45,
-                  size: 16.sp,
-                ),
-                SizedBox(width: 6.w),
-                Text(p, style: TextStyle(fontSize: 12.sp, color: isSelected ? const Color(0xFF007AFF) : Colors.black45, fontWeight: FontWeight.bold)),
-              ],
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 18.sp),
+            SizedBox(width: 8.w),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        );
-      }).toList(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -254,8 +275,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Schedule date", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
-              Icon(Icons.calendar_month_outlined, color: Colors.black54, size: 18.sp),
+              Text("Schedule date", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.black)),
             ],
           ),
           SizedBox(height: 15.h),
@@ -280,30 +300,57 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               if (dayNum < 1) dayNum = 31 + dayNum;
                if (dayNum > 30) dayNum = dayNum - 30;
 
-              return Center(
-                child: GestureDetector(
-                  onTap: () => setState(() => selectedDateIndex = index),
-                  child: Container(
-                    padding: EdgeInsets.all(8.r),
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFFF2D78) : Colors.transparent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      dayNum.toString(),
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: isSelected ? Colors.white : (isDimmed ? Colors.black26 : Colors.black87),
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              return GestureDetector(
+                onTap: () => setState(() => selectedDateIndex = index),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 32.r,
+                      height: 32.r,
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFFFF2D78) : Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        dayNum.toString(),
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: isSelected ? Colors.white : (isDimmed ? Colors.black26 : const Color(0xFF636D91)),
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
                       ),
                     ),
-                  ),
+                    if (!isSelected && !isDimmed) ...[
+                      SizedBox(height: 2.h),
+                      _buildDateDots(index),
+                    ],
+                  ],
                 ),
               );
             },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDateDots(int index) {
+    // Semi-mocked dots to match screenshot
+    List<Color> dotColors = [];
+    if (index % 3 == 0) dotColors = [const Color(0xFF007AFF)];
+    if (index % 5 == 0) dotColors = [const Color(0xFFFF2D78), const Color(0xFF007AFF)];
+    if (index % 7 == 0) dotColors = [const Color(0xFF007AFF), const Color(0xFFFF2D78), Colors.black];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: dotColors.map((c) => Container(
+        margin: EdgeInsets.symmetric(horizontal: 1.w),
+        width: 3.r,
+        height: 3.r,
+        decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+      )).toList(),
     );
   }
 
@@ -321,11 +368,14 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
             child: GestureDetector(
               onTap: () => setState(() => selectedTimeMode = mode),
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 10.h),
+                padding: EdgeInsets.symmetric(vertical: 12.h),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFFF2D78).withOpacity(0.8) : Colors.transparent,
                   borderRadius: BorderRadius.circular(20.r),
-                  gradient: isSelected ? const LinearGradient(colors: [Color(0xFFFF2D78), Color(0xFFA048FF)]) : null,
+                  gradient: isSelected ? const LinearGradient(
+                    colors: [Color(0xFFFF52D9), Color(0xFFB53CFF)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ) : null,
                 ),
                 child: Text(
                   mode,
