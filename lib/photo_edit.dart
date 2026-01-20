@@ -258,99 +258,101 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Photo Editor')),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ElevatedButton.icon(
-                icon: const Icon(Icons.photo_library),
-                label: const Text('Pick Image'),
-                onPressed: _isProcessing ? null : _pickImage,
-              ),
-              const SizedBox(height: 20),
-              if (_pickedImage != null) ...[
-                const Text('Original Image:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                Image.file(File(_pickedImage!.path), height: 200, fit: BoxFit.contain),
-                const SizedBox(height: 20),
-                const Text('Basic Filters:', style: TextStyle(fontWeight: FontWeight.bold)),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: _isProcessing ? null : () => _applyFilter('grayscale'),
-                      child: _isProcessing && _appliedFilter == 'grayscale'
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Grayscale'),
-                    ),
-                    ElevatedButton(
-                      onPressed: _isProcessing ? null : () => _applyFilter('sepia'),
-                      child: _isProcessing && _appliedFilter == 'sepia'
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Sepia'),
-                    ),
-                    ElevatedButton(
-                      onPressed: _isProcessing ? null : () => _applyFilter('blur'),
-                      child: _isProcessing && _appliedFilter == 'blur'
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Blur'),
-                    ),
-                  ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.photo_library),
+                  label: const Text('Pick Image'),
+                  onPressed: _isProcessing ? null : _pickImage,
                 ),
                 const SizedBox(height: 20),
-                const Text('Adjustments:', style: TextStyle(fontWeight: FontWeight.bold)),
-                _buildSlider('Brightness', _brightness, (value) {
-                  setState(() => _brightness = value);
-                  _applyFilterWithDebounce('brightness');
-                }),
-                _buildSlider('Contrast', _contrast, (value) {
-                  setState(() => _contrast = value);
-                  _applyFilterWithDebounce('contrast');
-                }),
-                _buildSlider('Saturation', _saturation, (value) {
-                  setState(() => _saturation = value);
-                  _applyFilterWithDebounce('saturation');
-                }),
-                _buildSlider('Highlights', _highlights, (value) {
-                  setState(() => _highlights = value);
-                  _applyFilterWithDebounce('highlights');
-                }),
-                _buildSlider('Shadows', _shadows, (value) {
-                  setState(() => _shadows = value);
-                  _applyFilterWithDebounce('shadows');
-                }),
-                _buildSlider('Temperature', _temperature, (value) {
-                  setState(() => _temperature = value);
-                  _applyFilterWithDebounce('temperature');
-                }),
+                if (_pickedImage != null) ...[
+                  const Text('Original Image:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  Image.file(File(_pickedImage!.path), height: 200, fit: BoxFit.contain),
+                  const SizedBox(height: 20),
+                  const Text('Basic Filters:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _isProcessing ? null : () => _applyFilter('grayscale'),
+                        child: _isProcessing && _appliedFilter == 'grayscale'
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Grayscale'),
+                      ),
+                      ElevatedButton(
+                        onPressed: _isProcessing ? null : () => _applyFilter('sepia'),
+                        child: _isProcessing && _appliedFilter == 'sepia'
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Sepia'),
+                      ),
+                      ElevatedButton(
+                        onPressed: _isProcessing ? null : () => _applyFilter('blur'),
+                        child: _isProcessing && _appliedFilter == 'blur'
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Blur'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('Adjustments:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  _buildSlider('Brightness', _brightness, (value) {
+                    setState(() => _brightness = value);
+                    _applyFilterWithDebounce('brightness');
+                  }),
+                  _buildSlider('Contrast', _contrast, (value) {
+                    setState(() => _contrast = value);
+                    _applyFilterWithDebounce('contrast');
+                  }),
+                  _buildSlider('Saturation', _saturation, (value) {
+                    setState(() => _saturation = value);
+                    _applyFilterWithDebounce('saturation');
+                  }),
+                  _buildSlider('Highlights', _highlights, (value) {
+                    setState(() => _highlights = value);
+                    _applyFilterWithDebounce('highlights');
+                  }),
+                  _buildSlider('Shadows', _shadows, (value) {
+                    setState(() => _shadows = value);
+                    _applyFilterWithDebounce('shadows');
+                  }),
+                  _buildSlider('Temperature', _temperature, (value) {
+                    setState(() => _temperature = value);
+                    _applyFilterWithDebounce('temperature');
+                  }),
+                ],
+                if (_editedImagePath != null) ...[
+                  const SizedBox(height: 20),
+                  const Text('Edited Image:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  Image.file(File(_editedImagePath!), height: 200, fit: BoxFit.contain),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _isProcessing ? null : _saveToGallery,
+                        child: _isProcessing
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Save to Gallery'),
+                      ),
+                      ElevatedButton(
+                        onPressed: _isProcessing ? null : _undoEdit,
+                        child: const Text('Undo'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Applied Filter: ${_appliedFilter ?? "None"}'),
+                ],
               ],
-              if (_editedImagePath != null) ...[
-                const SizedBox(height: 20),
-                const Text('Edited Image:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                Image.file(File(_editedImagePath!), height: 200, fit: BoxFit.contain),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: _isProcessing ? null : _saveToGallery,
-                      child: _isProcessing
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Save to Gallery'),
-                    ),
-                    ElevatedButton(
-                      onPressed: _isProcessing ? null : _undoEdit,
-                      child: const Text('Undo'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text('Applied Filter: ${_appliedFilter ?? "None"}'),
-              ],
-            ],
+            ),
           ),
         ),
       ),

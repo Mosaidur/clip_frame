@@ -32,11 +32,13 @@ dependencies:
     sdk: flutter
 #  gallery_saver: ^2.3.2
   get: ^4.6.6
+  flutter_screenutil: ^5.9.3
   image_picker: ^1.0.8
   path_provider: ^2.1.5
   ffmpeg_kit_flutter_new: ^4.1.0
   path: ^1.8.0
   permission_handler: ^12.0.1
+  uuid: ^4.0.0
   video_player: ^2.7.0
   camera: ^0.10.5+9
   intl: any # Required for localization (AppLocalizations)
@@ -53,6 +55,8 @@ dependencies:
   stylish_bottom_bar: ^1.1.1
   overlapped_carousel: ^1.0.2
   carousel_slider: ^5.1.1
+  gal: ^2.3.2
+  file_picker: ^10.3.8
 
 dev_dependencies:
   flutter_test:
