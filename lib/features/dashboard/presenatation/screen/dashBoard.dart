@@ -6,14 +6,14 @@ import '../widgets/schedule_list.dart';
 
 class DashBoardPage extends StatelessWidget {
   final TextEditingController customTypeController = TextEditingController();
-  String date = 'March 25, 2024';
-  String day = 'Today';
-  String? imageUrl;
-  List<int?> postCounts = [1, 2, 5, 0, 3, 4, 2]; // one value per day
-  List<String> weekdays = ["S", "M", "T", "W", "T", "F", "S"];
-  List<int?> dates = [1, 2, 3, 4, 5, 6, 7]; // replace with actual dates
-  int currentIndex = DateTime.now().weekday % 7; // 0 for Sunday
-  int total = 11;
+  final String date = 'March 25, 2024';
+  final String day = 'Today';
+  final String? imageUrl = null;
+  final List<int?> postCounts = [1, 2, 5, 0, 3, 4, 2]; // one value per day
+  final List<String> weekdays = ["S", "M", "T", "W", "T", "F", "S"];
+  final List<int?> dates = [1, 2, 3, 4, 5, 6, 7]; // replace with actual dates
+  final int currentIndex = DateTime.now().weekday % 7; // 0 for Sunday
+  final int total = 11;
   final List<Map<String, dynamic>> posts = [
     {
       "image": "assets/images/1.jpg",
@@ -398,8 +398,8 @@ class DashBoardPage extends StatelessWidget {
                               "Create Weekly Content",
                               style: TextStyle(color: Colors.white, fontSize: 11.sp),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
                     ),
                     SizedBox(width: 8.w),
@@ -755,22 +755,12 @@ class DashBoardPage extends StatelessWidget {
                         ),
                       );
                     },
-                  ),
                 ),
-                Text(
-                  dates[index].toString(),
-                  style: TextStyle(
-                    color: isToday ? Colors.black : Colors.black38,
-                    fontSize: 16,
-                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                  ),
                 ),
-                const SizedBox(height: 4),
-                _buildDots(postCount),
-              ],
-            ),
-          );
-        }),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -798,159 +788,9 @@ class DashBoardPage extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildPostList(BuildContext context) {
-    return SizedBox(
-      height: 200,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
-          final post = posts[index];
-          return _PostCard(post: post);
-        },
-      ),
-    );
-  }
 }
 
-class _SummaryCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final MainAxisAlignment alignment;
-  final bool reverse;
-  final bool fullWidth;
 
-  const _SummaryCard({
-    required this.label,
-    required this.value,
-    this.alignment = MainAxisAlignment.start,
-    this.reverse = false,
-    this.fullWidth = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisAlignment: alignment,
-        children: reverse
-            ? [
-          _valueText(),
-          const SizedBox(width: 8),
-          Expanded(child: _labelText()),
-        ]
-            : [
-          Expanded(child: _labelText()),
-          const SizedBox(width: 8),
-          _valueText(),
-        ],
-      ),
-    );
-  }
-
-  Widget _labelText() {
-    return Text(
-      label,
-      style: const TextStyle(color: Colors.black54, fontSize: 13, height: 1.2),
-    );
-  }
-
-  Widget _valueText() {
-    return Text(
-      value,
-      style: const TextStyle(
-        color: Colors.black87,
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-              SizedBox(height: 35.h),
-            ],
-          ),
-          TextButton(
-            onPressed: onSeeAll,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(50, 30),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Row(
-              children: const [
-                Text("See All", style: TextStyle(color: Colors.blue, fontSize: 12)),
-                Icon(Icons.chevron_right, color: Colors.blue, size: 16),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _PostCard extends StatelessWidget {
   final Map<String, dynamic> post;
