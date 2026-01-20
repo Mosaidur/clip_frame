@@ -53,7 +53,7 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
     setState(() => isRecording = true);
   }
 
-  Future<void> stopRecording() async {
+  Future<void> stopRecording() async { 
     final file = await controller!.stopVideoRecording();
     setState(() => isRecording = false);
 
