@@ -138,6 +138,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       backgroundColor: Colors.white,
       body: Container(
         width: double.infinity,
@@ -155,6 +156,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           ),
         ),
         child: SafeArea(
+        
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 20.w),
             child: Column(

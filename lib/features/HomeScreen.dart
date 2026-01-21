@@ -45,28 +45,36 @@ class HomePage extends StatelessWidget {
   Widget navItem(IconData icon, int index, String label) {
     return Obx(() {
       bool selected = controller.selectedIndex.value == index;
+      Color activeColor = const Color(0xFF007CFE);
+      Color inactiveColor = const Color(0xFFC4C4C4);
+      
       return GestureDetector(
         onTap: () {
           debugPrint('Nav item $label tapped, index: $index');
           controller.changePage(index);
         },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: selected ? const Color(0xFF007CFE) : Colors.grey,
-              size: 24.r,
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? const Color(0xFF007CFE) : Colors.grey,
-                fontSize: 10.sp,
+        child: Container(
+          color: Colors.transparent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: selected ? activeColor : inactiveColor,
+                size: 26.r,
               ),
-            ),
-          ],
+              SizedBox(height: 4.h),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? activeColor : inactiveColor,
+                  fontSize: 11.sp,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     });
@@ -76,6 +84,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        extendBody: true,
         resizeToAvoidBottomInset: false,
         backgroundColor: Colors.white,
         body: Stack(
@@ -114,27 +123,50 @@ class HomePage extends StatelessWidget {
           ],
         ),
         bottomNavigationBar: Container(
-          height: 75.h,
-          margin: EdgeInsets.only(bottom: 15.h, left: 15.w, right: 15.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(25.r),
-            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10.r, spreadRadius: 2.r)],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          color: Colors.transparent,
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            clipBehavior: Clip.none,
             children: [
-              navItem(Icons.dashboard, 0, "Dashboard"),
-              navItem(Icons.note, 1, "Posts"),
-              SizedBox(width: 50.w), // Space for central FAB
-              navItem(Icons.schedule, 2, "Schedules"),
-              navItem(Icons.person, 3, "Profile"),
+              PhysicalShape(
+                color: Colors.white,
+                elevation: 15,
+                clipper: CustomNotchClipper(),
+                child: Container(
+                  height: 70.h,
+                  padding: EdgeInsets.only(left: 20.w, right: 20.w, bottom: 10.h),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            navItem(Icons.grid_view_rounded, 0, "Dashboard"),
+                            navItem(Icons.video_library_rounded, 1, "Posts"),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 80.w), // Space for FAB
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            navItem(Icons.access_time_filled_rounded, 2, "Schedules"),
+                            navItem(Icons.person_rounded, 3, "Profile"),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         floatingActionButton: Padding(
-          padding: EdgeInsets.only(top: 25.h),
+          padding: EdgeInsets.only(top: 5.h),
           child: GestureDetector(
             onTap: () {
               debugPrint('FAB tapped, isExpanded: ${controller.isExpanded.value}');
@@ -142,8 +174,8 @@ class HomePage extends StatelessWidget {
             },
             child: Obx(() {
               return Container(
-                width: 65.r,
-                height: 65.r,
+                width: 70.r,
+                height: 70.r,
                 decoration: BoxDecoration(
                   gradient: controller.isExpanded.value
                       ? const LinearGradient(
@@ -152,30 +184,30 @@ class HomePage extends StatelessWidget {
                           end: Alignment.bottomRight,
                         )
                       : const LinearGradient(
-                          colors: [Color(0xFFFF277F), Color(0xFF007CFE)],
+                          colors: [Color(0xFFE4405F), Color(0xFF6A5AEF)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: Colors.black26, blurRadius: 10.r, offset: Offset(0, 4.h)),
-                  ],
-                  border: Border.all(color: Colors.white, width: 2.w),
+                  // boxShadow: [
+                  //   BoxShadow(color: Colors.black12, blurRadius: 15.r, offset: Offset(0, 8.h)),
+                  // ],
+                  // border: Border.all(color: Colors.white, width: 4.w),
                 ),
                 child: controller.isExpanded.value
                     ? ShaderMask(
                         shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Color(0xFFFF277F), Color(0xFF007CFE)],
+                          colors: [Color(0xFFE4405F), Color(0xFF6A5AEF)],
                         ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
                         child: Icon(
                           Icons.add,
-                          size: 40.r,
+                          size: 35.r,
                           color: Colors.white,
                         ),
                       )
                     : Icon(
                         Icons.add,
-                        size: 40.r,
+                        size: 35.r,
                         color: Colors.white,
                       ),
               );
@@ -185,4 +217,47 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
+}
+
+class CustomNotchClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    Path path = Path();
+    double notchWidth = 100.w; // Slightly wider for a smoother feel
+    double notchHeight = 40.h;
+    double centerX = size.width / 2;
+    double cornerRadius = 20.r;
+
+    path.moveTo(0, cornerRadius);
+    path.quadraticBezierTo(0, 0, cornerRadius, 0);
+
+    // Line to notch start
+    path.lineTo(centerX - notchWidth / 2 - 20.w, 0);
+
+    // Smooth curve into the notch
+    path.cubicTo(
+      centerX - notchWidth / 2, 0,
+      centerX - notchWidth / 4, notchHeight,
+      centerX, notchHeight,
+    );
+
+    // Smooth curve out of the notch
+    path.cubicTo(
+      centerX + notchWidth / 4, notchHeight,
+      centerX + notchWidth / 2, 0,
+      centerX + notchWidth / 2 + 20.w, 0,
+    );
+
+    path.lineTo(size.width - cornerRadius, 0);
+    path.quadraticBezierTo(size.width, 0, size.width, cornerRadius);
+
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => true;
 }
