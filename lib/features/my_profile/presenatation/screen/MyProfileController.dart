@@ -20,13 +20,7 @@ class MyProfilePage extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFEBC894), Color(0xFFB49EF4)],
-        ),
-      ),
+      color: Colors.transparent,
       child: SafeArea(
         child: SingleChildScrollView(
           child: Column(

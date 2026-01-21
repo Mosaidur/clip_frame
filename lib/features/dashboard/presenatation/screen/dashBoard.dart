@@ -43,13 +43,7 @@ class DashBoardPage extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFB49EF4), Color(0xFFEBC894)],
-        ),
-      ),
+      color: Colors.transparent,
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Container(

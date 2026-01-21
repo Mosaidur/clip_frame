@@ -82,13 +82,21 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        extendBody: true,
-        resizeToAvoidBottomInset: false,
-        backgroundColor: Colors.white,
-        body: Stack(
-          children: [
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFB49EF4), Color(0xFFEBC894)],
+        ),
+      ),
+      child: SafeArea(
+        child: Scaffold(
+          extendBody: true,
+          resizeToAvoidBottomInset: false,
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
             Obx(() {
               debugPrint('Building page: ${controller.selectedIndex.value}');
               return controller.pages[controller.selectedIndex.value];
@@ -215,8 +223,9 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class CustomNotchClipper extends CustomClipper<Path> {

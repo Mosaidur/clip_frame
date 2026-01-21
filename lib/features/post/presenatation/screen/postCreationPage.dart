@@ -90,17 +90,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
       body: SafeArea(
         child: Container(
           height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFEBC894),
-                // Color(0xFFFFFFF),
-                Color(0xFFB49EF4),
-              ],
-            ),
-          ),
+          color: Colors.transparent,
           child: SingleChildScrollView(
             child: Column(
               children: [

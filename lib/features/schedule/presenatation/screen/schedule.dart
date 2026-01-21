@@ -167,13 +167,7 @@ class ScheduleScreenPage extends StatelessWidget {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFEBC894), Color(0xFFB49EF4)],
-          ),
-        ),
+        color: Colors.transparent,
         child: SafeArea(
           bottom: false, // Let navigation bar handle the bottom if needed, or keep it true if you want items away from system nav
           child: Column(
