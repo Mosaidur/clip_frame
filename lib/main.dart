@@ -11,8 +11,17 @@ import 'Shared/theme/AppTheme.dart';
 
 
 
+import 'package:flutter/services.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Set status bar to transparent
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark, // Adjust based on your primary background
+    systemNavigationBarColor: Colors.transparent,
+  ));
 
 
   // Initialize the language controller

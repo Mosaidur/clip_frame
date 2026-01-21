@@ -11,6 +11,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:get/get.dart';
+import 'AiVideoEditPage.dart';
 
 /// ---- Models for History ----
 enum EditType { trim, split, crop, speed, filter, addAudio, replace, bgRemove, overlayText, merged }
@@ -1554,30 +1556,17 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       // Save to Gallery using Gal
       setState(() => statusText = "Saving to Gallery...");
       if (finalOutputPath != null) {
-         final file = File(finalOutputPath);
-         if (!await file.exists()) {
-           throw Exception("Output file not found");
-         }
-         
-         // Explicit permission request
-         bool hasAccess = await Gal.hasAccess();
-         if (!hasAccess) {
-            hasAccess = await Gal.requestAccess();
-         }
-         
-         if (hasAccess) {
-            await Gal.putVideo(finalOutputPath, album: "ClipFrame");
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Saved to Gallery successfully!"),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            }
-         } else {
-            throw Exception("Gallery access denied");
-         }
+        if (mounted) {
+          // PAUSE current player to free up decoding resources for the next screen
+          if (initialized) _controller.pause();
+          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AiVideoEditPage(videoFile: File(finalOutputPath!)),
+            ),
+          );
+        }
       }
 
     } catch (e) {
@@ -1857,14 +1846,17 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                       color: Colors.black,
                     ),
                   ),
-                  // Menu Icon
-                  Container(
-                    padding: EdgeInsets.all(12.r),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFACAAAA),
-                      shape: BoxShape.circle,
+                  // Save Button
+                  GestureDetector(
+                    onTap: exportAndSaveVideo,
+                    child: Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFACAAAA),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.download_rounded, size: 20.r, color: Colors.black),
                     ),
-                    child: Icon(Icons.grid_view_rounded, size: 20.r, color: Colors.black),
                   ),
                 ],
               ),
@@ -1945,6 +1937,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             ),
     );
   }
+
+
 
   Widget _buildVideoPlayerSection() {
     return Expanded(
@@ -2128,11 +2122,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             },
           ),
           TextButton(
-            onPressed: () {
-              // Handle Done
-            },
+            onPressed: isExporting ? null : exportAndSaveVideo,
             child: Text(
-              "DONE",
+              "SAVE",
               style: TextStyle(
                 color: const Color(0xFF5D5D5D),
                 fontWeight: FontWeight.bold,
@@ -2590,7 +2582,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             elevation: 0,
           ),
           child: Text(
-            "Save to Gallery",
+            "Save",
             style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
           ),
         ),
