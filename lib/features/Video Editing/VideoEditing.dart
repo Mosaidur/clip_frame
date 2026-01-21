@@ -303,6 +303,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       currentFile = f;
       currentVideoIndex = index;
       if (initialized) {
+        initialized = false; // Reset first
         await _controller.pause();
         _controller.removeListener(_videoListener);
         await _controller.dispose();
@@ -319,6 +320,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       if (play) _controller.play();
     } catch (e) {
       debugPrint("Error setting current file: $e");
+      setState(() => initialized = false); // Ensure flag is false on error
     }
   }
 
@@ -506,11 +508,14 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     if (index < videoSpeeds.length) videoSpeeds.removeAt(index);
     final removed = videoList.removeAt(index);
     if (currentFile?.path == removed.path) {
-      if (videoList.isNotEmpty) _setCurrentFile(videoList.first, 0);
-      else {
+      if (videoList.isNotEmpty) {
+        _setCurrentFile(videoList.first, 0);
+      } else {
         currentFile = null;
-        _controller.dispose();
-        initialized = false;
+        if (initialized) {
+          initialized = false;
+          _controller.dispose();
+        }
       }
     }
     setState(() {});
@@ -1557,8 +1562,13 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       setState(() => statusText = "Saving to Gallery...");
       if (finalOutputPath != null) {
         if (mounted) {
-          // PAUSE current player to free up decoding resources for the next screen
-          if (initialized) _controller.pause();
+          // DISPOSE current player to free up decoding resources for the next screen
+          if (initialized) {
+            initialized = false; // Reset flag IMMEDIATELY before or after disposal to prevent UI crash
+            _controller.removeListener(_videoListener);
+            _controller.pause();
+            _controller.dispose();
+          }
           
           Navigator.push(
             context,
@@ -1948,7 +1958,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            if (currentFile != null && initialized)
+            if (currentFile != null && initialized && _controller.value.isInitialized)
               Center(
                 child: AspectRatio(
                   aspectRatio: _controller.value.aspectRatio,

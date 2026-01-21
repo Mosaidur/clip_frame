@@ -256,11 +256,15 @@ class _AiVideoEditPageState extends State<AiVideoEditPage> {
                         height: 50.h,
                         child: ElevatedButton(
                           onPressed: () {
-                            if (_initialized) _controller.pause();
+                            if (_initialized) {
+                              _controller.pause();
+                              _controller.dispose();
+                              _initialized = false;
+                            }
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const CaptionGeneratorPage(),
+                                builder: (context) => CaptionGeneratorPage(videoFile: widget.videoFile),
                               ),
                             );
                           },

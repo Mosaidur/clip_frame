@@ -1,11 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-
 import 'package:flutter/services.dart';
+import 'VideoFinalPreviewPage.dart';
 
 class CaptionGeneratorPage extends StatefulWidget {
-  const CaptionGeneratorPage({super.key});
+  final File videoFile;
+  const CaptionGeneratorPage({super.key, required this.videoFile});
 
   @override
   State<CaptionGeneratorPage> createState() => _CaptionGeneratorPageState();
@@ -218,7 +220,16 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                       height: 55.h,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Final Navigation or Completion
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => VideoFinalPreviewPage(
+                                videoFile: widget.videoFile,
+                                caption: "“Check out our sizzling lunch specials! 🍕🍕 Come hungry, leave happy. #FoodieLove”",
+                                hashtags: const ["#Foodielover", "#Foodielover", "#Foodielover"],
+                              ),
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0080FF),
