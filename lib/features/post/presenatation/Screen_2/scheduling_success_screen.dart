@@ -3,9 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class SchedulingSuccessScreen extends StatelessWidget {
-  final String imagePath;
+  final String mediaPath;
+  final bool isImage;
+  final String? caption;
+  final List<String>? hashtags;
   final String scheduledTime;
-  const SchedulingSuccessScreen({super.key, required this.imagePath, required this.scheduledTime});
+
+  const SchedulingSuccessScreen({
+    super.key,
+    required this.mediaPath,
+    required this.scheduledTime,
+    this.isImage = true,
+    this.caption,
+    this.hashtags,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +40,11 @@ class SchedulingSuccessScreen extends StatelessWidget {
                 SizedBox(height: 30.h),
                 Text(
                   "Successfully Scheduled!",
-                  style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: Colors.black),
+                  style: TextStyle(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
                 SizedBox(height: 10.h),
                 Text(
@@ -58,19 +73,41 @@ class SchedulingSuccessScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25.r),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15.r, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15.r,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.only(topLeft: Radius.circular(25.r), topRight: Radius.circular(25.r)),
-            child: Image.file(
-              File(imagePath),
-              height: 250.h,
-              width: double.infinity,
-              fit: BoxFit.cover,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(25.r),
+              topRight: Radius.circular(25.r),
             ),
+            child: isImage
+                ? Image.file(
+                    File(mediaPath),
+                    height: 250.h,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                : Container(
+                    height: 250.h,
+                    width: double.infinity,
+                    color: Colors.black,
+                    child: Center(
+                      child: Icon(
+                        Icons.video_collection_rounded,
+                        color: Colors.white,
+                        size: 50.r,
+                      ),
+                    ),
+                  ),
           ),
           Padding(
             padding: EdgeInsets.all(16.w),
@@ -83,13 +120,27 @@ class SchedulingSuccessScreen extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Platform:", style: TextStyle(fontSize: 10.sp, color: Colors.black45)),
+                        Text(
+                          "Platform:",
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: Colors.black45,
+                          ),
+                        ),
                         SizedBox(height: 4.h),
                         Row(
                           children: [
-                            Icon(Icons.facebook, color: const Color(0xFF1877F2), size: 18.sp),
-                             SizedBox(width: 4.w),
-                            Icon(Icons.camera_alt, color: const Color(0xFFE4405F), size: 18.sp),
+                            Icon(
+                              Icons.facebook,
+                              color: const Color(0xFF1877F2),
+                              size: 18.sp,
+                            ),
+                            SizedBox(width: 4.w),
+                            Icon(
+                              Icons.camera_alt,
+                              color: const Color(0xFFE4405F),
+                              size: 18.sp,
+                            ),
                           ],
                         ),
                       ],
@@ -97,29 +148,47 @@ class SchedulingSuccessScreen extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text("Scheduled for:", style: TextStyle(fontSize: 10.sp, color: Colors.black45)),
+                        Text(
+                          "Scheduled for:",
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: Colors.black45,
+                          ),
+                        ),
                         SizedBox(height: 4.h),
                         Text(
                           "Tue, 24 Jun 2025\n$scheduledTime",
                           textAlign: TextAlign.right,
-                          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
                 SizedBox(height: 20.h),
-                Text("Caption:", style: TextStyle(fontSize: 10.sp, color: Colors.black45)),
+                Text(
+                  "Caption:",
+                  style: TextStyle(fontSize: 10.sp, color: Colors.black45),
+                ),
                 SizedBox(height: 4.h),
                 Text(
-                   "“Check out our sizzling lunch specials! 🍕🍕 Come hungry, leave happy. #FoodieLove“",
+                  caption ??
+                      "“Check out our sizzling lunch specials! 🍕🍕 Come hungry, leave happy. #FoodieLove“",
                   style: TextStyle(fontSize: 12.sp, color: Colors.black87),
                 ),
                 SizedBox(height: 20.h),
-                Text("Tags:", style: TextStyle(fontSize: 10.sp, color: Colors.black45)),
+                Text(
+                  "Tags:",
+                  style: TextStyle(fontSize: 10.sp, color: Colors.black45),
+                ),
                 SizedBox(height: 4.h),
                 Text(
-                  "#FoodieLove #FoodieLove #FoodieLove #FoodieLove",
+                  hashtags?.join(' ') ??
+                      "#FoodieLove #FoodieLove #FoodieLove #FoodieLove",
                   style: TextStyle(fontSize: 12.sp, color: Colors.black54),
                 ),
               ],
@@ -133,11 +202,23 @@ class SchedulingSuccessScreen extends StatelessWidget {
   Widget _buildActionButtons() {
     return Row(
       children: [
-        _buildActionButton(Icons.edit_outlined, "Edit", const Color(0xFFFFC107)),
+        _buildActionButton(
+          Icons.edit_outlined,
+          "Edit",
+          const Color(0xFFFFC107),
+        ),
         SizedBox(width: 10.w),
-        _buildActionButton(Icons.copy_rounded, "Duplicate", const Color(0xFF916BFF)),
+        _buildActionButton(
+          Icons.copy_rounded,
+          "Duplicate",
+          const Color(0xFF916BFF),
+        ),
         SizedBox(width: 10.w),
-        _buildActionButton(Icons.delete_outline_rounded, "Delete", const Color(0xFFFF3B30)),
+        _buildActionButton(
+          Icons.delete_outline_rounded,
+          "Delete",
+          const Color(0xFFFF3B30),
+        ),
       ],
     );
   }
@@ -155,7 +236,14 @@ class SchedulingSuccessScreen extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 16.sp),
             SizedBox(width: 4.w),
-            Text(label, style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
           ],
         ),
       ),
@@ -173,10 +261,19 @@ class SchedulingSuccessScreen extends StatelessWidget {
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF007AFF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.r),
+          ),
           elevation: 0,
         ),
-        child: Text("Back to Dashboard", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.bold)),
+        child: Text(
+          "Back to Dashboard",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

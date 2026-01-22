@@ -3,8 +3,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'scheduling_success_screen.dart';
 
 class SchedulePostScreen extends StatefulWidget {
-  final String imagePath;
-  const SchedulePostScreen({super.key, required this.imagePath});
+  final String mediaPath;
+  final String? caption;
+  final List<String>? hashtags;
+  final bool isImage;
+
+  const SchedulePostScreen({
+    super.key,
+    required this.mediaPath,
+    this.caption,
+    this.hashtags,
+    this.isImage = true,
+  });
 
   @override
   State<SchedulePostScreen> createState() => _SchedulePostScreenState();
@@ -113,7 +123,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                       child: Text("Schedule", style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.bold)),
                     ),
                   ),
+
                   SizedBox(width: 12.w),
+                  
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(context),
@@ -136,7 +148,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.white,
@@ -566,7 +578,10 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => SchedulingSuccessScreen(
-                          imagePath: widget.imagePath,
+                          mediaPath: widget.mediaPath,
+                          isImage: widget.isImage,
+                          caption: widget.caption,
+                          hashtags: widget.hashtags,
                           scheduledTime: "${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} $period",
                         ),
                       ),

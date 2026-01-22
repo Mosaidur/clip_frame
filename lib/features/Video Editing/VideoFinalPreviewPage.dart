@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:video_player/video_player.dart';
+import '../post/presenatation/Screen_2/schedule_post_screen.dart';
+import 'package:get/get.dart';
 
 class VideoFinalPreviewPage extends StatefulWidget {
   final File videoFile;
@@ -21,10 +23,13 @@ class VideoFinalPreviewPage extends StatefulWidget {
 }
 
 class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
+
+
   late VideoPlayerController _controller;
   bool _initialized = false;
   bool _showControls = true;
   String? _errorMessage;
+
 
   @override
   void initState() {
@@ -260,8 +265,17 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
                 height: 55.h,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Navigate back to Home or specific completion page
-                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SchedulePostScreen(
+                          mediaPath: widget.videoFile.path,
+                          caption: widget.caption,
+                          hashtags: widget.hashtags,
+                          isImage: false,
+                        ),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0080FF),

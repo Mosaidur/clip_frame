@@ -279,7 +279,7 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => SchedulePostScreen(imagePath: widget.imagePath)),
+            MaterialPageRoute(builder: (context) => SchedulePostScreen(mediaPath: widget.imagePath, isImage: true)),
           );
         },
         style: ElevatedButton.styleFrom(
