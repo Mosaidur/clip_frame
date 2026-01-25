@@ -62,6 +62,7 @@ class PostContent extends StatelessWidget {
                     radius: 12.5,
                     backgroundImage: AssetImage(profileImage),
                   ),
+                  
                   const SizedBox(width: 5),
                   Text(
                     name,

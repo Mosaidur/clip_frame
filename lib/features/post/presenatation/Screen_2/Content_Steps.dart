@@ -216,8 +216,8 @@
 
 
 import 'package:flutter/material.dart';
-
 import '../../../Video Editing/VideoList.dart';
+import '../../../story_creation/story_capture.dart';
 
 class StepByStepPage extends StatelessWidget {
   const StepByStepPage({super.key});
@@ -352,7 +352,7 @@ class StepByStepPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           // MaterialPageRoute(builder: (context) => StepByStepContentScreen()),
-                          MaterialPageRoute(builder: (context) => VideoListPage()),
+                          MaterialPageRoute(builder: (context) => StoryCapturePage()),
                         );
 
                       },
