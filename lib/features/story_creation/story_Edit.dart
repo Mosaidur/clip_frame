@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-enum StoryEditTool { bg, adjust, crop, filter }
+enum StoryEditTool { bg, adjust, crop, filter, frame }
 
 class StoryEditPage extends StatefulWidget {
   final List<File> files;
@@ -41,6 +41,23 @@ class _StoryEditPageState extends State<StoryEditPage> {
   bool _flipHorizontal = false;
   bool _flipVertical = false;
 
+  // Frame states
+  int _selectedFrameIndex = -1; // -1 means no frame
+  Rect _frameRect = const Rect.fromLTWH(0.05, 0.05, 0.9, 0.9);
+  bool _lockFrameAspectRatio = true;
+  double _frameEdgeAdjustment = 0.0;
+  final List<String> _frameAssets = [
+    "assets/images/frame1.jpg",
+    "assets/images/frame2.jpg",
+    "assets/images/frame3.png",
+    "assets/images/frame4.jpg",
+    "assets/images/frame5.jpg",
+    "assets/images/frame6.png",
+    "assets/images/frame8.jpg",
+    "assets/images/frame9.jpg",
+    "assets/images/frame10.jpg",
+  ];
+
   // Snapshot states for cancel logic
   double? _snapBrightness;
   double? _snapContrast;
@@ -57,6 +74,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
   String? _snapAspectRatio;
   bool? _snapFlipHorizontal;
   bool? _snapFlipVertical;
+  int? _snapFrameIndex;
+  Rect? _snapFrameRect;
+  bool? _snapLockFrameAspectRatio;
+  double? _snapFrameEdgeAdjustment;
 
   void _takeSnapshot() {
     _snapBrightness = _brightness;
@@ -74,6 +95,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
     _snapAspectRatio = _selectedAspectRatio;
     _snapFlipHorizontal = _flipHorizontal;
     _snapFlipVertical = _flipVertical;
+    _snapFrameIndex = _selectedFrameIndex;
+    _snapFrameRect = _frameRect;
+    _snapLockFrameAspectRatio = _lockFrameAspectRatio;
+    _snapFrameEdgeAdjustment = _frameEdgeAdjustment;
   }
 
   void _revertToSnapshot() {
@@ -92,6 +117,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
     if (_snapAspectRatio != null) _selectedAspectRatio = _snapAspectRatio!;
     if (_snapFlipHorizontal != null) _flipHorizontal = _snapFlipHorizontal!;
     if (_snapFlipVertical != null) _flipVertical = _snapFlipVertical!;
+    if (_snapFrameIndex != null) _selectedFrameIndex = _snapFrameIndex!;
+    if (_snapFrameRect != null) _frameRect = _snapFrameRect!;
+    if (_snapLockFrameAspectRatio != null) _lockFrameAspectRatio = _snapLockFrameAspectRatio!;
+    if (_snapFrameEdgeAdjustment != null) _frameEdgeAdjustment = _snapFrameEdgeAdjustment!;
   }
 
   final Map<String, List<Map<String, dynamic>>> _filterCategories = {
@@ -277,7 +306,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
               return Container(
                 margin: EdgeInsets.symmetric(horizontal: 20.w),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20.r),
+                  borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -286,11 +315,12 @@ class _StoryEditPageState extends State<StoryEditPage> {
                     )
                   ],
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20.r),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.zero,
                         child: LayoutBuilder(
                           builder: (context, innerConstraints) {
                             final w = innerConstraints.maxWidth;
@@ -337,6 +367,90 @@ class _StoryEditPageState extends State<StoryEditPage> {
                           },
                         ),
                       ),
+                    ),
+                    if (_selectedFrameIndex != -1)
+                        Positioned.fill(
+                          child: LayoutBuilder(
+                            builder: (context, frameConstraints) {
+                              final fw = frameConstraints.maxWidth;
+                              final fh = frameConstraints.maxHeight;
+
+                              final adjustedRect = _frameRect.inflate(_frameEdgeAdjustment);
+                              final fRect = Rect.fromLTWH(
+                                adjustedRect.left * fw,
+                                adjustedRect.top * fh,
+                                adjustedRect.width * fw,
+                                adjustedRect.height * fh,
+                              );
+
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Positioned(
+                                    left: fRect.left,
+                                    top: fRect.top,
+                                    width: fRect.width,
+                                    height: fRect.height,
+                                    child: GestureDetector(
+                                      onPanUpdate: (details) {
+                                        if (_activeTool == StoryEditTool.frame) {
+                                          setState(() {
+                                            double dx = details.delta.dx / fw;
+                                            double dy = details.delta.dy / fh;
+                                            _frameRect = Rect.fromLTWH(
+                                              (_frameRect.left + dx).clamp(-0.5, 1.5),
+                                              (_frameRect.top + dy).clamp(-0.5, 1.5),
+                                              _frameRect.width,
+                                              _frameRect.height,
+                                            );
+                                          });
+                                        }
+                                      },
+                                      child: IgnorePointer(
+                                        ignoring: _activeTool != StoryEditTool.frame,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.zero,
+                                          child: Image.asset(
+                                            _frameAssets[_selectedFrameIndex],
+                                            fit: BoxFit.fill,
+                                            cacheWidth: (fw * 2).toInt(), // High quality frame
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  if (_activeTool == StoryEditTool.frame) ...[
+                                    // Guide border
+                                    Positioned(
+                                      left: fRect.left,
+                                      top: fRect.top,
+                                      width: fRect.width,
+                                      height: fRect.height,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: Colors.blue.withOpacity(0.5), width: 1.w, style: BorderStyle.none), // Custom dashed design could be added here
+                                        ),
+                                      ),
+                                    ),
+                                    // Corner Handles
+                                    _buildCropHandle(fRect.topLeft, (d) => _updateFrameRect(d, fw, fh, isTop: true, isLeft: true)),
+                                    _buildCropHandle(fRect.topRight, (d) => _updateFrameRect(d, fw, fh, isTop: true, isLeft: false)),
+                                    _buildCropHandle(fRect.bottomLeft, (d) => _updateFrameRect(d, fw, fh, isTop: false, isLeft: true)),
+                                    _buildCropHandle(fRect.bottomRight, (d) => _updateFrameRect(d, fw, fh, isTop: false, isLeft: false)),
+                                    
+                                    if (!_lockFrameAspectRatio) ...[
+                                      // Side Handles
+                                      _buildCropHandle(Offset(fRect.center.dx, fRect.top), (d) => _updateFrameRect(d, fw, fh, isTop: true, isLeft: null)),
+                                      _buildCropHandle(Offset(fRect.center.dx, fRect.bottom), (d) => _updateFrameRect(d, fw, fh, isTop: false, isLeft: null)),
+                                      _buildCropHandle(Offset(fRect.left, fRect.center.dy), (d) => _updateFrameRect(d, fw, fh, isTop: null, isLeft: true)),
+                                      _buildCropHandle(Offset(fRect.right, fRect.center.dy), (d) => _updateFrameRect(d, fw, fh, isTop: null, isLeft: false)),
+                                    ],
+                                  ],
+                                ],
+                              );
+                            },
+                          ),
+                        ),
                       if (_activeTool == StoryEditTool.crop)
                         Positioned.fill(
                           child: LayoutBuilder(
@@ -385,8 +499,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
                         ),
                     ],
                   ),
-                ),
-              );
+                );
             },
           ),
         ),
@@ -441,7 +554,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
             _toolIcon(Icons.auto_awesome_motion_rounded, "Filter", StoryEditTool.filter),
             _toolIcon(Icons.compare_arrows_rounded, "Split", null), 
             _toolIcon(Icons.content_cut_rounded, "Trim", null),
-            _toolIcon(Icons.delete_outline_rounded, "Delete", null),
+            _toolIcon(Icons.crop_free_rounded, "Frame", StoryEditTool.frame),
           ],
         ),
       ),
@@ -493,7 +606,142 @@ class _StoryEditPageState extends State<StoryEditPage> {
         if (_activeTool == StoryEditTool.filter) _buildFilterPanel(),
         if (_activeTool == StoryEditTool.bg) _buildBGPanel(),
         if (_activeTool == StoryEditTool.crop) _buildCropPanel(),
+        if (_activeTool == StoryEditTool.frame) _buildFramePanel(),
       ],
+    );
+  }
+
+  Widget _buildFramePanel() {
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                _frameActionBtn(
+                  _lockFrameAspectRatio ? Icons.lock_rounded : Icons.lock_open_rounded, 
+                  _lockFrameAspectRatio ? "Locked" : "Free", 
+                  () => setState(() => _lockFrameAspectRatio = !_lockFrameAspectRatio)
+                ),
+                SizedBox(width: 8.w),
+                _frameActionBtn(Icons.center_focus_strong_rounded, "Center", () {
+                  setState(() {
+                    _frameRect = const Rect.fromLTWH(0.05, 0.05, 0.9, 0.9);
+                    _frameEdgeAdjustment = 0.0;
+                  });
+                }),
+                SizedBox(width: 8.w),
+                _frameActionBtn(Icons.fullscreen_rounded, "Smart Fit", () {
+                  setState(() {
+                    _frameRect = const Rect.fromLTWH(0, 0, 1, 1);
+                    _frameEdgeAdjustment = 0.15; // Good default for many frames
+                  });
+                }),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Edge Adjustment", style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: Colors.blue)),
+                  Text("${(_frameEdgeAdjustment * 100).toInt()}%", style: TextStyle(fontSize: 10.sp, color: Colors.blue)),
+                ],
+              ),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 2.h,
+                  thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6.r),
+                  overlayShape: RoundSliderOverlayShape(overlayRadius: 14.r),
+                ),
+                child: Slider(
+                  value: _frameEdgeAdjustment,
+                  min: 0.0,
+                  max: 0.4,
+                  onChanged: (val) => setState(() => _frameEdgeAdjustment = val),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 100.h,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            itemCount: _frameAssets.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                 return _frameItem(-1, "assets/images/edit_photo.png", "NONE");
+              }
+              return _frameItem(index - 1, _frameAssets[index - 1], "Frame $index");
+            },
+          ),
+        ),
+        SizedBox(height: 20.h),
+      ],
+    );
+  }
+
+  Widget _frameItem(int index, String asset, String label) {
+    bool selected = index == _selectedFrameIndex;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFrameIndex = index),
+      child: Column(
+        children: [
+          Container(
+            width: 70.w,
+            height: 70.w,
+            margin: EdgeInsets.only(right: 12.w),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(10.r),
+              border: selected ? Border.all(color: Colors.blue, width: 2.w) : null,
+              image: DecorationImage(
+                image: ResizeImage(AssetImage(asset), width: 150),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 8.sp,
+              color: selected ? Colors.black : Colors.black45,
+              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _frameActionBtn(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(15.r),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16.r, color: Colors.blue),
+            SizedBox(width: 6.w),
+            Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: Colors.black54)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -833,6 +1081,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
       case StoryEditTool.bg: title = "Background"; break;
       case StoryEditTool.adjust: title = "Adjust"; break;
       case StoryEditTool.crop: title = "Crop Photos"; break;
+      case StoryEditTool.frame: title = "Frame"; break;
       case StoryEditTool.filter: title = "Filter"; break;
       default: break;
     }
@@ -937,6 +1186,62 @@ class _StoryEditPageState extends State<StoryEditPage> {
         ),
       ),
     );
+  }
+
+  void _updateFrameRect(Offset delta, double w, double h, {bool? isTop, bool? isLeft}) {
+    setState(() {
+      double dx = delta.dx / w;
+      double dy = delta.dy / h;
+      
+      double left = _frameRect.left;
+      double top = _frameRect.top;
+      double width = _frameRect.width;
+      double height = _frameRect.height;
+      
+      double initialRatio = width / height;
+
+      if (isLeft != null) {
+        if (isLeft) {
+          double newLeft = (left + dx).clamp(-0.5, left + width - 0.05);
+          width += (left - newLeft);
+          left = newLeft;
+        } else {
+          width = (width + dx).clamp(0.05, 1.5 - left);
+        }
+      }
+
+      if (isTop != null) {
+        if (isTop) {
+          double newTop = (top + dy).clamp(-0.5, top + height - 0.05);
+          height += (top - newTop);
+          top = newTop;
+        } else {
+          height = (height + dy).clamp(0.05, 1.5 - top);
+        }
+      }
+
+      if (_lockFrameAspectRatio) {
+        if (isTop != null && isLeft != null) {
+            height = width / initialRatio;
+        } else if (isTop != null) {
+            width = height * initialRatio;
+        } else if (isLeft != null) {
+            height = width / initialRatio;
+        }
+        
+        if (left + width > 1.5) width = 1.5 - left;
+        if (top + height > 1.5) height = 1.5 - top;
+        if (width / height != initialRatio) {
+            if (width / height > initialRatio) {
+                width = height * initialRatio;
+            } else {
+                height = width / initialRatio;
+            }
+        }
+      }
+
+      _frameRect = Rect.fromLTWH(left, top, width, height);
+    });
   }
 
   Widget _buildAdjustPanel() {
