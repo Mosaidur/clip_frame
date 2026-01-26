@@ -34,8 +34,12 @@ class _StoryEditPageState extends State<StoryEditPage> {
   String _selectedFilterCategory = "Trending";
 
   // Crop states
-  Rect _cropRect = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0);
+  Rect _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
   int _rotation = 0;
+  String _cropMode = "Format"; // "Format" or "Rotate"
+  String _selectedAspectRatio = "Original"; // "Original", "1:1", "4:5", "16:9", "9:16", "3:2"
+  bool _flipHorizontal = false;
+  bool _flipVertical = false;
 
   // Snapshot states for cancel logic
   double? _snapBrightness;
@@ -49,6 +53,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
   String? _snapFilterCategory;
   Rect? _snapCropRect;
   int? _snapRotation;
+  String? _snapCropMode;
+  String? _snapAspectRatio;
+  bool? _snapFlipHorizontal;
+  bool? _snapFlipVertical;
 
   void _takeSnapshot() {
     _snapBrightness = _brightness;
@@ -62,6 +70,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
     _snapFilterCategory = _selectedFilterCategory;
     _snapCropRect = _cropRect;
     _snapRotation = _rotation;
+    _snapCropMode = _cropMode;
+    _snapAspectRatio = _selectedAspectRatio;
+    _snapFlipHorizontal = _flipHorizontal;
+    _snapFlipVertical = _flipVertical;
   }
 
   void _revertToSnapshot() {
@@ -76,6 +88,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
     if (_snapFilterCategory != null) _selectedFilterCategory = _snapFilterCategory!;
     if (_snapCropRect != null) _cropRect = _snapCropRect!;
     if (_snapRotation != null) _rotation = _snapRotation!;
+    if (_snapCropMode != null) _cropMode = _snapCropMode!;
+    if (_snapAspectRatio != null) _selectedAspectRatio = _snapAspectRatio!;
+    if (_snapFlipHorizontal != null) _flipHorizontal = _snapFlipHorizontal!;
+    if (_snapFlipVertical != null) _flipVertical = _snapFlipVertical!;
   }
 
   final Map<String, List<Map<String, dynamic>>> _filterCategories = {
@@ -169,6 +185,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
           ),
         ),
         child: SafeArea(
+          bottom: false,
           child: Column(
             children: [
               // 1. Header
@@ -274,38 +291,96 @@ class _StoryEditPageState extends State<StoryEditPage> {
                   child: Stack(
                     children: [
                       Positioned.fill(
-                        child: PageView.builder(
-                          controller: _pageController,
-                          itemCount: widget.files.isNotEmpty ? widget.files.length : 1,
-                          onPageChanged: (index) {
-                            setState(() => _currentPage = index);
-                          },
-                          itemBuilder: (context, index) {
-                            return ColorFiltered(
-                              colorFilter: ColorFilter.matrix(_getCombinedMatrix()),
-                              child: widget.files.isNotEmpty
-                                  ? Image.file(
-                                      widget.files[index],
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Image.network(
-                                      "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe",
-                                      fit: BoxFit.cover,
-                                    ),
+                        child: LayoutBuilder(
+                          builder: (context, innerConstraints) {
+                            final w = innerConstraints.maxWidth;
+                            final h = innerConstraints.maxHeight;
+                            
+                            Widget content = Transform(
+                              alignment: Alignment.center,
+                              transform: Matrix4.identity()
+                                ..rotateZ(_rotation * 3.14159 / 180)
+                                ..scale(_flipHorizontal ? -1.0 : 1.0, _flipVertical ? -1.0 : 1.0),
+                              child: PageView.builder(
+                                controller: _pageController,
+                                itemCount: widget.files.isNotEmpty ? widget.files.length : 1,
+                                onPageChanged: (index) {
+                                  setState(() => _currentPage = index);
+                                },
+                                itemBuilder: (context, index) {
+                                  return ColorFiltered(
+                                    colorFilter: ColorFilter.matrix(_getCombinedMatrix()),
+                                    child: widget.files.isNotEmpty
+                                        ? Image.file(
+                                            widget.files[index],
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.network(
+                                            "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe",
+                                            fit: BoxFit.cover,
+                                          ),
+                                  );
+                                },
+                              ),
                             );
+
+                            if (_activeTool != StoryEditTool.crop) {
+                              content = Transform(
+                                alignment: Alignment.topLeft,
+                                transform: Matrix4.identity()
+                                  ..scale(1.0 / _cropRect.width, 1.0 / _cropRect.height)
+                                  ..translate(-_cropRect.left * w, -_cropRect.top * h),
+                                child: content,
+                              );
+                            }
+                            return content;
                           },
                         ),
                       ),
                       if (_activeTool == StoryEditTool.crop)
-                        IgnorePointer(
-                          child: CustomPaint(
-                            painter: CropPainter(Rect.fromLTWH(
-                              _cropRect.left * (constraints.maxWidth - 40.w),
-                              _cropRect.top * constraints.maxHeight,
-                              _cropRect.width * (constraints.maxWidth - 40.w),
-                              _cropRect.height * constraints.maxHeight,
-                            )),
-                            child: Container(),
+                        Positioned.fill(
+                          child: LayoutBuilder(
+                            builder: (context, cropConstraints) {
+                              final w = cropConstraints.maxWidth;
+                              final h = cropConstraints.maxHeight;
+                              
+                              final rect = Rect.fromLTWH(
+                                _cropRect.left * w,
+                                _cropRect.top * h,
+                                _cropRect.width * w,
+                                _cropRect.height * h,
+                              );
+
+                              return Stack(
+                                children: [
+                                  GestureDetector(
+                                    onPanUpdate: (details) {
+                                      setState(() {
+                                        double dx = details.delta.dx / w;
+                                        double dy = details.delta.dy / h;
+                                        
+                                        _cropRect = Rect.fromLTWH(
+                                          (_cropRect.left + dx).clamp(0.0, 1.0 - _cropRect.width),
+                                          (_cropRect.top + dy).clamp(0.0, 1.0 - _cropRect.height),
+                                          _cropRect.width,
+                                          _cropRect.height,
+                                        );
+                                      });
+                                    },
+                                    child: CustomPaint(
+                                      size: Size(w, h),
+                                      painter: CropPainter(rect),
+                                      child: Container(),
+                                    ),
+                                  ),
+                                  // Handles
+                                  _buildCropHandle(rect.topLeft, (d) => _updateCropRect(d, w, h, isTop: true, isLeft: true)),
+                                  _buildCropHandle(rect.topRight, (d) => _updateCropRect(d, w, h, isTop: true, isLeft: false)),
+                                  _buildCropHandle(rect.bottomLeft, (d) => _updateCropRect(d, w, h, isTop: false, isLeft: true)),
+                                  _buildCropHandle(rect.bottomRight, (d) => _updateCropRect(d, w, h, isTop: false, isLeft: false)),
+                                ],
+                              );
+                            },
                           ),
                         ),
                     ],
@@ -331,11 +406,11 @@ class _StoryEditPageState extends State<StoryEditPage> {
   }
 
   Widget _buildBottomSection() {
-    bool isCustomMode = _activeTool != null;
     return Container(
       width: double.infinity,
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
-        color: isCustomMode ? const Color(0xFFE5DAFB) : Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(30.r),
           topRight: Radius.circular(30.r),
@@ -352,19 +427,23 @@ class _StoryEditPageState extends State<StoryEditPage> {
   }
 
   Widget _buildToolBar() {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 10.w),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _toolIcon(Icons.layers_clear_rounded, "BG", StoryEditTool.bg),
-          _toolIcon(Icons.wb_sunny_outlined, "Adjust", StoryEditTool.adjust),
-          _toolIcon(Icons.crop_rounded, "Crop", StoryEditTool.crop),
-          _toolIcon(Icons.auto_awesome_motion_rounded, "Filter", StoryEditTool.filter),
-          _toolIcon(Icons.compare_arrows_rounded, "Split", null), 
-          _toolIcon(Icons.content_cut_rounded, "Trim", null),
-          _toolIcon(Icons.delete_outline_rounded, "Delete", null),
-        ],
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [
+            _toolIcon(Icons.layers_clear_rounded, "BG", StoryEditTool.bg),
+            _toolIcon(Icons.wb_sunny_outlined, "Adjust", StoryEditTool.adjust),
+            _toolIcon(Icons.crop_rounded, "Crop", StoryEditTool.crop),
+            _toolIcon(Icons.auto_awesome_motion_rounded, "Filter", StoryEditTool.filter),
+            _toolIcon(Icons.compare_arrows_rounded, "Split", null), 
+            _toolIcon(Icons.content_cut_rounded, "Trim", null),
+            _toolIcon(Icons.delete_outline_rounded, "Delete", null),
+          ],
+        ),
       ),
     );
   }
@@ -384,20 +463,23 @@ class _StoryEditPageState extends State<StoryEditPage> {
           });
         }
       },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 22.r, color: isActive ? Colors.black : Colors.black45),
-          SizedBox(height: 4.h),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.sp,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              color: isActive ? Colors.black : Colors.black45,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 24.r, color: isActive ? Colors.black : Colors.black54),
+            SizedBox(height: 4.h),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9.sp,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                color: isActive ? Colors.black : Colors.black54,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -532,62 +614,215 @@ class _StoryEditPageState extends State<StoryEditPage> {
           ),
           child: Row(
             children: [
-              _cropToggleItem("Format", true),
-              _cropToggleItem("Rotate", false),
+              _cropToggleItem("Format", _cropMode == "Format"),
+              _cropToggleItem("Rotate", _cropMode == "Rotate"),
             ],
           ),
         ),
         SizedBox(height: 30.h),
-        // Aspect Ratios
-        SizedBox(
-          height: 80.h,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            children: [
-              _ratioItem(Icons.crop_free_rounded, "Original", false),
-              _ratioItem(Icons.crop_square_rounded, "1:1", true),
-              _ratioItem(Icons.crop_portrait_rounded, "4:5", false),
-              _ratioItem(Icons.crop_16_9_rounded, "16:9", false),
-              _ratioItem(Icons.smartphone_rounded, "9:16", false),
-              _ratioItem(Icons.crop_3_2, "3:2", false),
-            ],
-          ),
-        ),
+        // Show different controls based on mode
+        if (_cropMode == "Format") _buildFormatControls(),
+        if (_cropMode == "Rotate") _buildRotateControls(),
         SizedBox(height: 20.h),
       ],
     );
   }
 
-  Widget _cropToggleItem(String label, bool active) {
-    return Expanded(
-      child: Container(
-        height: 24.h,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? Colors.pink : Colors.transparent,
-          borderRadius: BorderRadius.circular(8.r),
-        ),
-        child: Text(label, style: TextStyle(fontSize: 10.sp, color: active ? Colors.white : Colors.black38, fontWeight: FontWeight.bold)),
+  Widget _buildFormatControls() {
+    return SizedBox(
+      height: 80.h,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 20.w),
+        children: [
+          _ratioItem(Icons.crop_free_rounded, "Original", _selectedAspectRatio == "Original", () {
+            setState(() {
+              _selectedAspectRatio = "Original";
+              _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
+            });
+          }),
+          _ratioItem(Icons.crop_square_rounded, "1:1", _selectedAspectRatio == "1:1", () {
+            setState(() {
+              _selectedAspectRatio = "1:1";
+              _applyCropAspectRatio(1.0);
+            });
+          }),
+          _ratioItem(Icons.crop_portrait_rounded, "4:5", _selectedAspectRatio == "4:5", () {
+            setState(() {
+              _selectedAspectRatio = "4:5";
+              _applyCropAspectRatio(4.0 / 5.0);
+            });
+          }),
+          _ratioItem(Icons.crop_16_9_rounded, "16:9", _selectedAspectRatio == "16:9", () {
+            setState(() {
+              _selectedAspectRatio = "16:9";
+              _applyCropAspectRatio(16.0 / 9.0);
+            });
+          }),
+          _ratioItem(Icons.smartphone_rounded, "9:16", _selectedAspectRatio == "9:16", () {
+            setState(() {
+              _selectedAspectRatio = "9:16";
+              _applyCropAspectRatio(9.0 / 16.0);
+            });
+          }),
+          _ratioItem(Icons.crop_3_2, "3:2", _selectedAspectRatio == "3:2", () {
+            setState(() {
+              _selectedAspectRatio = "3:2";
+              _applyCropAspectRatio(3.0 / 2.0);
+            });
+          }),
+        ],
       ),
     );
   }
 
-  Widget _ratioItem(IconData icon, String label, bool active) {
-    return Container(
-      width: 55.w,
-      margin: EdgeInsets.only(right: 15.w),
-      decoration: BoxDecoration(
-        color: active ? Colors.blue : Colors.black.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(10.r),
+  Widget _buildRotateControls() {
+    return Column(
+      children: [
+        // Rotation buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _rotateButton(Icons.rotate_left_rounded, "90° Left", () {
+              setState(() => _rotation = (_rotation - 90) % 360);
+            }),
+            SizedBox(width: 20.w),
+            _rotateButton(Icons.rotate_right_rounded, "90° Right", () {
+              setState(() => _rotation = (_rotation + 90) % 360);
+            }),
+          ],
+        ),
+        SizedBox(height: 20.h),
+        // Flip buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _flipButton(Icons.flip_rounded, "Flip H", _flipHorizontal, () {
+              setState(() => _flipHorizontal = !_flipHorizontal);
+            }),
+            SizedBox(width: 20.w),
+            _flipButton(Icons.flip_camera_android_rounded, "Flip V", _flipVertical, () {
+              setState(() => _flipVertical = !_flipVertical);
+            }),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _applyCropAspectRatio(double aspectRatio) {
+    // Calculate new crop rect maintaining aspect ratio
+    double centerX = _cropRect.left + _cropRect.width / 2;
+    double centerY = _cropRect.top + _cropRect.height / 2;
+    
+    double newWidth = 0.8;
+    double newHeight = newWidth / aspectRatio;
+    
+    if (newHeight > 0.8) {
+      newHeight = 0.8;
+      newWidth = newHeight * aspectRatio;
+    }
+    
+    double newLeft = (centerX - newWidth / 2).clamp(0.0, 1.0 - newWidth);
+    double newTop = (centerY - newHeight / 2).clamp(0.0, 1.0 - newHeight);
+    
+    _cropRect = Rect.fromLTWH(newLeft, newTop, newWidth, newHeight);
+  }
+
+  Widget _rotateButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2196F3).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: const Color(0xFF2196F3), width: 1.5.w),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF2196F3), size: 20.r),
+            SizedBox(width: 8.w),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: const Color(0xFF2196F3),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: active ? Colors.white : Colors.black45, size: 20.r),
-          SizedBox(height: 6.h),
-          Text(label, style: TextStyle(fontSize: 9.sp, color: active ? Colors.white : Colors.black45, fontWeight: FontWeight.w500)),
-        ],
+    );
+  }
+
+  Widget _flipButton(IconData icon, String label, bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFE91E63) : Colors.black.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: isActive ? const Color(0xFFE91E63) : Colors.black26,
+            width: 1.5.w,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isActive ? Colors.white : Colors.black45, size: 20.r),
+            SizedBox(width: 8.w),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: isActive ? Colors.white : Colors.black45,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cropToggleItem(String label, bool active) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _cropMode = label),
+        child: Container(
+          height: 24.h,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? Colors.pink : Colors.transparent,
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Text(label, style: TextStyle(fontSize: 10.sp, color: active ? Colors.white : Colors.black38, fontWeight: FontWeight.bold)),
+        ),
+      ),
+    );
+  }
+
+  Widget _ratioItem(IconData icon, String label, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 55.w,
+        margin: EdgeInsets.only(right: 15.w),
+        decoration: BoxDecoration(
+          color: active ? Colors.blue : Colors.black.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: active ? Colors.white : Colors.black45, size: 20.r),
+            SizedBox(height: 6.h),
+            Text(label, style: TextStyle(fontSize: 9.sp, color: active ? Colors.white : Colors.black45, fontWeight: FontWeight.w500)),
+          ],
+        ),
       ),
     );
   }
@@ -597,73 +832,109 @@ class _StoryEditPageState extends State<StoryEditPage> {
     switch (_activeTool) {
       case StoryEditTool.bg: title = "Background"; break;
       case StoryEditTool.adjust: title = "Adjust"; break;
-      case StoryEditTool.crop: title = "Crop"; break;
+      case StoryEditTool.crop: title = "Crop Photos"; break;
       case StoryEditTool.filter: title = "Filter"; break;
       default: break;
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0D6B1), // Tan background
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30.r),
-          topRight: Radius.circular(30.r),
-        ),
-      ),
+      color: Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: Icon(Icons.close_rounded, color: Colors.black54, size: 24.r),
+          TextButton(
             onPressed: () => setState(() {
               _revertToSnapshot(); // Revert changes on Cancel
               _activeTool = null;
             }),
+            child: Text("Cancel", style: TextStyle(color: Colors.black54, fontSize: 16.sp)),
           ),
-          Container(
-            height: 24.h,
-            width: 1.w,
-            color: Colors.black12,
-            margin: EdgeInsets.symmetric(horizontal: 4.w),
-          ),
-          IconButton(
-            icon: Icon(Icons.refresh_rounded, color: Colors.black54, size: 24.r),
-            onPressed: () {
-              setState(() {
-                if (_activeTool == StoryEditTool.adjust) {
-                   switch (_selectedAdjustTool) {
-                     case "Brightness": _brightness = 0; break;
-                     case "Contrast": _contrast = 1.0; break;
-                     case "Saturation": _saturation = 1.0; break;
-                     case "Highlights": _highlights = 0; break;
-                     case "Shadows": _shadows = 0; break;
-                     case "Temperature": _temperature = 0; break;
-                   }
-                } else if (_activeTool == StoryEditTool.filter) {
-                   _selectedFilterIndex = 0;
-                   _filterIntensity = 1.0;
-                }
-              });
-            },
-          ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18.sp, 
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16.sp, 
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.check_rounded, color: Colors.black54, size: 24.r),
+          ElevatedButton(
             onPressed: () => setState(() {
               _activeTool = null; // Keep changes on Apply
             }),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue, 
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+            ),
+            child: const Text("Done"),
           ),
         ],
+      ),
+    );
+  }
+
+  void _updateCropRect(Offset delta, double w, double h, {required bool isTop, required bool isLeft}) {
+    setState(() {
+      double dx = delta.dx / w;
+      double dy = delta.dy / h;
+      
+      double left = _cropRect.left;
+      double top = _cropRect.top;
+      double width = _cropRect.width;
+      double height = _cropRect.height;
+
+      if (isLeft) {
+        double newLeft = (left + dx).clamp(0.0, left + width - 0.1);
+        width += (left - newLeft);
+        left = newLeft;
+      } else {
+        width = (width + dx).clamp(0.1, 1.0 - left);
+      }
+
+      if (isTop) {
+        double newTop = (top + dy).clamp(0.0, top + height - 0.1);
+        height += (top - newTop);
+        top = newTop;
+      } else {
+        height = (height + dy).clamp(0.1, 1.0 - top);
+      }
+
+      _cropRect = Rect.fromLTWH(left, top, width, height);
+    });
+  }
+
+  Widget _buildCropHandle(Offset pos, Function(Offset) onDrag) {
+    return Positioned(
+      left: pos.dx - 15.r,
+      top: pos.dy - 15.r,
+      child: GestureDetector(
+        onPanUpdate: (details) => onDrag(details.delta),
+        child: Container(
+          width: 30.r,
+          height: 30.r,
+          color: Colors.transparent,
+          child: Center(
+            child: Container(
+              width: 12.r,
+              height: 12.r,
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.w),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1325,29 +1596,58 @@ class CropPainter extends CustomPainter {
     final paint = Paint()..color = Colors.black54;
     final hole = rect;
 
+    // Draw darkened areas outside crop
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, hole.top), paint);
     canvas.drawRect(Rect.fromLTWH(0, hole.bottom, size.width, (size.height - hole.bottom)), paint);
     canvas.drawRect(Rect.fromLTWH(0, hole.top, hole.left, hole.height), paint);
     canvas.drawRect(Rect.fromLTWH(hole.right, hole.top, (size.width - hole.right), hole.height), paint);
 
+    // Draw white border around crop area
     final borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawRect(hole, borderPaint);
     
+    // Draw grid lines (rule of thirds)
+    final gridPaint = Paint()
+      ..color = Colors.white.withOpacity(0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    
+    // Vertical grid lines
+    double gridX1 = hole.left + hole.width / 3;
+    double gridX2 = hole.left + (hole.width * 2) / 3;
+    canvas.drawLine(Offset(gridX1, hole.top), Offset(gridX1, hole.bottom), gridPaint);
+    canvas.drawLine(Offset(gridX2, hole.top), Offset(gridX2, hole.bottom), gridPaint);
+    
+    // Horizontal grid lines
+    double gridY1 = hole.top + hole.height / 3;
+    double gridY2 = hole.top + (hole.height * 2) / 3;
+    canvas.drawLine(Offset(hole.left, gridY1), Offset(hole.right, gridY1), gridPaint);
+    canvas.drawLine(Offset(hole.left, gridY2), Offset(hole.right, gridY2), gridPaint);
+    
+    // Draw corner handles
     final accentPaint = Paint()
       ..color = Colors.blue
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
     
-    const double L = 15;
+    const double L = 20; // Longer handles for better visibility
+    
+    // Top-left corner
     canvas.drawLine(hole.topLeft, hole.topLeft + const Offset(L, 0), accentPaint);
     canvas.drawLine(hole.topLeft, hole.topLeft + const Offset(0, L), accentPaint);
+    
+    // Top-right corner
     canvas.drawLine(hole.topRight, hole.topRight + const Offset(-L, 0), accentPaint);
     canvas.drawLine(hole.topRight, hole.topRight + const Offset(0, L), accentPaint);
+    
+    // Bottom-left corner
     canvas.drawLine(hole.bottomLeft, hole.bottomLeft + const Offset(L, 0), accentPaint);
     canvas.drawLine(hole.bottomLeft, hole.bottomLeft + const Offset(0, -L), accentPaint);
+    
+    // Bottom-right corner
     canvas.drawLine(hole.bottomRight, hole.bottomRight + const Offset(-L, 0), accentPaint);
     canvas.drawLine(hole.bottomRight, hole.bottomRight + const Offset(0, -L), accentPaint);
   }
