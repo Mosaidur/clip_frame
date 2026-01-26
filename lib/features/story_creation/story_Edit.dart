@@ -37,32 +37,104 @@ class _StoryEditPageState extends State<StoryEditPage> {
   Rect _cropRect = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0);
   int _rotation = 0;
 
+  // Snapshot states for cancel logic
+  double? _snapBrightness;
+  double? _snapContrast;
+  double? _snapSaturation;
+  double? _snapHighlights;
+  double? _snapShadows;
+  double? _snapTemperature;
+  int? _snapFilterIndex;
+  double? _snapFilterIntensity;
+  String? _snapFilterCategory;
+  Rect? _snapCropRect;
+  int? _snapRotation;
+
+  void _takeSnapshot() {
+    _snapBrightness = _brightness;
+    _snapContrast = _contrast;
+    _snapSaturation = _saturation;
+    _snapHighlights = _highlights;
+    _snapShadows = _shadows;
+    _snapTemperature = _temperature;
+    _snapFilterIndex = _selectedFilterIndex;
+    _snapFilterIntensity = _filterIntensity;
+    _snapFilterCategory = _selectedFilterCategory;
+    _snapCropRect = _cropRect;
+    _snapRotation = _rotation;
+  }
+
+  void _revertToSnapshot() {
+    if (_snapBrightness != null) _brightness = _snapBrightness!;
+    if (_snapContrast != null) _contrast = _snapContrast!;
+    if (_snapSaturation != null) _saturation = _snapSaturation!;
+    if (_snapHighlights != null) _highlights = _snapHighlights!;
+    if (_snapShadows != null) _shadows = _snapShadows!;
+    if (_snapTemperature != null) _temperature = _snapTemperature!;
+    if (_snapFilterIndex != null) _selectedFilterIndex = _snapFilterIndex!;
+    if (_snapFilterIntensity != null) _filterIntensity = _snapFilterIntensity!;
+    if (_snapFilterCategory != null) _selectedFilterCategory = _snapFilterCategory!;
+    if (_snapCropRect != null) _cropRect = _snapCropRect!;
+    if (_snapRotation != null) _rotation = _snapRotation!;
+  }
+
   final Map<String, List<Map<String, dynamic>>> _filterCategories = {
     "Trending": [
-      {"name": "NONE"},
-      {"name": "DUAL"},
-      {"name": "POP"},
-      {"name": "NEON"},
-      {"name": "FILM"},
+      {"name": "NONE", "image": "assets/images/edit_photo.png"},
+      {"name": "DUAL", "image": "assets/images/1.jpg"},
+      {"name": "POP", "image": "assets/images/2.jpg"},
+      {"name": "NEON", "image": "assets/images/filter_img1.png"},
+      {"name": "FILM", "image": "assets/images/5.jpg"},
+      {"name": "GLOW", "image": "assets/images/filter_img2.png"},
+      {"name": "VIBE", "image": "assets/images/7.jpg"},
+      {"name": "MOOD", "image": "assets/images/8.jpg"},
+      {"name": "VINTAGE", "image": "assets/images/9.png"},
+      {"name": "SOFT", "image": "assets/images/1.jpg"},
     ],
     "Glitch": [
-      {"name": "GLITCH"},
-      {"name": "RGB"},
-      {"name": "SHIFT"},
-      {"name": "ERROR"},
-      {"name": "PIXEL"},
+      {"name": "GLITCH", "image": "assets/images/2.jpg"},
+      {"name": "RGB", "image": "assets/images/filter_img3.png"},
+      {"name": "SHIFT", "image": "assets/images/5.jpg"},
+      {"name": "ERROR", "image": "assets/images/filter_img4.png"},
+      {"name": "PIXEL", "image": "assets/images/7.jpg"},
+      {"name": "NOISE", "image": "assets/images/8.jpg"},
+      {"name": "WARP", "image": "assets/images/9.png"},
     ],
     "Weather": [
-      {"name": "SUN"},
-      {"name": "WARM"},
-      {"name": "COOL"},
-      {"name": "FOG"},
+      {"name": "SUN", "image": "assets/images/1.jpg"},
+      {"name": "WARM", "image": "assets/images/2.jpg"},
+      {"name": "COOL", "image": "assets/images/3.jpg"},
+      {"name": "FOG", "image": "assets/images/5.jpg"},
+      {"name": "RAIN", "image": "assets/images/6.jpg"},
+      {"name": "SNOW", "image": "assets/images/7.jpg"},
+      {"name": "DUST", "image": "assets/images/8.jpg"},
     ],
     "Vintage": [
-      {"name": "VINT"},
-      {"name": "SEPIA"},
-      {"name": "RETRO"},
-      {"name": "FADE"},
+      {"name": "VINT", "image": "assets/images/9.png"},
+      {"name": "SEPIA", "image": "assets/images/1.jpg"},
+      {"name": "RETRO", "image": "assets/images/2.jpg"},
+      {"name": "FADE", "image": "assets/images/3.jpg"},
+      {"name": "OLD", "image": "assets/images/5.jpg"},
+      {"name": "FILM2", "image": "assets/images/6.jpg"},
+      {"name": "BROWN", "image": "assets/images/7.jpg"},
+    ],
+    "Color / Pop": [
+      {"name": "POP2", "image": "assets/images/8.jpg"},
+      {"name": "BRIGHT", "image": "assets/images/9.png"},
+      {"name": "SAT", "image": "assets/images/1.jpg"},
+      {"name": "PASTEL", "image": "assets/images/filter_img5.png"},
+      {"name": "FRESH", "image": "assets/images/3.jpg"},
+      {"name": "BOOST", "image": "assets/images/5.jpg"},
+      {"name": "JUICY", "image": "assets/images/6.jpg"},
+    ],
+    "Moody": [
+      {"name": "DARK", "image": "assets/images/7.jpg"},
+      {"name": "SHADOW", "image": "assets/images/8.jpg"},
+      {"name": "NIGHT", "image": "assets/images/9.png"},
+      {"name": "BLUE", "image": "assets/images/1.jpg"},
+      {"name": "LOW", "image": "assets/images/2.jpg"},
+      {"name": "DEEP", "image": "assets/images/3.jpg"},
+      {"name": "SAD", "image": "assets/images/5.jpg"},
     ],
   };
 
@@ -302,7 +374,14 @@ class _StoryEditPageState extends State<StoryEditPage> {
     return GestureDetector(
       onTap: () {
         if (tool != null) {
-          setState(() => _activeTool = (_activeTool == tool ? null : tool));
+          setState(() {
+            if (_activeTool == tool) {
+              _activeTool = null;
+            } else {
+              _takeSnapshot(); // Take snapshot when opening a tool
+              _activeTool = tool;
+            }
+          });
         }
       },
       child: Column(
@@ -536,7 +615,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
         children: [
           IconButton(
             icon: Icon(Icons.close_rounded, color: Colors.black54, size: 24.r),
-            onPressed: () => setState(() => _activeTool = null),
+            onPressed: () => setState(() {
+              _revertToSnapshot(); // Revert changes on Cancel
+              _activeTool = null;
+            }),
           ),
           Container(
             height: 24.h,
@@ -557,6 +639,9 @@ class _StoryEditPageState extends State<StoryEditPage> {
                      case "Shadows": _shadows = 0; break;
                      case "Temperature": _temperature = 0; break;
                    }
+                } else if (_activeTool == StoryEditTool.filter) {
+                   _selectedFilterIndex = 0;
+                   _filterIntensity = 1.0;
                 }
               });
             },
@@ -574,7 +659,9 @@ class _StoryEditPageState extends State<StoryEditPage> {
           ),
           IconButton(
             icon: Icon(Icons.check_rounded, color: Colors.black54, size: 24.r),
-            onPressed: () => setState(() => _activeTool = null),
+            onPressed: () => setState(() {
+              _activeTool = null; // Keep changes on Apply
+            }),
           ),
         ],
       ),
@@ -698,24 +785,36 @@ class _StoryEditPageState extends State<StoryEditPage> {
   }
 
   Widget _buildFilterPanel() {
+    final List<Map<String, dynamic>> filters = _filterCategories[_selectedFilterCategory]!;
     return Column(
       children: [
          // Category Tabs
          Padding(
            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-           child: Row(
-             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-             children: ["Movies", "Trending", "Glitch", "Weather", "Vintage"].map((cat) {
-               bool active = cat == "Trending";
-               return Text(
-                 cat,
-                 style: TextStyle(
-                   color: active ? const Color(0xFFE91E63) : Colors.black38,
-                   fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                   fontSize: 12.sp,
-                 ),
-               );
-             }).toList(),
+           child: SingleChildScrollView(
+             scrollDirection: Axis.horizontal,
+             child: Row(
+               children: _filterCategories.keys.map((cat) {
+                 bool active = cat == _selectedFilterCategory;
+                 return Padding(
+                   padding: EdgeInsets.only(right: 20.w),
+                   child: GestureDetector(
+                     onTap: () => setState(() {
+                       _selectedFilterCategory = cat;
+                       _selectedFilterIndex = 0; // Reset to NONE when switching categories
+                     }),
+                     child: Text(
+                       cat,
+                       style: TextStyle(
+                         color: active ? const Color(0xFFE91E63) : Colors.black38,
+                         fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                         fontSize: 12.sp,
+                       ),
+                     ),
+                   ),
+                 );
+               }).toList(),
+             ),
            ),
          ),
          // Filter Thumbnails
@@ -724,19 +823,36 @@ class _StoryEditPageState extends State<StoryEditPage> {
            child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(horizontal: 20.w),
-              itemCount: 8,
+              itemCount: filters.length,
               itemBuilder: (context, index) {
-                bool selected = index == 1; // "VINTAGE"
-                return Container(
-                  width: 65.w,
-                  margin: EdgeInsets.only(right: 10.w),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10.r),
-                    border: selected ? Border.all(color: Colors.blue, width: 2.w) : null,
-                    image: const DecorationImage(
-                      image: NetworkImage("https://images.unsplash.com/photo-1540189549336-e6e99c3679fe"),
-                      fit: BoxFit.cover,
-                    ),
+                bool selected = index == _selectedFilterIndex;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedFilterIndex = index),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 65.w,
+                        height: 65.w,
+                        margin: EdgeInsets.only(right: 10.w),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10.r),
+                          border: selected ? Border.all(color: const Color(0xFFE91E63), width: 2.w) : null,
+                          image: DecorationImage(
+                            image: AssetImage(filters[index]["image"] ?? "assets/images/edit_photo.png"),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        filters[index]["name"],
+                        style: TextStyle(
+                          fontSize: 8.sp,
+                          color: selected ? Colors.black : Colors.black45,
+                          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -756,10 +872,13 @@ class _StoryEditPageState extends State<StoryEditPage> {
                      inactiveTrackColor: Colors.black12,
                      thumbColor: const Color(0xFFE91E63),
                    ),
-                   child: Slider(value: 0.5, onChanged: (v){}),
+                   child: Slider(
+                     value: _filterIntensity,
+                     onChanged: (v) => setState(() => _filterIntensity = v),
+                   ),
                  ),
                ),
-               Text("50%", style: TextStyle(fontSize: 10.sp, color: Colors.black54)),
+               Text("${(_filterIntensity * 100).toInt()}%", style: TextStyle(fontSize: 10.sp, color: Colors.black54)),
              ],
            ),
          ),
@@ -851,14 +970,323 @@ class _StoryEditPageState extends State<StoryEditPage> {
   List<double> _getFilterMatrix(int index) {
      final String name = _filterCategories[_selectedFilterCategory]![index]["name"];
      switch (name) {
-       case "DUAL": return [1.2, 0.1, 0.1, 0.0, 0.0, 0.1, 1.1, 0.1, 0.0, 0.0, 0.1, 0.1, 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-       case "POP": return [1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.3, 0.0, 0.0, 0.0, 0.0, 0.0, 1.2, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-       case "NEON": return [1.0, 0.0, 0.2, 0.0, 0.0, 0.2, 1.0, 0.0, 0.0, 0.0, 0.0, 0.2, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-       case "GLITCH": return [-1.0, 0.0, 0.0, 0.0, 255.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 255.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-       case "SEPIA": case "VINT": return [0.393, 0.769, 0.189, 0.0, 0.0, 0.349, 0.686, 0.168, 0.0, 0.0, 0.272, 0.534, 0.131, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-       case "RAIN": return [0.7, 0.0, 0.0, 0.0, 10.0, 0.0, 0.7, 0.0, 0.0, 10.0, 0.0, 0.0, 0.9, 0.0, 30.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-       // ... simplified port of other matrices
-       default: return [1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,1,0];
+       // --- Trending ---
+       case "DUAL":
+         return [
+           1.2, 0.1, 0.1, 0.0, 0.0,
+           1.2, 0.1, 0.1, 0.0, 0.0,
+           0.1, 1.1, 0.1, 0.0, 0.0,
+           0.1, 0.1, 1.5, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ].sublist(0, 20); // Ensuring it's exactly 20 elements
+       case "POP":
+         return [
+           1.5, 0.0, 0.0, 0.0, 0.0,
+           0.0, 1.3, 0.0, 0.0, 0.0,
+           0.0, 0.0, 1.2, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "NEON":
+         return [
+           1.5, 0.0, 0.0, 0.0, 0.0,
+           0.0, 0.0, 1.5, 0.0, 0.0,
+           0.0, 1.5, 0.0, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "FILM":
+         return [
+           0.9, 0.2, 0.0, 0.0, 0.0,
+           0.1, 0.9, 0.1, 0.0, 0.0,
+           0.0, 0.2, 0.8, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "GLOW":
+         return [
+           1.0, 0.0, 0.0, 0.0, 40.0,
+           0.0, 1.0, 0.0, 0.0, 40.0,
+           0.0, 0.0, 1.0, 0.0, 40.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "VIBE":
+         return [
+           1.1, 0.0, 0.0, 0.0, 10.0,
+           0.0, 1.0, 0.0, 0.0, 0.0,
+           0.0, 0.0, 0.9, 0.0, -10.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "MOOD":
+         return [
+           0.9, 0.0, 0.0, 0.0, -10.0,
+           0.0, 1.0, 0.0, 0.0, 0.0,
+           0.0, 0.0, 1.1, 0.0, 10.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "VINTAGE":
+       case "VINT":
+         return [
+           0.393, 0.769, 0.189, 0.0, 0.0,
+           0.349, 0.686, 0.168, 0.0, 0.0,
+           0.272, 0.534, 0.131, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "SOFT":
+         return [
+           1.0, 0.4, 0.4, 0.0, 0.0,
+           0.4, 1.0, 0.4, 0.0, 0.0,
+           0.4, 0.4, 1.0, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       // --- Glitch ---
+       case "GLITCH":
+         return [
+           -1.0, 0.0, 0.0, 0.0, 255.0,
+           0.0, 1.0, 0.0, 0.0, 0.0,
+           0.0, 0.0, -1.0, 0.0, 255.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "RGB":
+         return [
+           1.0, 0.5, 0.0, 0.0, 0.0,
+           0.0, 1.0, 0.5, 0.0, 0.0,
+           0.5, 0.0, 1.0, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "SHIFT":
+         return [
+           1.0, 0.0, 0.2, 0.0, 0.0,
+           0.2, 1.0, 0.0, 0.0, 0.0,
+           0.0, 0.2, 1.0, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "ERROR":
+         return [
+           -1.0, -1.0, -1.0, 0.0, 255.0,
+           -1.0, -1.0, -1.0, 0.0, 255.0,
+           -1.0, -1.0, -1.0, 0.0, 255.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "PIXEL":
+         return [
+           1.0, 0.2, 0.0, 0.0, 0.0,
+           0.0, 1.0, 0.2, 0.0, 0.0,
+           0.2, 0.0, 1.0, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "NOISE":
+         return [
+           1.0, 0.0, 0.0, 0.0, 20.0,
+           0.0, 1.0, 0.0, 0.0, 20.0,
+           0.0, 0.0, 1.0, 0.0, 20.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "WARP":
+         return [
+           1.5, -0.5, 0.0, 0.0, 0.0,
+           0.0, 1.5, -0.5, 0.0, 0.0,
+           -0.5, 0.0, 1.5, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       // --- Weather ---
+       case "SUN":
+         return [
+           1.1, 0.0, 0.0, 0.0, 30.0,
+           0.0, 1.0, 0.0, 0.0, 20.0,
+           0.0, 0.0, 0.9, 0.0, -10.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "WARM":
+         return [
+           1.2, 0.0, 0.0, 0.0, 20.0,
+           0.0, 1.1, 0.0, 0.0, 10.0,
+           0.0, 0.0, 0.9, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "COOL":
+         return [
+           0.9, 0.0, 0.0, 0.0, 0.0,
+           0.0, 1.0, 0.0, 0.0, 10.0,
+           0.0, 0.0, 1.2, 0.0, 20.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "FOG":
+         return [
+           0.8, 0.0, 0.0, 0.0, 50.0,
+           0.0, 0.8, 0.0, 0.0, 50.0,
+           0.0, 0.0, 0.8, 0.0, 50.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "RAIN":
+         return [
+           0.7, 0.0, 0.0, 0.0, 10.0,
+           0.0, 0.7, 0.0, 0.0, 10.0,
+           0.0, 0.0, 0.9, 0.0, 30.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "SNOW":
+         return [
+           1.2, 0.0, 0.0, 0.0, 40.0,
+           0.0, 1.2, 0.0, 0.0, 40.0,
+           0.0, 0.0, 1.3, 0.0, 50.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "DUST":
+         return [
+           1.0, 0.2, 0.2, 0.0, 10.0,
+           0.2, 1.0, 0.2, 0.0, 10.0,
+           0.2, 0.2, 0.8, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       // --- Vintage ---
+       case "SEPIA":
+         return [
+           0.393, 0.769, 0.189, 0.0, 0.0,
+           0.349, 0.686, 0.168, 0.0, 0.0,
+           0.272, 0.534, 0.131, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "RETRO":
+         return [
+           1.0, 0.0, 0.0, 0.0, 30.0,
+           0.0, 0.8, 0.0, 0.0, 0.0,
+           0.0, 0.0, 1.2, 0.0, -20.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "FADE":
+         return [
+           0.9, 0.1, 0.1, 0.0, 20.0,
+           0.1, 0.9, 0.1, 0.0, 20.0,
+           0.1, 0.1, 0.9, 0.0, 20.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "OLD":
+         return [
+           0.7, 0.2, 0.1, 0.0, 30.0,
+           0.2, 0.7, 0.1, 0.0, 30.0,
+           0.1, 0.1, 0.7, 0.0, 30.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "FILM2":
+         return [
+           1.1, 0.1, -0.1, 0.0, 0.0,
+           0.0, 1.0, 0.0, 0.0, 0.0,
+           -0.1, 0.1, 1.1, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "BROWN":
+         return [
+           1.0, 0.0, 0.0, 0.0, 30.0,
+           0.0, 0.9, 0.0, 0.0, 15.0,
+           0.0, 0.0, 0.8, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       // --- Color / Pop ---
+       case "POP2":
+         return [
+           1.6, -0.1, -0.1, 0.0, 0.0,
+           -0.1, 1.6, -0.1, 0.0, 0.0,
+           -0.1, -0.1, 1.6, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "BRIGHT":
+         return [
+           1.0, 0.0, 0.0, 0.0, 50.0,
+           0.0, 1.0, 0.0, 0.0, 50.0,
+           0.0, 0.0, 1.0, 0.0, 50.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "SAT":
+         return [
+           1.3, -0.15, -0.15, 0.0, 0.0,
+           -0.15, 1.3, -0.15, 0.0, 0.0,
+           -0.15, -0.15, 1.3, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "PASTEL":
+         return [
+           0.8, 0.1, 0.1, 0.0, 60.0,
+           0.1, 0.8, 0.1, 0.0, 60.0,
+           0.1, 0.1, 0.8, 0.0, 60.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "FRESH":
+         return [
+           1.0, 0.0, 0.0, 0.0, 0.0,
+           0.0, 1.2, 0.0, 0.0, 10.0,
+           0.0, 0.0, 1.2, 0.0, 10.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "BOOST":
+         return [
+           1.4, 0.0, 0.0, 0.0, -20.0,
+           0.0, 1.4, 0.0, 0.0, -20.0,
+           0.0, 0.0, 1.4, 0.0, -20.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "JUICY":
+         return [
+           1.5, 0.0, 0.0, 0.0, 20.0,
+           0.0, 1.2, 0.0, 0.0, 0.0,
+           0.0, 0.0, 1.0, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       // --- Moody ---
+       case "DARK":
+         return [
+           0.6, 0.0, 0.0, 0.0, 0.0,
+           0.0, 0.6, 0.0, 0.0, 0.0,
+           0.0, 0.0, 0.6, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "SHADOW":
+         return [
+           1.2, 0.0, 0.0, 0.0, -50.0,
+           0.0, 1.2, 0.0, 0.0, -50.0,
+           0.0, 0.0, 1.2, 0.0, -50.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "NIGHT":
+         return [
+           0.5, 0.0, 0.0, 0.0, -20.0,
+           0.0, 0.5, 0.0, 0.0, -20.0,
+           0.0, 0.0, 0.8, 0.0, 10.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "BLUE":
+         return [
+           0.7, 0.0, 0.0, 0.0, 0.0,
+           0.0, 0.7, 0.0, 0.0, 0.0,
+           0.0, 0.0, 1.1, 0.0, 30.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "LOW":
+         return [
+           0.4, 0.0, 0.0, 0.0, 0.0,
+           0.0, 0.4, 0.0, 0.0, 0.0,
+           0.0, 0.0, 0.4, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "DEEP":
+         return [
+           1.5, 0.0, 0.0, 0.0, -40.0,
+           0.0, 1.5, 0.0, 0.0, -40.0,
+           0.0, 0.0, 1.5, 0.0, -40.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+       case "SAD":
+         return [
+           0.5, 0.2, 0.1, 0.0, -10.0,
+           0.1, 0.5, 0.1, 0.0, -10.0,
+           0.1, 0.2, 0.5, 0.0, -10.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
+
+       default:
+         return [
+           1.0, 0.0, 0.0, 0.0, 0.0,
+           0.0, 1.0, 0.0, 0.0, 0.0,
+           0.0, 0.0, 1.0, 0.0, 0.0,
+           0.0, 0.0, 0.0, 1.0, 0.0,
+         ];
      }
   }
 }
