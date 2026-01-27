@@ -264,7 +264,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
           ),
           // Done Button
           TextButton(
-            onPressed: () {},
+            onPressed: () => Navigator.pop(context, widget.files),
             child: Text(
               "DONE",
               style: TextStyle(
