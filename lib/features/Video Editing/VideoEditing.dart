@@ -12,7 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
-import 'AiVideoEditPage.dart';
+import 'CaptionGeneratorPage.dart';
 import 'ProfessionalCamera.dart';
 
 /// ---- Models for Video Segments ----
@@ -1324,7 +1324,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         }
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => AiVideoEditPage(videoFile: File(res))),
+          MaterialPageRoute(builder: (context) => CaptionGeneratorPage(videoFile: File(res))),
         );
       }
     } catch (e) {

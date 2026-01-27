@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:clip_frame/features/Video%20Editing/ProfessionalCamera.dart';
+import 'package:clip_frame/features/Video%20Editing/VideoEditing.dart';
 import 'package:clip_frame/features/post/presenatation/widgets/reelContainer.dart';
+import '../Screen_2/video_Highlight.dart';
 
 import '../screen/reelsScrollPage.dart';
 
@@ -32,11 +36,15 @@ class _ReelsListPageState extends State<ReelsListPage> {
               title: reel["title"],
               width: itemWidth,
               isFavorite: reel["isFavorite"],
-              onCreate: () {
+              onCreate: () async {
                 debugPrint("Create clicked for: ${reel["title"]}");
+                
+                // 1. Open Video Highlight (Start of flow)
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const Reelsscrollpage()),
+                  MaterialPageRoute(
+                    builder: (context) => VideoHighlight(url: reel["imagePath"]),
+                  ),
                 );
 
 

@@ -141,7 +141,7 @@ class PostHighlight extends StatelessWidget {
                         if ((contentType ?? '').toLowerCase() == 'story') {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => StepByStepPage()),
+                            MaterialPageRoute(builder: (context) => StepByStepPage(contentType: contentType)),
                           );
                         } else {
                           _showImageSourceSheet(context);

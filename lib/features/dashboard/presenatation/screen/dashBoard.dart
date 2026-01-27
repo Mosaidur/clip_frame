@@ -46,710 +46,450 @@ class DashBoardPage extends StatelessWidget {
       color: Colors.transparent,
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context),
+            SizedBox(height: 15.h),
+            _buildSummaryGrid(),
+            _buildActionButtons(context),
+            _buildSection(
+              title: "Most Recent",
+              onSeeAll: () => debugPrint("See All Most Recent"),
+            ),
+            _buildHorizontalPostList(),
+            SizedBox(height: 20.h),
+            _buildPromotionBanner(),
+            _buildSection(
+              title: "For you",
+              onSeeAll: () => debugPrint("See All For You"),
+            ),
+            _buildHorizontalPostList(),
+            SizedBox(height: 100.h),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.4),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30.r),
+          bottomRight: Radius.circular(30.r),
+        ),
+      ),
+      child: Column(
+        children: [
+          SizedBox(height: MediaQuery.of(context).padding.top + 10.h),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 10.h),
+                    Text(
+                      date,
+                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                    ),
+                    SizedBox(height: 5.h),
+                    Text(
+                      day,
+                      style: TextStyle(
+                        fontSize: 22.sp,
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                _buildProfileAvatar(),
+              ],
+            ),
+          ),
+          _buildCalendarStrip(),
+          SizedBox(height: 20.h),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileAvatar() {
+    return Container(
+      width: 50.r,
+      height: 50.r,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.grey[300],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            spreadRadius: 2,
+          )
+        ],
+      ),
+      child: imageUrl == null || imageUrl!.isEmpty
+          ? Icon(Icons.person, size: 30.r, color: Colors.white)
+          : ClipOval(
+              child: Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    Icon(Icons.person, size: 30.r, color: Colors.white),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildCalendarStrip() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(7, (index) {
+        bool isToday = index == currentIndex;
+        int? postCount = postCounts[index];
+
+        return Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header section
+              Text(
+                weekdays[index],
+                style: TextStyle(
+                  color: isToday ? Colors.black : Colors.grey,
+                  fontSize: 12.sp,
+                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              SizedBox(height: 4.h),
               Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.4),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30.r),
-                    bottomRight: Radius.circular(30.r),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    SizedBox(height: 10.h),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(height: 10.h),
-                              Text(
-                                date,
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              SizedBox(height: 5.h),
-                              Text(
-                                day,
-                                style: TextStyle(
-                                  fontSize: 18.sp,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            width: 50.r,
-                            height: 50.r,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.grey,
-                            ),
-                            child: imageUrl == null || imageUrl!.isEmpty
-                                ? Icon(
-                                    Icons.person,
-                                    size: 35.r,
-                                    color: Colors.white,
-                                  )
-                                : ClipOval(
-                                    child: Image.network(
-                                      imageUrl!,
-                                      fit: BoxFit.cover,
-                                      width: 50.r,
-                                      height: 50.r,
-                                    ),
-                                  ),
-                          )
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List.generate(7, (index) {
-                        bool isToday = index == currentIndex;
-                        int? postCount = postCounts[index];
-
-                        return Expanded(
-                          child: GestureDetector(
-                            onTap: () {},
-                            child: Column(
-                              children: [
-                                Text(
-                                  weekdays[index],
-                                  style: TextStyle(
-                                    color: isToday ? Colors.black : Colors.grey,
-                                    fontSize: 11.sp,
-                                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                  ),
-                                ),
-                                Text(
-                                  dates[index].toString(),
-                                  style: TextStyle(
-                                    color: isToday ? Colors.black : Colors.grey,
-                                    fontSize: 14.sp,
-                                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                  ),
-                                ),
-                                SizedBox(height: 4.h),
-                                // Dots
-                                SizedBox(
-                                  height: 12.h,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: List.generate(
-                                      (postCount ?? 0) > 3 ? 3 : (postCount ?? 0),
-                                      (dotIndex) {
-                                        Color circleColor;
-                                        if ((postCount ?? 0) > 3 && dotIndex == 2) {
-                                          circleColor = Colors.black;
-                                        } else {
-                                          switch (dotIndex) {
-                                            case 0:
-                                              circleColor = Colors.blue;
-                                              break;
-                                            case 1:
-                                              circleColor = Colors.grey;
-                                              break;
-                                            case 2:
-                                              circleColor = Colors.pink;
-                                              break;
-                                            default:
-                                              circleColor = Colors.grey;
-                                          }
-                                        }
-                                        return Container(
-                                          margin: EdgeInsets.only(right: 2.w),
-                                          width: 6.r,
-                                          height: 6.r,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: circleColor,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                    SizedBox(height: 20.h),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 15.h),
-
-              // Dashboard Summary
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: EdgeInsets.all(12.r),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                "Post \nPublished",
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 11.sp,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              total.toString(),
-                              style: TextStyle(
-                                color: Colors.grey[800],
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-                    Expanded(
-                      child: Container(
-                        padding: EdgeInsets.all(12.r),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              total.toString(),
-                              style: TextStyle(
-                                color: Colors.grey[800],
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              "Reels \nPublished",
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 11.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: EdgeInsets.all(12.r),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                "Story \nCreated",
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 11.sp,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              total.toString(),
-                              style: TextStyle(
-                                color: Colors.grey[800],
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-                    Expanded(
-                      child: Container(
-                        padding: EdgeInsets.all(12.r),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              total.toString(),
-                              style: TextStyle(
-                                color: Colors.grey[800],
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              "Weekly \nViews",
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 11.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(15.r),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          "Average Engagement",
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 11.sp,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        "$total%",
-                        style: TextStyle(
-                          color: Colors.grey[800],
-                          fontSize: 20.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                padding: EdgeInsets.all(8.r),
+                decoration: isToday ? BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ) : null,
+                child: Text(
+                  dates[index].toString(),
+                  style: TextStyle(
+                    color: isToday ? Colors.blue : Colors.grey,
+                    fontSize: 14.sp,
+                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ),
-              
-              // Content Create and Calender
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 6,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF007CFE),
-                          borderRadius: BorderRadius.circular(50.r),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_box_rounded, color: Colors.white, size: 14.r),
-                            SizedBox(width: 5.w),
-                            Text(
-                              "Create Weekly Content",
-                              style: TextStyle(color: Colors.white, fontSize: 11.sp),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      flex: 4,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SchedulePage(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF277F),
-                            borderRadius: BorderRadius.circular(50.r),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.calendar_month, color: Colors.white, size: 14.r),
-                              SizedBox(width: 5.w),
-                              Text(
-                                "Calendar",
-                                style: TextStyle(color: Colors.white, fontSize: 11.sp),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+              SizedBox(height: 6.h),
+              _buildDotsIndicator(postCount ?? 0),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildDotsIndicator(int count) {
+    int displayCount = count > 3 ? 3 : count;
+    return SizedBox(
+      height: 6.h,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(displayCount, (i) {
+          Color dotColor = [Colors.blue, Colors.orange, Colors.pink][i % 3];
+          if (count > 3 && i == 2) dotColor = Colors.black;
+          return Container(
+            margin: EdgeInsets.symmetric(horizontal: 1.w),
+            width: 5.r,
+            height: 5.r,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: dotColor),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildSummaryGrid() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 15.w),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryCard(
+                  label: "Post\nPublished",
+                  value: total.toString(),
+                  icon: Icons.article_outlined,
+                  color: Colors.blue,
                 ),
               ),
-
-              //Most Recent Post
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Most Recent',
-                      style: TextStyle(
-                        color: const Color(0xFF6D6D73),
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        debugPrint("=========== Most recent Post");
-                      },
-                      child: Row(
-                        children: [
-                          Text(
-                            "See All",
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 11.sp,
-                            ),
-                          ),
-                          SizedBox(width: 4.w),
-                          Icon(
-                            Icons.arrow_forward,
-                            color: Colors.blue,
-                            size: 11.r,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              SizedBox(width: 12.w),
+              Expanded(
+                child: _SummaryCard(
+                  label: "Reels\nPublished",
+                  value: total.toString(),
+                  icon: Icons.movie_outlined,
+                  color: Colors.orange,
                 ),
               ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryCard(
+                  label: "Story\nCreated",
+                  value: total.toString(),
+                  icon: Icons.history_edu_outlined,
+                  color: Colors.pink,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: _SummaryCard(
+                  label: "Weekly\nViews",
+                  value: total.toString(),
+                  icon: Icons.remove_red_eye_outlined,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          _SummaryCard(
+            label: "Average Engagement",
+            value: "$total%",
+            icon: Icons.query_stats,
+            color: Colors.purple,
+            isWide: true,
+          ),
+        ],
+      ),
+    );
+  }
 
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w),
-                child: SizedBox(
-                  height: 180.h,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: posts.length,
-                    separatorBuilder: (_, __) => SizedBox(width: 10.w),
-                    itemBuilder: (context, index) {
-                      final post = posts[index];
-                      return Container(
-                        width: 0.38.sw,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15.r),
-                          image: DecorationImage(
-                            image: AssetImage(post['image']),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        child: Stack(
-                          children: [
-                            // Top-left profile + name
-                            Positioned(
-                              top: 8.h,
-                              left: 8.w,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(25.r),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: 22.r,
-                                      height: 22.r,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        image: DecorationImage(
-                                          image: AssetImage(post['profileImage']),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: 5.w),
-                                    Flexible(
-                                      child: Text(
-                                        post['name'],
-                                        style: TextStyle(
-                                          fontSize: 9.sp,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Bottom row with repost and likes
-                            Positioned(
-                              bottom: 8.h,
-                              left: 8.w,
-                              right: 8.w,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(25.r),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(Icons.repeat, color: Colors.white, size: 12.r),
-                                        SizedBox(width: 4.w),
-                                        Text(
-                                          post['repostCount'].toString(),
-                                          style: TextStyle(color: Colors.white, fontSize: 10.sp),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      '|',
-                                      style: TextStyle(color: Colors.white, fontSize: 10.sp),
-                                    ),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.favorite, color: Colors.white, size: 12.r),
-                                        SizedBox(width: 4.w),
-                                        Text(
-                                          post['likeCount'].toString(),
-                                          style: TextStyle(color: Colors.white, fontSize: 10.sp),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+  Widget _buildActionButtons(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 20.h),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 6,
+            child: _ActionButton(
+              label: "Create Weekly Content",
+              icon: Icons.add_box_rounded,
+              color: const Color(0xFF007CFE),
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            flex: 4,
+            child: _ActionButton(
+              label: "Calendar",
+              icon: Icons.calendar_month,
+              color: const Color(0xFFFF277F),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SchedulePage()),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection({required String title, required VoidCallback onSeeAll}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(15.w, 10.h, 15.w, 12.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: const Color(0xFF2D2D2F),
+              fontSize: 18.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          GestureDetector(
+            onTap: onSeeAll,
+            child: Row(
+              children: [
+                Text(
+                  "See All",
+                  style: TextStyle(color: Colors.blue, fontSize: 13.sp, fontWeight: FontWeight.w600),
+                ),
+                Icon(Icons.chevron_right, color: Colors.blue, size: 18.sp),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHorizontalPostList() {
+    return SizedBox(
+      height: 200.h,
+      child: ListView.separated(
+        padding: EdgeInsets.symmetric(horizontal: 15.w),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: posts.length,
+        separatorBuilder: (_, __) => SizedBox(width: 12.w),
+        itemBuilder: (context, index) => _PostCard(post: posts[index]),
+      ),
+    );
+  }
+
+  Widget _buildPromotionBanner() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            )
+          ],
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: Image.asset(
+          "assets/images/edit_photo.png",
+          fit: BoxFit.cover,
+          height: 140.h,
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final bool isWide;
+
+  const _SummaryCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.isWide = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: Colors.white.withOpacity(0.4)),
+      ),
+      child: Row(
+        mainAxisAlignment: isWide ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.r),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(icon, color: color, size: 22.r),
+          ),
+          SizedBox(width: 12.w),
+          if (isWide) ...[
+            Text(
+              label,
+              style: TextStyle(color: Colors.grey[600], fontSize: 13.sp, fontWeight: FontWeight.w500),
+            ),
+            const Spacer(),
+            Text(
+              value,
+              style: TextStyle(color: Colors.black, fontSize: 22.sp, fontWeight: FontWeight.bold),
+            ),
+          ] else
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: TextStyle(color: Colors.black, fontSize: 22.sp, fontWeight: FontWeight.bold),
                   ),
-                ),
-              ),
-
-              SizedBox(height: 15.h),
-              //edit photo
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w),
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20.r),
+                  Text(
+                    label.replaceAll("\n", " "),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 11.sp),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  clipBehavior: Clip.hardEdge,
-                  child: Image.asset(
-                    "assets/images/edit_photo.png",
-                    fit: BoxFit.cover,
-                  ),
-                ),
+                ],
               ),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
-              SizedBox(height: 15.h),
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
 
-              //For You Post
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'For you',
-                      style: TextStyle(
-                        color: const Color(0xFF6D6D73),
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        debugPrint("=========== For you");
-                      },
-                      child: Row(
-                        children: [
-                          Text(
-                            "See All",
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 11.sp,
-                            ),
-                          ),
-                          SizedBox(width: 4.w),
-                          Icon(
-                            Icons.arrow_forward,
-                            color: Colors.blue,
-                            size: 11.r,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w),
-                child: SizedBox(
-                  height: 180.h,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: posts.length,
-                    separatorBuilder: (_, __) => SizedBox(width: 10.w),
-                    itemBuilder: (context, index) {
-                      final post = posts[index];
-                      return Container(
-                        width: 0.38.sw,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15.r),
-                          image: DecorationImage(
-                            image: AssetImage(post['image']),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        child: Stack(
-                          children: [
-                            Positioned(
-                              top: 8.h,
-                              left: 8.w,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(25.r),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: 22.r,
-                                      height: 22.r,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        image: DecorationImage(
-                                          image: AssetImage(post['profileImage']),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: 5.w),
-                                    Flexible(
-                                      child: Text(
-                                        post['name'],
-                                        style: TextStyle(
-                                          fontSize: 9.sp,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 8.h,
-                              left: 8.w,
-                              right: 8.w,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(25.r),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(Icons.repeat, color: Colors.white, size: 12.r),
-                                        SizedBox(width: 4.w),
-                                        Text(
-                                          post['repostCount'].toString(),
-                                          style: TextStyle(color: Colors.white, fontSize: 10.sp),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      '|',
-                                      style: TextStyle(color: Colors.white, fontSize: 10.sp),
-                                    ),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.favorite, color: Colors.white, size: 12.r),
-                                        SizedBox(width: 4.w),
-                                        Text(
-                                          post['likeCount'].toString(),
-                                          style: TextStyle(color: Colors.white, fontSize: 10.sp),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                ),
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(50.r),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 12.h),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(50.r),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 18.r),
+              SizedBox(width: 8.w),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -758,33 +498,7 @@ class DashBoardPage extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildDots(int count) {
-    int displayCount = count > 3 ? 3 : count;
-    return SizedBox(
-      height: 8,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(displayCount, (i) {
-          Color dotColor = Colors.grey;
-          if (count > 3 && i == 2) {
-            dotColor = Colors.black;
-          } else {
-            dotColor = [Colors.blue, Colors.grey, Colors.pink][i % 3];
-          }
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 1.5),
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: dotColor),
-          );
-        }),
-      ),
-    );
-  }
 }
-
-
 
 class _PostCard extends StatelessWidget {
   final Map<String, dynamic> post;
@@ -794,59 +508,67 @@ class _PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 150,
-      margin: const EdgeInsets.only(right: 12),
+      width: 140.w,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         image: DecorationImage(
           image: AssetImage(post['image']),
           fit: BoxFit.cover,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Stack(
         children: [
-          Positioned(
-            top: 10,
-            left: 10,
-            child: _buildProfileTag(),
-          ),
-          Positioned(
-            bottom: 10,
-            left: 10,
-            right: 10,
-            child: _buildStatsTag(),
-          ),
+          _buildGradientOverlay(),
+          Positioned(top: 10.h, left: 10.w, child: _buildProfileTag()),
+          Positioned(bottom: 10.h, left: 10.w, right: 10.w, child: _buildStatsTag()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGradientOverlay() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20.r),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.black.withOpacity(0.2),
+            Colors.transparent,
+            Colors.black.withOpacity(0.4),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildProfileTag() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: Colors.black45,
-        borderRadius: BorderRadius.circular(15),
+        color: Colors.black.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(20.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           CircleAvatar(
-            radius: 10,
+            radius: 10.r,
             backgroundImage: AssetImage(post['profileImage']),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: 6.w),
           Flexible(
             child: Text(
               post['name'],
-              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.bold),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -858,16 +580,17 @@ class _PostCard extends StatelessWidget {
 
   Widget _buildStatsTag() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: Colors.black45,
-        borderRadius: BorderRadius.circular(15),
+        color: Colors.black.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _StatItem(icon: Icons.repeat, count: post['repostCount'].toString()),
-          const Text("|", style: TextStyle(color: Colors.white24, fontSize: 10)),
+          VerticalDivider(color: Colors.white24, width: 1.w, thickness: 1),
           _StatItem(icon: Icons.favorite, count: post['likeCount'].toString()),
         ],
       ),
@@ -885,9 +608,9 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white, size: 12),
-        const SizedBox(width: 2),
-        Text(count, style: const TextStyle(color: Colors.white, fontSize: 10)),
+        Icon(icon, color: Colors.white, size: 12.r),
+        SizedBox(width: 4.w),
+        Text(count, style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w600)),
       ],
     );
   }

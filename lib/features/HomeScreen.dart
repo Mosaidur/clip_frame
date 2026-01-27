@@ -90,8 +90,7 @@ class HomePage extends StatelessWidget {
           colors: [Color(0xFFB49EF4), Color(0xFFEBC894)],
         ),
       ),
-      child: SafeArea(
-        child: Scaffold(
+      child: Scaffold(
           extendBody: true,
           resizeToAvoidBottomInset: false,
           backgroundColor: Colors.transparent,
@@ -222,7 +221,6 @@ class HomePage extends StatelessWidget {
             }),
           ),
         ),
-      ),
     ),
   );
 }

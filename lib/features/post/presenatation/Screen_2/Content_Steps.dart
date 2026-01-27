@@ -215,12 +215,17 @@
 
 
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../Video Editing/VideoList.dart';
 import '../../../story_creation/story_capture.dart';
+import 'package:clip_frame/features/post/presenatation/screen/ReviewClipsPage.dart';
+import '../../../../features/Video Editing/ProfessionalCamera.dart';
+import '../../../../features/Video Editing/VideoEditing.dart';
 
 class StepByStepPage extends StatelessWidget {
-  const StepByStepPage({super.key});
+  final String contentType;
+  const StepByStepPage({super.key, this.contentType = 'Reel'});
 
   @override
   Widget build(BuildContext context) {
@@ -347,14 +352,29 @@ class StepByStepPage extends StatelessWidget {
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        if (contentType == 'Story') {
+                           Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const StoryCapturePage()),
+                          );
+                        } else {
+                          // 1. Open Professional Camera
+                          final videoFile = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ProfessionalCameraPage()),
+                          );
 
-                        Navigator.push(
-                          context,
-                          // MaterialPageRoute(builder: (context) => StepByStepContentScreen()),
-                          MaterialPageRoute(builder: (context) => StoryCapturePage()),
-                        );
-
+                          // 2. If video recorded, go to Review Clips Page
+                          if (videoFile != null && videoFile is File && context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReviewClipsPage(recordedClips: [videoFile]),
+                              ),
+                            );
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,

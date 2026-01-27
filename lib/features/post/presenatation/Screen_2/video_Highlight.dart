@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as widget;
 
-import '../widget2/MediaDisplayWidget.dart';
 import 'Content_Steps.dart';
 
 class VideoHighlight extends StatelessWidget {
@@ -99,7 +98,17 @@ class VideoHighlight extends StatelessWidget {
                     alignment: Alignment.center,
                     children: [
                       Positioned.fill(
-                          child: MediaDisplayWidget(videoUrl: url)
+                          child: url.startsWith('http')
+                              ? Image.network(
+                                  url,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) => Container(color: Colors.grey),
+                                )
+                              : Image.asset(
+                                  url,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) => Container(color: Colors.grey),
+                                ),
                       ),
                       // Container(
                       //   width: 60,

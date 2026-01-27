@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -12,7 +13,7 @@ class ProfessionalCameraPage extends StatefulWidget {
 }
 
 class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
-  late final List<CameraDescription> cameras;
+  List<CameraDescription> cameras = [];
   CameraController? controller;
   bool isRecording = false;
   bool isFlashOn = false;
@@ -23,7 +24,20 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
   @override
   void initState() {
     super.initState();
-    initCamera(cameras.first);
+    _setupCameras();
+  }
+
+  Future<void> _setupCameras() async {
+    try {
+      cameras = await availableCameras();
+      if (cameras.isNotEmpty) {
+        initCamera(cameras.first);
+      } else {
+        debugPrint("No cameras found");
+      }
+    } catch (e) {
+      debugPrint("Error fetching cameras: $e");
+    }
   }
 
   Future<void> initCamera(CameraDescription cameraDescription) async {
@@ -46,19 +60,47 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
     super.dispose();
   }
 
+
+  Timer? _timer;
+  int _recordDuration = 0;
+
   Future<void> startRecording() async {
     if (!controller!.value.isInitialized) return;
 
     await controller!.startVideoRecording();
-    setState(() => isRecording = true);
+    setState(() {
+      isRecording = true;
+      _recordDuration = 0;
+    });
+
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _recordDuration++;
+        });
+      }
+    });
   }
 
   Future<void> stopRecording() async { 
+    _timer?.cancel();
     final file = await controller!.stopVideoRecording();
     setState(() => isRecording = false);
 
     // Return video file path to previous screen
-    Navigator.pop(context, File(file.path));
+    if (mounted) {
+        Navigator.pop(context, File(file.path));
+    }
+  }
+
+  String _formatDuration(int seconds) {
+    final int min = seconds ~/ 60;
+    final int sec = seconds % 60;
+    return '${min.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
   }
 
   void toggleFlash() async {
@@ -146,6 +188,31 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
               ),
             ),
           ),
+
+          // Timer Display
+          if (isRecording)
+            Positioned(
+              top: 80,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _formatDuration(_recordDuration),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           // RECORD BUTTON
           Positioned(
