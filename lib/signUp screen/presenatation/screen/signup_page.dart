@@ -226,17 +226,28 @@ class signUpScreen extends StatelessWidget {
 
                         const SizedBox(height: 40),
                         // SignUp Button
-                        ElevatedButton(
-                          onPressed: signUpcontroller.signUp,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(double.infinity, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                        Obx(
+                          () => ElevatedButton(
+                            onPressed: signUpcontroller.isLoading.value ? null : signUpcontroller.signUp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
+                            child: signUpcontroller.isLoading.value
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text('Register'),
                           ),
-                          child: Text('Register'),
                         ),
                         const SizedBox(height: 20),
                         // Sign Up

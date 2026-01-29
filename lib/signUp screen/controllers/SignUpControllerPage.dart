@@ -1,3 +1,4 @@
+import 'package:clip_frame/core/services/api_services/authentication/sign_up_controller.dart' as api;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -17,9 +18,13 @@ class SignUpController extends GetxController {
   var obscureConfirmPassword = true.obs;
   var isLoading = false.obs;
 
+  // API Controller instance
+  final api.signUp_Controller _apiController = api.signUp_Controller();
+
   // Validation regex
   final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-  final phoneRegex = RegExp(r'^\+?1?\d{9,15}$');
+  // Updated regex to accept: +8801XXXXXXXXX, 8801XXXXXXXXX, 01XXXXXXXXX, or international format
+  final phoneRegex = RegExp(r'^(\+?88)?01[3-9]\d{8}$');
 
   void togglePasswordVisibility() {
     obscurePassword.value = !obscurePassword.value;
@@ -40,7 +45,7 @@ class SignUpController extends GetxController {
   }
 
   // Signup validation and submission
-  void signUp() {
+  Future<void> signUp() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final confirmPassword = confirmPasswordController.text.trim();
@@ -66,7 +71,7 @@ class SignUpController extends GetxController {
     }
 
     if (phone.isNotEmpty && !phoneRegex.hasMatch(phone)) {
-      Get.snackbar('error'.tr, 'Please Enter Valid Phone');
+      Get.snackbar('error'.tr, 'Please Enter Valid Phone Number (e.g., 01XXXXXXXXX or +8801XXXXXXXXX)');
       return;
     }
 
@@ -76,24 +81,47 @@ class SignUpController extends GetxController {
     }
 
     if (password != confirmPassword) {
-
       Get.snackbar('error'.tr, 'Password & Confirm password Do Not Match');
       return;
     }
 
-    // Simulate signup process
+    // Show loading state
     isLoading.value = true;
-    Future.delayed(const Duration(seconds: 2), () {
+
+    try {
+      // Call API
+      bool success = await _apiController.SignUp(
+        email,
+        password,
+        firstName,
+        lastName,
+        confirmPassword,
+        phone,
+      );
+
+      if (success) {
+        Get.snackbar('success'.tr, 'signedUpAs'.tr + email);
+        // Navigate to email verification screen with email parameter
+        Get.toNamed(AppRoutes.emailVerification, arguments: email);
+      } else {
+        // Show error message from API
+        Get.snackbar(
+          'error'.tr,
+          _apiController.errorMessage ?? 'signupFailed'.tr,
+          backgroundColor: Colors.red.withOpacity(0.7),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        'An error occurred: ${e.toString()}',
+        backgroundColor: Colors.red.withOpacity(0.7),
+        colorText: Colors.white,
+      );
+    } finally {
       isLoading.value = false;
-      Get.snackbar('success'.tr, 'signedUpAs'.tr + email);
-      // Navigate or API call here
-    });
-
-    if (areAllFieldsFilled()) {
-      print("Navigating to RegistrationProcess...");
-      Get.toNamed(AppRoutes.RegistrationProcess);
     }
-
   }
 
   // Clear all fields

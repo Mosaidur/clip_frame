@@ -12,6 +12,8 @@ import '../../signUp screen/bindings/AudienceAndLanguageBinding.dart';
 import '../../signUp screen/bindings/SignUp_binding.dart';
 import '../../signUp screen/presenatation/screen/registrationProcessPage.dart';
 import '../../signUp screen/presenatation/screen/signup_page.dart';
+import '../../email_verification/bindings/email_verification_binding.dart';
+import '../../email_verification/presentation/screen/email_verification_screen.dart';
 import '../../splashScreen/bindings/welcome_binding.dart';
 import '../../splashScreen/presenatation/screen/onboardingScreen.dart';
 
@@ -22,6 +24,7 @@ class AppRoutes {
   static const VIDEO_EDIT = '/video_edit';
   static const String login = '/login';
   static const String signUp = '/signUp';
+  static const String emailVerification = '/emailVerification';
   static const String RegistrationProcess = '/RegistrationProcess';
 
   static final pages = [
@@ -39,6 +42,11 @@ class AppRoutes {
       name: signUp,
       page: () => signUpScreen(),
       binding: SignUpBindings(),
+    ),
+    GetPage(
+      name: emailVerification,
+      page: () => EmailVerificationScreen(),
+      binding: EmailVerificationBinding(),
     ),
     GetPage(
       name: RegistrationProcess,
