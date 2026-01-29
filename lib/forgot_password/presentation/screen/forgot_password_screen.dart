@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../Shared/widgets/language_toggle_button.dart';
 import '../../../splashScreen/controllers/language_controller.dart';
-import '../../controllers/email_verification_controller.dart';
+import '../../controllers/forgot_password_page_controller.dart';
 
-class EmailVerificationScreen extends StatelessWidget {
-  final EmailVerificationController controller = Get.find<EmailVerificationController>();
+class ForgotPasswordScreen extends StatelessWidget {
+  final ForgotPasswordPageController controller = Get.put(ForgotPasswordPageController());
   
   Shader linearGradient = const LinearGradient(
     colors: <Color>[Color(0xFF4983F6), Color(0xFFC175F5), Color(0xFFFBACB7)],
@@ -85,7 +84,7 @@ class EmailVerificationScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          'Verify Email',
+                          'Forgot Password',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -94,65 +93,28 @@ class EmailVerificationScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'We have sent a verification code to',
+                          'Enter your email address and we will send you a code to reset your password',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey),
                         ),
-                        const SizedBox(height: 5),
-                        Text(
-                          controller.email,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(height: 30),
+                        // Email Field
+                        TextField(
+                          controller: controller.emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.email_outlined),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 30),
-                        // OTP Input Fields
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: List.generate(6, (index) {
-                            return SizedBox(
-                              width: 45,
-                              child: TextField(
-                                controller: controller.otpControllers[index],
-                                focusNode: controller.focusNodes[index],
-                                textAlign: TextAlign.center,
-                                keyboardType: TextInputType.number,
-                                maxLength: 1,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                decoration: InputDecoration(
-                                  counterText: '',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.blue, width: 2),
-                                  ),
-                                ),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
-                                onChanged: (value) {
-                                  if (value.isNotEmpty && index < 5) {
-                                    controller.focusNodes[index + 1].requestFocus();
-                                  } else if (value.isEmpty && index > 0) {
-                                    controller.focusNodes[index - 1].requestFocus();
-                                  }
-                                },
-                              ),
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 30),
-                        // Verify Button
+                        // Submit Button
                         Obx(
                           () => ElevatedButton(
-                            onPressed: controller.isLoading.value ? null : controller.verifyEmail,
+                            onPressed: controller.isLoading.value ? null : controller.submitEmail,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
@@ -170,28 +132,9 @@ class EmailVerificationScreen extends StatelessWidget {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : Text('Verify'),
+                                : Text('Send Reset Code'),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        // Resend OTP
-                        Obx(() {
-                          return controller.canResend.value
-                              ? TextButton(
-                                  onPressed: controller.resendOTP,
-                                  child: Text(
-                                    'Resend OTP',
-                                    style: TextStyle(
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                )
-                              : Text(
-                                  'Resend OTP in ${controller.resendCountdown.value}s',
-                                  style: TextStyle(color: Colors.grey),
-                                );
-                        }),
                         const SizedBox(height: 20),
                       ],
                     ),

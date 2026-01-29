@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../Shared/routes/routes.dart';
 import '../../../Shared/widgets/language_toggle_button.dart';
 import '../../../splashScreen/controllers/language_controller.dart';
-import '../../controllers/loginControllerPage.dart';
+import '../../controllers/reset_password_page_controller.dart';
 
-class LoginScreen extends StatelessWidget {
-  final LoginController controller = Get.put(LoginController());
+class ResetPasswordScreen extends StatelessWidget {
+  final ResetPasswordPageController controller = Get.find<ResetPasswordPageController>();
+  
   Shader linearGradient = const LinearGradient(
     colors: <Color>[Color(0xFF4983F6), Color(0xFFC175F5), Color(0xFFFBACB7)],
   ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0));
@@ -34,7 +34,7 @@ class LoginScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: 30),
-                  // header of the auth feature
+                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -84,7 +84,7 @@ class LoginScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          'getStartedLoginScreen'.tr,
+                          'Reset Password',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -93,111 +93,70 @@ class LoginScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'disclaimerLoginScreen'.tr,
+                          'Create a new password for your account',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey),
                         ),
-                        const SizedBox(height: 20),
-                        // Google Button
-                        ElevatedButton.icon(
-                          onPressed: controller.googleLogin,
-                          icon: Image.asset("assets/images/google.png", height: 20),
-                          label: Text('signInGoogle'.tr),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                            side: const BorderSide(color: Colors.grey),
-                            minimumSize: const Size(double.infinity, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                        const SizedBox(height: 5),
+                        Text(
+                          controller.email,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        // Facebook Button
-                        ElevatedButton.icon(
-                          onPressed: controller.facebookLogin,
-                          icon: Image.asset("assets/images/facebook.png", height: 20),
-                          label: Text('signInFacebook'.tr),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                            side: const BorderSide(color: Colors.grey),
-                            minimumSize: const Size(double.infinity, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Text('or'.tr),
-                        const SizedBox(height: 15),
-                        // Email Field
-                        TextField(
-                          controller: controller.emailController,
-                          decoration: InputDecoration(
-                            labelText: 'email'.tr,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        // Password Field with toggle
+                        const SizedBox(height: 30),
+                        // New Password Field
                         Obx(
-                              () => TextField(
-                            controller: controller.passwordController,
-                            obscureText: controller.obscurePassword.value,
+                          () => TextField(
+                            controller: controller.newPasswordController,
+                            obscureText: controller.obscureNewPassword.value,
                             decoration: InputDecoration(
-                              labelText: 'password'.tr,
+                              labelText: 'New Password',
+                              prefixIcon: Icon(Icons.lock_outline),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  controller.obscurePassword.value
+                                  controller.obscureNewPassword.value
                                       ? Icons.visibility_off
                                       : Icons.visibility,
                                 ),
-                                onPressed: controller.togglePasswordVisibility,
+                                onPressed: controller.toggleNewPasswordVisibility,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        // Remember me + Forgot Password
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Obx(
-                                  () => Row(
-                                children: [
-                                  Checkbox(
-                                    value: controller.rememberMe.value,
-                                    onChanged: (val) {
-                                      controller.toggleRememberMe(val ?? false);
-                                      print(controller.rememberMe.value);
-                                    },
-                                  ),
-                                  Text('rememberMe'.tr),
-                                ],
+                        const SizedBox(height: 15),
+                        // Confirm Password Field
+                        Obx(
+                          () => TextField(
+                            controller: controller.confirmPasswordController,
+                            obscureText: controller.obscureConfirmPassword.value,
+                            decoration: InputDecoration(
+                              labelText: 'Confirm Password',
+                              prefixIcon: Icon(Icons.lock_outline),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  controller.obscureConfirmPassword.value
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                ),
+                                onPressed: controller.toggleConfirmPasswordVisibility,
                               ),
                             ),
-                            Flexible(
-                              child: TextButton(
-                                onPressed: () {
-                                  Get.toNamed(AppRoutes.forgotPassword);
-                                },
-                                child: Text('forgotPassword'.tr),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                        // Login Button
+                        const SizedBox(height: 30),
+                        // Reset Button
                         Obx(
                           () => ElevatedButton(
-                            onPressed: controller.isLoading.value ? null : controller.login,
+                            onPressed: controller.isLoading.value ? null : controller.resetPassword,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
@@ -215,29 +174,8 @@ class LoginScreen extends StatelessWidget {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : Text('login'.tr),
+                                : Text('Reset Password'),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Sign Up
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('dontHaveAccount'.tr),
-                            GestureDetector(
-                              onTap: () {
-                                // Get.snackbar('signUp'.tr, 'goToSignupPage'.tr);
-                                Get.toNamed(AppRoutes.signUp);
-                              },
-                              child: Text(
-                                'signUp'.tr,
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                         const SizedBox(height: 20),
                       ],

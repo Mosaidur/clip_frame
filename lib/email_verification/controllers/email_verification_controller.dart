@@ -23,8 +23,11 @@ class EmailVerificationController extends GetxController {
   var resendCountdown = 60.obs;
   Timer? _timer;
 
-  // Email passed from signup
+  // Email passed from signup or forgot password
   String email = '';
+  
+  // Flag to indicate if this is for password reset flow
+  bool isForPasswordReset = false;
 
   // API Controller instance
   final api.VerifyEmailController _apiController = api.VerifyEmailController();
@@ -32,8 +35,15 @@ class EmailVerificationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Get email from route parameters
-    email = Get.arguments ?? '';
+    // Get arguments from route - can be just email string or a map with email and isForPasswordReset
+    final args = Get.arguments;
+    if (args is String) {
+      email = args;
+      isForPasswordReset = false;
+    } else if (args is Map) {
+      email = args['email'] ?? '';
+      isForPasswordReset = args['isForPasswordReset'] ?? false;
+    }
     startResendTimer();
   }
 
@@ -70,9 +80,19 @@ class EmailVerificationController extends GetxController {
       bool success = await _apiController.verifyEmail(email, otp);
 
       if (success) {
-        Get.snackbar('success'.tr, 'Email verified successfully!');
-        // Navigate to registration process or home
-        Get.offAllNamed(AppRoutes.RegistrationProcess);
+        Get.snackbar('success'.tr, isForPasswordReset ? 'OTP verified successfully!' : 'Email verified successfully!');
+        
+        // Navigate based on the flow
+        if (isForPasswordReset) {
+          // Navigate to reset password screen with email and token
+          Get.offNamed(AppRoutes.resetPassword, arguments: {
+            'email': email,
+            'token': _apiController.resetToken,
+          });
+        } else {
+          // Navigate to registration process or home
+          Get.offAllNamed(AppRoutes.RegistrationProcess);
+        }
       } else {
         Get.snackbar(
           'error'.tr,

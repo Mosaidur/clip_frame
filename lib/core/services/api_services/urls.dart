@@ -7,4 +7,6 @@ class Urls{
   static const String loginUrl = "$baseUrl/api/v1/auth/custom-login";
   static const String verifyEmailUrl = "$baseUrl/api/v1/auth/verify-account";
   static const String resendOTPUrl = "$baseUrl/api/v1/auth/resend-otp";
+  static const String forgotPassword ="$baseUrl/api/v1/auth/forget-password";
+  static const String resetPasswordUrl = "$baseUrl/api/v1/auth/reset-password";
 }

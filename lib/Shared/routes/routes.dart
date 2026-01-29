@@ -14,6 +14,10 @@ import '../../signUp screen/presenatation/screen/registrationProcessPage.dart';
 import '../../signUp screen/presenatation/screen/signup_page.dart';
 import '../../email_verification/bindings/email_verification_binding.dart';
 import '../../email_verification/presentation/screen/email_verification_screen.dart';
+import '../../forgot_password/bindings/forgot_password_binding.dart';
+import '../../forgot_password/presentation/screen/forgot_password_screen.dart';
+import '../../reset_password/bindings/reset_password_binding.dart';
+import '../../reset_password/presentation/screen/reset_password_screen.dart';
 import '../../splashScreen/bindings/welcome_binding.dart';
 import '../../splashScreen/presenatation/screen/onboardingScreen.dart';
 
@@ -25,6 +29,8 @@ class AppRoutes {
   static const String login = '/login';
   static const String signUp = '/signUp';
   static const String emailVerification = '/emailVerification';
+  static const String forgotPassword = '/forgotPassword';
+  static const String resetPassword = '/resetPassword';
   static const String RegistrationProcess = '/RegistrationProcess';
 
   static final pages = [
@@ -47,6 +53,16 @@ class AppRoutes {
       name: emailVerification,
       page: () => EmailVerificationScreen(),
       binding: EmailVerificationBinding(),
+    ),
+    GetPage(
+      name: forgotPassword,
+      page: () => ForgotPasswordScreen(),
+      binding: ForgotPasswordBinding(),
+    ),
+    GetPage(
+      name: resetPassword,
+      page: () => ResetPasswordScreen(),
+      binding: ResetPasswordBinding(),
     ),
     GetPage(
       name: RegistrationProcess,

@@ -43,10 +43,18 @@ class NetworkCaller {
         );
       } else {
         final decodedJson = jsonDecode(response.body);
+        // Try to extract error message from 'message' field first, then 'data' if it's a String
+        String? errorMsg;
+        if (decodedJson['message'] != null && decodedJson['message'] is String) {
+          errorMsg = decodedJson['message'];
+        } else if (decodedJson['data'] != null && decodedJson['data'] is String) {
+          errorMsg = decodedJson['data'];
+        }
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
-          errorMessage: decodedJson['data'] ?? _defaultErrorMessage,
+          responseBody: decodedJson,
+          errorMessage: errorMsg ?? _defaultErrorMessage,
         );
       }
     } catch (e) {
@@ -58,12 +66,16 @@ class NetworkCaller {
     }
   }
 
-   static Future<NetworkResponse> postRequest({required String url, Map<String, dynamic>? body,bool isFromLogin = false}) async {
+   static Future<NetworkResponse> postRequest({required String url, Map<String, dynamic>? body, bool isFromLogin = false, String? token}) async {
     try {
       Uri uri = Uri.parse(url);
       final Map<String, String> headers = {
             'content-type': 'application/json',
           };
+      // Add Authorization header if token is provided
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = token;
+      }
           _logRequest;;(url, body, headers);
       Response response = await post(
         uri,
@@ -93,10 +105,18 @@ class NetworkCaller {
       }
       else {
         final decodedJson = jsonDecode(response.body);
+        // Try to extract error message from 'message' field first, then 'data' if it's a String
+        String? errorMsg;
+        if (decodedJson['message'] != null && decodedJson['message'] is String) {
+          errorMsg = decodedJson['message'];
+        } else if (decodedJson['data'] != null && decodedJson['data'] is String) {
+          errorMsg = decodedJson['data'];
+        }
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: false,
-          errorMessage: decodedJson['data'] ?? _defaultErrorMessage,
+          responseBody: decodedJson,
+          errorMessage: errorMsg ?? _defaultErrorMessage,
         );
       }
     } catch (e) {

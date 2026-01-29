@@ -5,6 +5,10 @@ import 'package:get/get.dart';
 class VerifyEmailController extends GetxController {
   var _inProgress = false.obs;
   var _errorMessage = ''.obs;
+  
+  // Store token from verification response (for password reset flow)
+  String? _resetToken;
+  String? get resetToken => _resetToken;
 
   bool get inProgress => _inProgress.value;
   String? get errorMessage => _errorMessage.value.isEmpty ? null : _errorMessage.value;
@@ -28,8 +32,15 @@ class VerifyEmailController extends GetxController {
       body: requestBody,
     );
     
+    print("📥 Verify Email Response: ${response.responseBody}");
+    
     if (response.isSuccess && response.responseBody?['data'] != null) {
       isSuccess = true;
+      // Try to extract token from response (for password reset flow)
+      final data = response.responseBody?['data'];
+      if (data is Map) {
+        _resetToken = data['token'] ?? data['accessToken'] ?? data['resetToken'];
+      }
     } else {
       _errorMessage.value = response.errorMessage ?? 'Verification failed';
     }
