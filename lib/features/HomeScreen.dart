@@ -90,17 +90,114 @@ class HomePage extends StatelessWidget {
           colors: [Color(0xFFB49EF4), Color(0xFFEBC894)],
         ),
       ),
-      child: Scaffold(
-          extendBody: true,
-          resizeToAvoidBottomInset: false,
-          backgroundColor: Colors.transparent,
-          body: Stack(
-            children: [
-            Obx(() {
+      child: Stack(
+        children: [
+          Scaffold(
+            extendBody: true,
+            resizeToAvoidBottomInset: false,
+            backgroundColor: Colors.transparent,
+            body: Obx(() {
               debugPrint('Building page: ${controller.selectedIndex.value}');
               return controller.pages[controller.selectedIndex.value];
             }),
-            AnimatedBuilder(
+            bottomNavigationBar: Container(
+              color: Colors.transparent,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                clipBehavior: Clip.none,
+                children: [
+                  PhysicalShape(
+                    color: Colors.white,
+                    elevation: 15,
+                    clipper: CustomNotchClipper(),
+                    child: Container(
+                      height: 70.h,
+                      padding: EdgeInsets.only(left: 20.w, right: 20.w, bottom: 10.h),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                navItem(Icons.grid_view_rounded, 0, "Dashboard"),
+                                navItem(Icons.video_library_rounded, 1, "Posts"),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 80.w), // Space for FAB
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                navItem(Icons.access_time_filled_rounded, 2, "Schedules"),
+                                navItem(Icons.person_rounded, 3, "Profile"),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+            floatingActionButton: Padding(
+              padding: EdgeInsets.only(top: 5.h),
+              child: GestureDetector(
+                onTap: () {
+                  debugPrint('FAB tapped, isExpanded: ${controller.isExpanded.value}');
+                  controller.toggleExpand();
+                },
+                child: Obx(() {
+                  return Container(
+                    width: 70.r,
+                    height: 70.r,
+                    decoration: BoxDecoration(
+                      gradient: controller.isExpanded.value
+                          ? const LinearGradient(
+                              colors: [Color(0xFFFFFFFF), Color(0xFFFFFFFF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : const LinearGradient(
+                              colors: [Color(0xFFE4405F), Color(0xFF6A5AEF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      shape: BoxShape.circle,
+                      // boxShadow: [
+                      //   BoxShadow(color: Colors.black12, blurRadius: 15.r, offset: Offset(0, 8.h)),
+                      // ],
+                      // border: Border.all(color: Colors.white, width: 4.w),
+                    ),
+                    child: controller.isExpanded.value
+                        ? ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [Color(0xFFE4405F), Color(0xFF6A5AEF)],
+                            ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                            child: Icon(
+                              Icons.add,
+                              size: 35.r,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            Icons.add,
+                            size: 35.r,
+                            color: Colors.white,
+                          ),
+                  );
+                }),
+              ),
+            ),
+          ),
+          
+          // Floating Menu Items (Moved outside Scaffold to be on top of BottomNavBar)
+          IgnorePointer(
+            ignoring: !controller.isExpanded.value, // Ignore touches when collapsed
+            child: AnimatedBuilder(
               animation: controller.controller,
               builder: (context, child) {
                 double radius = 70.h;
@@ -111,6 +208,9 @@ class HomePage extends StatelessWidget {
                 return Stack(
                   children: List.generate(icons.length, (index) {
                     double angle = (angleStep * index - 0) * (3.14159 / 180);
+                    // Adjust bottom offset to account for being in outer stack potentially?
+                    // actually SW/SH works same. But ensure alignment.
+                    // The FAB is at bottom center.
                     return Positioned(
                       bottom: 40.h + controller.animation.value * radius * sin(angle),
                       left: 0.5.sw - 30.r + controller.animation.value * radius * cos(angle),
@@ -127,102 +227,10 @@ class HomePage extends StatelessWidget {
                 );
               },
             ),
-          ],
-        ),
-        bottomNavigationBar: Container(
-          color: Colors.transparent,
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            clipBehavior: Clip.none,
-            children: [
-              PhysicalShape(
-                color: Colors.white,
-                elevation: 15,
-                clipper: CustomNotchClipper(),
-                child: Container(
-                  height: 70.h,
-                  padding: EdgeInsets.only(left: 20.w, right: 20.w, bottom: 10.h),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            navItem(Icons.grid_view_rounded, 0, "Dashboard"),
-                            navItem(Icons.video_library_rounded, 1, "Posts"),
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: 80.w), // Space for FAB
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            navItem(Icons.access_time_filled_rounded, 2, "Schedules"),
-                            navItem(Icons.person_rounded, 3, "Profile"),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: Padding(
-          padding: EdgeInsets.only(top: 5.h),
-          child: GestureDetector(
-            onTap: () {
-              debugPrint('FAB tapped, isExpanded: ${controller.isExpanded.value}');
-              controller.toggleExpand();
-            },
-            child: Obx(() {
-              return Container(
-                width: 70.r,
-                height: 70.r,
-                decoration: BoxDecoration(
-                  gradient: controller.isExpanded.value
-                      ? const LinearGradient(
-                          colors: [Color(0xFFFFFFFF), Color(0xFFFFFFFF)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : const LinearGradient(
-                          colors: [Color(0xFFE4405F), Color(0xFF6A5AEF)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                  shape: BoxShape.circle,
-                  // boxShadow: [
-                  //   BoxShadow(color: Colors.black12, blurRadius: 15.r, offset: Offset(0, 8.h)),
-                  // ],
-                  // border: Border.all(color: Colors.white, width: 4.w),
-                ),
-                child: controller.isExpanded.value
-                    ? ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Color(0xFFE4405F), Color(0xFF6A5AEF)],
-                        ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-                        child: Icon(
-                          Icons.add,
-                          size: 35.r,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Icon(
-                        Icons.add,
-                        size: 35.r,
-                        color: Colors.white,
-                      ),
-              );
-            }),
-          ),
-        ),
-    ),
-  );
+        ],
+      ),
+    );
 }
 }
 

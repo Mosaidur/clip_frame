@@ -17,6 +17,10 @@ class Urls{
 
   //user api
   static const String getUserProfileUrl = "$baseUrl/api/v1/user/profile";
+
+
+  //scheduleing api
+  static const String schedulingUrl = "$baseUrl/api/v1/content/my-contents?status=published";
   
 
 }

@@ -1,157 +1,9 @@
-// schedule_controller.dart
-import 'package:get/get.dart';
-import '../../data/model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../data/model.dart';
+import '../controller/schedule_controller.dart';
 import '../widgets/SchedulePost.dart';
 import '../widgets/history.dart';
-
-class ScheduleController extends GetxController {
-  var scheduledPosts = <SchedulePost>[].obs;
-  var historyPosts = <HistoryPost>[].obs;
-
-  // Add selected tab state
-  var selectedTab = 0.obs;
-
-  @override
-  void onInit() {
-    super.onInit();
-    loadDemoData();
-  }
-
-  void loadDemoData() {
-    // Dummy Scheduled posts
-    scheduledPosts.value =   [
-      SchedulePost(
-        imageUrl: "https://picsum.photos/400/200",
-        title: "Eid Festival Offer",
-        tags: ["eid", "discount", "shopping"],
-        scheduleTime: "12 Sept 2025 - 10:00 AM",
-      ),
-      SchedulePost(
-        imageUrl: "https://picsum.photos/400/201",
-        title: "Tech Product Launch",
-        tags: ["tech", "launch", "new"],
-        scheduleTime: "15 Sept 2025 - 6:00 PM",
-      ),
-    ];
-
-    // Dummy History posts
-    historyPosts.value =    [
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/210",
-        title: "Summer Sale Campaign",
-        tags: ["sale", "summer", "offer"],
-        scheduleTime: "2 Sept 2025 - 8:00 PM",
-        totalAudience: 12300,
-        percentageGrowth: 15.2,
-        facebookReach: 4000,
-        instagramReach: 5000,
-        tiktokReach: 2300,
-      ),
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/211",
-        title: "Product Awareness Drive",
-        tags: ["awareness", "product"],
-        scheduleTime: "1 Sept 2025 - 7:00 PM",
-        totalAudience: 9800,
-        percentageGrowth: -4.5,
-        facebookReach: 3500,
-        instagramReach: 4000,
-        tiktokReach: 2300,
-      ),
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/210",
-        title: "Summer Sale Campaign",
-        tags: ["sale", "summer", "offer"],
-        scheduleTime: "2 Sept 2025 - 8:00 PM",
-        totalAudience: 12300,
-        percentageGrowth: 15.2,
-        facebookReach: 4000,
-        instagramReach: 5000,
-        tiktokReach: 2300,
-      ),
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/211",
-        title: "Product Awareness Drive",
-        tags: ["awareness", "product"],
-        scheduleTime: "1 Sept 2025 - 7:00 PM",
-        totalAudience: 9800,
-        percentageGrowth: -4.5,
-        facebookReach: 3500,
-        instagramReach: 4000,
-        tiktokReach: 2300,
-      ),
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/210",
-        title: "Summer Sale Campaign",
-        tags: ["sale", "summer", "offer"],
-        scheduleTime: "2 Sept 2025 - 8:00 PM",
-        totalAudience: 12300,
-        percentageGrowth: 15.2,
-        facebookReach: 4000,
-        instagramReach: 5000,
-        tiktokReach: 2300,
-      ),
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/211",
-        title: "Product Awareness Drive",
-        tags: ["awareness", "product"],
-        scheduleTime: "1 Sept 2025 - 7:00 PM",
-        totalAudience: 9800,
-        percentageGrowth: -4.5,
-        facebookReach: 3500,
-        instagramReach: 4000,
-        tiktokReach: 2300,
-      ),
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/210",
-        title: "Summer Sale Campaign",
-        tags: ["sale", "summer", "offer"],
-        scheduleTime: "2 Sept 2025 - 8:00 PM",
-        totalAudience: 12300,
-        percentageGrowth: 15.2,
-        facebookReach: 4000,
-        instagramReach: 5000,
-        tiktokReach: 2300,
-      ),
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/211",
-        title: "Product Awareness Drive",
-        tags: ["awareness", "product"],
-        scheduleTime: "1 Sept 2025 - 7:00 PM",
-        totalAudience: 9800,
-        percentageGrowth: -4.5,
-        facebookReach: 3500,
-        instagramReach: 4000,
-        tiktokReach: 2300,
-      ),
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/210",
-        title: "Summer Sale Campaign",
-        tags: ["sale", "summer", "offer"],
-        scheduleTime: "2 Sept 2025 - 8:00 PM",
-        totalAudience: 12300,
-        percentageGrowth: 15.2,
-        facebookReach: 4000,
-        instagramReach: 5000,
-        tiktokReach: 2300,
-      ),
-      HistoryPost(
-        imageUrl: "https://picsum.photos/400/211",
-        title: "Product Awareness Drive",
-        tags: ["awareness", "product"],
-        scheduleTime: "1 Sept 2025 - 7:00 PM",
-        totalAudience: 9800,
-        percentageGrowth: -4.5,
-        facebookReach: 3500,
-        instagramReach: 4000,
-        tiktokReach: 2300,
-      ),
-    ];
-  }
-}
-
 
 
 class ScheduleScreenPage extends StatelessWidget {
@@ -161,7 +13,8 @@ class ScheduleScreenPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String? imageUrl ;
-    final controller = Get.put(ScheduleController());
+    // Inject the new controller
+    final ScheduleController controller = Get.put(ScheduleController());
 
     return Scaffold(
       body: Container(
@@ -169,7 +22,7 @@ class ScheduleScreenPage extends StatelessWidget {
         height: double.infinity,
         color: Colors.transparent,
         child: SafeArea(
-          bottom: false, // Let navigation bar handle the bottom if needed, or keep it true if you want items away from system nav
+          bottom: false, 
           child: Column(
             children: [
               // Top Row
@@ -228,7 +81,7 @@ class ScheduleScreenPage extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   // height: double.infinity,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(25),
                         topRight: Radius.circular(25),
@@ -240,7 +93,7 @@ class ScheduleScreenPage extends StatelessWidget {
                     child: Column(
                       children: [
 
-                        SizedBox(height: 10,),
+                        const SizedBox(height: 10,),
                         // Custom Tab Switcher
                         Obx(() {
                           return Container(
@@ -314,8 +167,68 @@ class ScheduleScreenPage extends StatelessWidget {
                         // Tab Content
                         Expanded(
                           child: Obx(() {
+                            if (controller.isLoading.value) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            
+                            if (controller.errorMessage.isNotEmpty) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(controller.errorMessage.value, textAlign: TextAlign.center),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        controller.fetchSchedules("scheduled");
+                                        controller.fetchSchedules("published");
+                                      },
+                                      child: const Text("Retry"),
+                                    )
+                                  ],
+                                ),
+                              );
+                            }
+
                             if (controller.selectedTab.value == 0) {
-                              // Scheduled posts list
+                              if (controller.scheduledPosts.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF4F4F4),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.calendar_today_rounded,
+                                          size: 50,
+                                          color: Color(0xFFC4C4C4),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        "No Scheduled Posts",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        "You don't have any posts scheduled yet.\nTap the + button to create one!",
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
                               return ListView.builder(
                                 itemCount: controller.scheduledPosts.length,
                                 itemBuilder: (context, index) {
@@ -325,6 +238,45 @@ class ScheduleScreenPage extends StatelessWidget {
                               );
                             } else {
                               // History posts list
+                              if (controller.historyPosts.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF4F4F4),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.history_rounded,
+                                          size: 50,
+                                          color: Color(0xFFC4C4C4),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        "No History Available",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        "Your past published posts will appear here.",
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
                               return ListView.builder(
                                 itemCount: controller.historyPosts.length,
                                 itemBuilder: (context, index) {
@@ -362,5 +314,4 @@ class ScheduleScreenPage extends StatelessWidget {
       ),
     );
   }
-
 }
