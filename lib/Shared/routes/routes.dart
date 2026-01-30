@@ -20,6 +20,8 @@ import '../../reset_password/bindings/reset_password_binding.dart';
 import '../../reset_password/presentation/screen/reset_password_screen.dart';
 import '../../splashScreen/bindings/welcome_binding.dart';
 import '../../splashScreen/presenatation/screen/onboardingScreen.dart';
+import '../../features/user_onboarding/presentation/screens/user_onboarding_wrapper.dart';
+import '../../features/user_onboarding/bindings/user_onboarding_binding.dart';
 
 class AppRoutes {
   static const WELCOME = '/welcome';
@@ -32,6 +34,7 @@ class AppRoutes {
   static const String forgotPassword = '/forgotPassword';
   static const String resetPassword = '/resetPassword';
   static const String RegistrationProcess = '/RegistrationProcess';
+  static const String userOnboarding = '/userOnboarding';
 
   static final pages = [
     GetPage(
@@ -68,6 +71,11 @@ class AppRoutes {
       name: RegistrationProcess,
       page: () => RegistrationProcessPage(),
       binding: RegistrationProcessBinding(),
+    ),
+    GetPage(
+      name: userOnboarding,
+      page: () => const UserOnboardingWrapper(),
+      binding: UserOnboardingBinding(),
     ),
 
 GetPage(name: HOME, page: () => HomePage()),

@@ -76,7 +76,7 @@ class NetworkCaller {
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = token;
       }
-          _logRequest;;(url, body, headers);
+          _logRequest(url, body, headers);
       Response response = await post(
         uri,
         headers: headers,
@@ -129,8 +129,8 @@ class NetworkCaller {
   }
 
 
-   static void _logRequest(
-      String url, Map<String, String>? body, Map<String, String>? headers) {
+  static void _logRequest(
+      String url, Map<String, dynamic>? body, Map<String, String>? headers) {
     debugPrint('=====================Request========================\n'
         'URL: $url \n'
         'BODY:$body \n'
