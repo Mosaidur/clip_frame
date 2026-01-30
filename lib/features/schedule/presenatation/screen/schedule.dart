@@ -4,6 +4,8 @@ import '../../data/model.dart';
 import '../controller/schedule_controller.dart';
 import '../widgets/SchedulePost.dart';
 import '../widgets/history.dart';
+import '../../../homeController.dart';
+import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 
 
 class ScheduleScreenPage extends StatelessWidget {
@@ -14,7 +16,9 @@ class ScheduleScreenPage extends StatelessWidget {
   Widget build(BuildContext context) {
     String? imageUrl ;
     // Inject the new controller
+    // Inject the new controller
     final ScheduleController controller = Get.put(ScheduleController());
+    final MyProfileController profileController = Get.put(MyProfileController());
 
     return Scaffold(
       body: Container(
@@ -48,28 +52,38 @@ class ScheduleScreenPage extends StatelessWidget {
                     ),
 
                     // Profile Image / Avatar
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey.shade300, width: 1),
-                      ),
-                      child: ClipOval(
-                        child: imageUrl == null || imageUrl!.isEmpty
-                            ? Container(
-                          color: Colors.grey,
-                          child: const Icon(
-                            Icons.person,
-                            size: 30,
-                            color: Colors.white,
-                          ),
-                        )
-                            : Image.network(
-                          imageUrl!,
-                          fit: BoxFit.cover,
-                          width: 50,
-                          height: 50,
+                    GestureDetector(
+                      onTap: () {
+                        Get.find<HomeController>().changePage(3);
+                      },
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey.shade300, width: 1),
+                        ),
+                        child: ClipOval(
+                          child: Obx(() {
+                             final user = profileController.userModel.value;
+                             // Use the same logic as MyProfilePage
+                             return Image.network(
+                                "https://example.com/profile.jpg", // Placeholder until backend provides image
+                                fit: BoxFit.cover,
+                                width: 50,
+                                height: 50,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey,
+                                    child: const Icon(
+                                      Icons.person,
+                                      size: 30,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
+                              );
+                          }),
                         ),
                       ),
                     ),
