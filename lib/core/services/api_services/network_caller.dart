@@ -22,10 +22,22 @@ class NetworkCaller {
   static const String _defaultErrorMessage = "Something went wrong😢";
   static const String _unAuthorizeMessage = "Unauthorized Token😒";
   //get request
-  static Future<NetworkResponse> getRequest({required String url}) async {
+  static Future<NetworkResponse> getRequest({required String url, String? token}) async {
     try {
       Uri uri = Uri.parse(url);
-      final response = await get(uri);
+      final Map<String, String> headers = {
+        'content-type': 'application/json',
+      };
+      // Add Authorization header if token is provided
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      _logRequest(url, null, headers);
+
+      final response = await get(uri, headers: headers).timeout(const Duration(seconds: 30));
+      logResponse(url, response);
+
       if (response.statusCode == 200) {
         final decodedJson = jsonDecode(response.body);
         return NetworkResponse(
@@ -74,7 +86,7 @@ class NetworkCaller {
           };
       // Add Authorization header if token is provided
       if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = token;
+        headers['Authorization'] = 'Bearer $token';
       }
           _logRequest(url, body, headers);
       Response response = await post(

@@ -1,6 +1,7 @@
 class Urls{
   // base url 
   static const String baseUrl = "http://10.10.7.50:5001";
+  // static const String baseUrl = "http://10.0.2.2:5001"; // Reverted
 
   //auth api
   static const String signupUrl = "$baseUrl/api/v1/auth/signup";
@@ -12,6 +13,10 @@ class Urls{
 
   //useronboarding api
   static const String userOnboardingUrl =  "$baseUrl/api/v1/useronboarding";
+
+
+  //user api
+  static const String getUserProfileUrl = "$baseUrl/api/v1/user/profile";
   
 
 }

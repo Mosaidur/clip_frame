@@ -14,7 +14,7 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Connect your Social Profile",
+            "Social Media Platforms Selection",
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -23,7 +23,7 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
           ),
           const SizedBox(height: 10),
           Text(
-            "Select the primary platform where you want to share content.",
+            "Choose one or more social media platforms", // Keeping text consistent with prompt
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.black54,
@@ -31,70 +31,64 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
           ),
           const SizedBox(height: 30),
           
-          Expanded(
-            child: Obx(() => ListView.builder(
-              itemCount: controller.socialPlatformOptions.length,
-              itemBuilder: (context, index) {
-                final platform = controller.socialPlatformOptions[index];
-                final String key = platform['key'];
-                final bool isSelected = controller.selectedPlatform.value == key;
-
-                return GestureDetector(
-                  onTap: () => controller.selectPlatform(key),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: isSelected ? Colors.deepPurple.withOpacity(0.1) : Colors.white,
-                      border: Border.all(
-                        color: isSelected ? Colors.deepPurple : Colors.grey.shade200,
-                        width: isSelected ? 2 : 1,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          platform['icon'],
-                          size: 28,
-                          color: isSelected ? Colors.deepPurple : Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            platform['name'],
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected ? Colors.black87 : Colors.grey.shade700,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (isSelected)
-                          const Icon(Icons.check_circle, color: Colors.deepPurple),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            )),
+          Text(
+            "Choose Platforms:",
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
           ),
+          const SizedBox(height: 16),
+          
+          // Platform Selection
+          Wrap(
+            spacing: 20,
+            children: controller.socialPlatformOptions.map((platform) {
+              return Obx(() {
+                final isSelected = controller.selectedPlatform.value == platform['key'];
+                return GestureDetector(
+                    onTap: () => controller.selectPlatform(platform['key']),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.deepPurple.withOpacity(0.1) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
+                          width: 2,
+                        ),
+                      ), // Use platform specific styling if needed, keeping simple for now
+                      child: Center(
+                        child: Icon(
+                          platform['icon'],
+                          color: isSelected ? Colors.deepPurple : Colors.grey,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                  );
+              });
+            }).toList(),
+          ),
+          
+          const Spacer(),
           
           SizedBox(
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: controller.nextPage,
+              onPressed: controller.nextPage, 
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: Colors.blue, 
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: Text(
-                "Next",
+                "Continue",
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

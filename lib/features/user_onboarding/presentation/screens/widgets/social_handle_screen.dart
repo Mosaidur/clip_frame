@@ -13,17 +13,17 @@ class SocialHandleScreen extends GetView<UserOnboardingPageController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "What's your handle?",
+          Obx(() => Text(
+            "${controller.selectedPlatform.value.capitalizeFirst} Handle",
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
-          ),
+          )),
           const SizedBox(height: 10),
           Text(
-            "Let us know your username so we can customize your experience.",
+            "Enter your username",
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.black54,
@@ -34,12 +34,11 @@ class SocialHandleScreen extends GetView<UserOnboardingPageController> {
           Obx(() => TextField(
             controller: controller.handleController,
             decoration: InputDecoration(
-              labelText: controller.handleLabel,
-              prefixIcon: const Icon(Icons.alternate_email, color: Colors.grey),
+              labelText: "Enter your ${controller.selectedPlatform.value} username",
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
               contentPadding: const EdgeInsets.all(20),
@@ -55,7 +54,7 @@ class SocialHandleScreen extends GetView<UserOnboardingPageController> {
             child: ElevatedButton(
               onPressed: controller.isLoading.value ? null : controller.nextPage,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: Colors.blue,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

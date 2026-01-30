@@ -196,4 +196,5 @@ class UserOnboardingPageController extends GetxController {
     if (selectedPlatform.value.isEmpty) return "Enter username";
     return "Enter your ${selectedPlatform.value} username"; 
   }
+
 }
