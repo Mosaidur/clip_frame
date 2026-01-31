@@ -3,41 +3,55 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'homeController.dart';
 
 class HomePage extends StatelessWidget {
   final HomeController controller = Get.put(HomeController());
   
-  // Floating button widget
+  // Floating button widget for the menu items
   Widget floatingButton(String label, IconData icon) {
-    return Container(
-      width: 60.r,
-      height: 60.r,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF277F), Color(0xFF007CFE)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 65.r,
+          height: 65.r,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE4405F), Color(0xFF6A5AEF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 8.r,
+                offset: Offset(0, 4.h),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 24.r),
+              SizedBox(height: 2.h),
+              Text(
+                label.toUpperCase(),
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 9.sp,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                  decoration: TextDecoration.none, // Remove underlining "dag"
+                ),
+              ),
+            ],
+          ),
         ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(color: Colors.black26, blurRadius: 8.r, offset: Offset(0, 4.h)),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 24.r),
-        onPressed: () {
-          Get.snackbar(
-            label,
-            '$label button clicked!',
-            snackPosition: SnackPosition.TOP,
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.black54,
-            colorText: Colors.white,
-          );
-        },
-      ),
+      ],
     );
   }
 
@@ -194,36 +208,46 @@ class HomePage extends StatelessWidget {
             ),
           ),
           
-          // Floating Menu Items (Moved outside Scaffold to be on top of BottomNavBar)
+          // Floating Menu Items (Positioned based on image layout)
           IgnorePointer(
-            ignoring: !controller.isExpanded.value, // Ignore touches when collapsed
+            ignoring: !controller.isExpanded.value,
             child: AnimatedBuilder(
               animation: controller.controller,
               builder: (context, child) {
-                double radius = 70.h;
-                double angleStep = 90;
-                List<IconData> icons = [Icons.post_add, Icons.movie, Icons.history_edu];
-                List<String> labels = ["Post", "Reels", "Story"];
-
+                // Arrangement: POST (West), REEL (North), STORY (East)
+                // Reduced radius to bring items closer
+                double radius = 85.h;
+                
                 return Stack(
-                  children: List.generate(icons.length, (index) {
-                    double angle = (angleStep * index - 0) * (3.14159 / 180);
-                    // Adjust bottom offset to account for being in outer stack potentially?
-                    // actually SW/SH works same. But ensure alignment.
-                    // The FAB is at bottom center.
-                    return Positioned(
-                      bottom: 40.h + controller.animation.value * radius * sin(angle),
-                      left: 0.5.sw - 30.r + controller.animation.value * radius * cos(angle),
+                  children: [
+                    // REEL (Top/North)
+                    Positioned(
+                      bottom: 85.h + (controller.animation.value * radius),
+                      left: 0.5.sw - 32.5.r,
                       child: Opacity(
                         opacity: controller.animation.value,
-                        child: Column(
-                          children: [
-                            floatingButton(labels[index], icons[index]),
-                          ],
-                        ),
+                        child: floatingButton("REEL", Icons.movie_outlined),
                       ),
-                    );
-                  }),
+                    ),
+                    // POST (Left/West)
+                    Positioned(
+                      bottom: 45.h + (controller.animation.value * radius * 0.4),
+                      left: 0.5.sw - 32.5.r - (controller.animation.value * radius * 0.7),
+                      child: Opacity(
+                        opacity: controller.animation.value,
+                        child: floatingButton("POST", Icons.dashboard_customize_outlined),
+                      ),
+                    ),
+                    // STORY (Right/East)
+                    Positioned(
+                      bottom: 45.h + (controller.animation.value * radius * 0.4),
+                      left: 0.5.sw - 32.5.r + (controller.animation.value * radius * 0.7),
+                      child: Opacity(
+                        opacity: controller.animation.value,
+                        child: floatingButton("STORY", Icons.amp_stories_outlined),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
