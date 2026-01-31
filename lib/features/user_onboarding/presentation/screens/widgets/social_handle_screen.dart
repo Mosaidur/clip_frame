@@ -31,10 +31,10 @@ class SocialHandleScreen extends GetView<UserOnboardingPageController> {
           ),
           const SizedBox(height: 30),
           
-          Obx(() => TextField(
+          TextField(
             controller: controller.handleController,
             decoration: InputDecoration(
-              labelText: "Enter your ${controller.selectedPlatform.value} username",
+              labelText: controller.handleLabel,
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
@@ -44,7 +44,7 @@ class SocialHandleScreen extends GetView<UserOnboardingPageController> {
               contentPadding: const EdgeInsets.all(20),
             ),
             style: GoogleFonts.poppins(fontSize: 16),
-          )),
+          ),
           
           const Spacer(),
           

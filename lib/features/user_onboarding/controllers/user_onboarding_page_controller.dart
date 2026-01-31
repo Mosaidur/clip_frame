@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/services/api_services/user_onboarding/user_onboarding_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../Shared/routes/routes.dart';
@@ -13,35 +15,59 @@ class UserOnboardingPageController extends GetxController {
 
   // Step 1: Business Type
   var selectedBusinessType = ''.obs;
+  final businessTypeSearchController = TextEditingController();
   final customBusinessTypeController = TextEditingController();
-  final List<String> businessTypes = [
+  
+  final List<String> predefinedBusinessTypes = [
     "Restaurants & Cafes",
     "Retail Stores & Boutiques",
     "Beauty Salons & Barbershops",
     "Gyms & Fitness Studios",
     "Local Academies (e.g., language, music, cooking)"
   ];
+  
+  var filteredBusinessTypes = <String>[].obs;
+  var customBusinessTypes = <String>[].obs;
 
   // Step 2: Description
   final businessDescriptionController = TextEditingController();
+  var descriptionCharCount = 0.obs;
+  
+  final List<String> descriptionSuggestions = [
+    "Lorem Ipsum is simply dummy text",
+    "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
+    "Lorem Ipsum has been the industry's standard dummy text."
+  ];
+  
+  void updateDescriptionCount() {
+    descriptionCharCount.value = businessDescriptionController.text.length;
+  }
 
   // Step 3: Audience & Language
   var selectedAudiences = <String>[].obs;
   final List<String> audienceOptions = [
-    "Local Audience",
-    "Tourist Audience",
-    "Online only Audience",
-    "All types"
+    "local",
+    "tourist",
+    "online",
+    "all"
   ];
 
-  var selectedLanguage = 'English'.obs; // Single selection for language
-  final List<String> languageOptions = [
-    "English",
-    "Spanish",
-    "German",
-    "Chinese"
-  ];
+  var selectedLanguage = 'english'.obs; // Single selection for language
+  var languageOptions = [
+    "english",
+    "spanish",
+    "bengali",
+    "hindi",
+    "french"
+  ].obs;
   final languageController = TextEditingController(); // For custom? Keeping it if needed
+  
+  void addCustomLanguage(String language) {
+    if (!languageOptions.contains(language)) {
+      languageOptions.add(language);
+      selectedLanguage.value = language;
+    }
+  }
   var autoTranslateCaptions = false.obs;
 
   // Step 4: Social Platforms (Single Select)
@@ -54,7 +80,27 @@ class UserOnboardingPageController extends GetxController {
 
   // Step 5: Handles
   final handleController = TextEditingController();
+  final passwordController = TextEditingController();
 
+  // Step 6: Branding
+  var primaryColor = const Color(0xFF000000).obs;
+  var secondaryColor = const Color(0xFF000000).obs;
+  var logoPath = ''.obs;
+  File? logoFile;
+
+  Future<void> pickLogo() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (image != null) {
+        logoPath.value = image.path;
+        logoFile = File(image.path);
+      }
+    } catch (e) {
+      print("Error picking logo: $e");
+    }
+  }
 
   void nextPage() {
     if (!validateCurrentStep()) return;
@@ -82,6 +128,30 @@ class UserOnboardingPageController extends GetxController {
     }
   }
 
+  // Business Type Methods
+  void filterBusinessTypes(String query) {
+    if (query.isEmpty) {
+      filteredBusinessTypes.clear();
+    } else {
+      final allTypes = [...predefinedBusinessTypes, ...customBusinessTypes];
+      filteredBusinessTypes.value = allTypes
+          .where((type) => type.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    }
+  }
+
+  void selectBusinessType(String type) {
+    selectedBusinessType.value = type;
+    customBusinessTypeController.clear();
+  }
+
+  void addCustomBusinessType(String type) {
+    if (!customBusinessTypes.contains(type) && !predefinedBusinessTypes.contains(type)) {
+      customBusinessTypes.add(type);
+      selectedBusinessType.value = type;
+    }
+  }
+
   bool validateCurrentStep() {
     switch (currentPage.value) {
       case 0: // Business Type
@@ -104,21 +174,21 @@ class UserOnboardingPageController extends GetxController {
             backgroundColor: Colors.red.withOpacity(0.5), colorText: Colors.white);
           return false;
         }
-        // Language validation (optional since it has default)
         return true;
-      case 3: // Platform
+      case 3: // Platform Selection & Connect Form
         if (selectedPlatform.value.isEmpty) {
            Get.snackbar("Required", "Please select a social media platform.",
             backgroundColor: Colors.red.withOpacity(0.5), colorText: Colors.white);
           return false;
         }
-        return true;
-      case 4: // Handle
         if (handleController.text.trim().isEmpty) {
            Get.snackbar("Required", "Please enter your ${selectedPlatform.value} username.",
             backgroundColor: Colors.red.withOpacity(0.5), colorText: Colors.white);
           return false;
         }
+        return true;
+      case 4: // Branding
+        // Colors and logo can be optional for now as they have defaults or skip option
         return true;
       default:
         return true;
@@ -136,14 +206,20 @@ class UserOnboardingPageController extends GetxController {
       "businessType": finalBusinessType,
       "businessDescription": businessDescriptionController.text,
       "targetAudience": selectedAudiences,
-      "preferredLanguages": selectedLanguage.value, // Sending as string "English" etc.
+      "preferredLanguages": [selectedLanguage.value], // Must be a list for the API
       "autoTranslateCaptions": autoTranslateCaptions.value,
       "socialHandles": [
         {
           "platform": selectedPlatform.value.toLowerCase(),
           "username": handleController.text,
+          "password": passwordController.text, // Added password
         }
-      ]
+      ],
+      "branding": {
+        "primaryColor": "#${primaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
+        "secondaryColor": "#${secondaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
+        "logo": logoPath.value, // This might need to be uploaded separately or as base64
+      }
     };
     
     print("📦 Onboarding Payload: $data");
@@ -158,8 +234,8 @@ class UserOnboardingPageController extends GetxController {
     isLoading.value = false;
 
     if (success) {
-      Get.offAllNamed(AppRoutes.HOME); // Navigate to Home
-    } else {
+    Get.offAllNamed(AppRoutes.login); // Navigate to Login as requested
+  } else {
       Get.snackbar("Error", "Failed to submit onboarding data. Please try again.",
           backgroundColor: Colors.red, colorText: Colors.white);
     }
@@ -168,10 +244,12 @@ class UserOnboardingPageController extends GetxController {
   @override
   void onClose() {
     pageController.dispose();
+    businessTypeSearchController.dispose();
     customBusinessTypeController.dispose();
     businessDescriptionController.dispose();
     languageController.dispose();
     handleController.dispose();
+    passwordController.dispose();
     super.onClose();
   }
   

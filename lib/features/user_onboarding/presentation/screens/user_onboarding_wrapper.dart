@@ -5,6 +5,8 @@ import '../../controllers/user_onboarding_page_controller.dart';
 import 'widgets/business_type_screen.dart';
 import 'widgets/business_description_screen.dart';
 import 'widgets/audience_language_screen.dart';
+import 'widgets/platform_selection_screen.dart';
+import 'widgets/branding_screen.dart';
 
 class UserOnboardingWrapper extends GetView<UserOnboardingPageController> {
   const UserOnboardingWrapper({Key? key}) : super(key: key);
@@ -71,6 +73,8 @@ class UserOnboardingWrapper extends GetView<UserOnboardingPageController> {
                     BusinessTypeScreen(),
                     BusinessDescriptionScreen(),
                     AudienceLanguageScreen(),
+                    PlatformSelectionScreen(),
+                    BrandingScreen(),
                   ],
                 ),
               ),

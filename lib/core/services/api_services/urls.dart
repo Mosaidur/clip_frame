@@ -12,7 +12,7 @@ class Urls{
   static const String resetPasswordUrl = "$baseUrl/api/v1/auth/reset-password";
 
   //useronboarding api
-  static const String userOnboardingUrl =  "$baseUrl/api/v1/useronboarding";
+  static const String userOnboardingUrl =  "$baseUrl/api/v1/useronboarding/branding";
 
 
   //user api

@@ -91,7 +91,7 @@ class EmailVerificationController extends GetxController {
           });
         } else {
           // Navigate to registration process or home
-          Get.offAllNamed(AppRoutes.RegistrationProcess);
+          Get.offAllNamed(AppRoutes.userOnboarding);
         }
       } else {
         Get.snackbar(
