@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
               Locale('en', 'US'),
               Locale('es', 'ES'),
             ],
-            initialRoute: AppRoutes.WELCOME,
+            initialRoute: AppRoutes.SPLASH,
             getPages: AppRoutes.pages,
             debugShowCheckedModeBanner: false,
           );

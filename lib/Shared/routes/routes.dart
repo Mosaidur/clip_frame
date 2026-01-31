@@ -20,10 +20,12 @@ import '../../reset_password/bindings/reset_password_binding.dart';
 import '../../reset_password/presentation/screen/reset_password_screen.dart';
 import '../../splashScreen/bindings/welcome_binding.dart';
 import '../../splashScreen/presenatation/screen/onboardingScreen.dart';
+import '../../splashScreen/presenatation/screen/splash_screen.dart';
 import '../../features/user_onboarding/presentation/screens/user_onboarding_wrapper.dart';
 import '../../features/user_onboarding/bindings/user_onboarding_binding.dart';
 
 class AppRoutes {
+  static const SPLASH = '/';
   static const WELCOME = '/welcome';
   static const HOME = '/home';
   static const PHOTO_EDIT = '/photo_edit';
@@ -37,6 +39,10 @@ class AppRoutes {
   static const String userOnboarding = '/userOnboarding';
 
   static final pages = [
+    GetPage(
+      name: SPLASH,
+      page: () => const SplashScreen(),
+    ),
     GetPage(
       name: WELCOME,
       page: () => WelcomeScreen(),
@@ -79,7 +85,6 @@ class AppRoutes {
     ),
 
 GetPage(name: HOME, page: () => HomePage()),
-
 
 
 

@@ -1,9 +1,12 @@
 import 'package:clip_frame/core/model/user_model.dart';
+import 'package:clip_frame/core/services/api_services/authentication/logout_controller.dart' as api;
 import 'package:clip_frame/core/services/api_services/network_caller.dart';
 import 'package:clip_frame/core/services/api_services/urls.dart';
 import 'package:clip_frame/core/services/auth_service.dart';
+import 'package:clip_frame/shared/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/AboutMeWidget.dart';
 import '../widgets/MyCreationsWidget.dart';
@@ -12,6 +15,9 @@ class MyProfileController extends GetxController {
   var selectedTab = 0.obs; // 0 = About Me, 1 = My Creations
   var isLoading = false.obs;
   var errorMessage = ''.obs;
+
+  // Logout API Controller
+  final api.LogoutController _logoutController = Get.put(api.LogoutController());
   Rx<UserModel?> userModel = Rx<UserModel?>(null);
 
   @override
@@ -62,6 +68,43 @@ class MyProfileController extends GetxController {
     isLoading.value = false;
     print('🟣 isLoading set to false');
   }
+  Future<void> logout() async {
+    try {
+      isLoading.value = true;
+      
+      // Verify token presence before hitting API
+      String? token = await AuthService.getToken();
+      print("🔑 MyProfileController: Token before logout: ${token != null ? 'Present' : 'NULL'}");
+      
+      // Hit logout API
+      bool apiSuccess = await _logoutController.logout();
+      
+      if (apiSuccess) {
+        await AuthService.clearData();
+        Get.offAllNamed(AppRoutes.WELCOME);
+        Get.snackbar(
+          'Success',
+          'Logged out successfully',
+          backgroundColor: Colors.green.withOpacity(0.7),
+          colorText: Colors.white,
+        );
+      } else {
+        // Even if API fails, we usually clear data for UX, but we show a warning
+        await AuthService.clearData();
+        Get.offAllNamed(AppRoutes.WELCOME);
+        Get.snackbar(
+          'Logout',
+          'Logged out locally, but backend session might remain active.',
+          backgroundColor: Colors.orange.withOpacity(0.7),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Logout failed: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }
 
 class MyProfilePage extends StatelessWidget {
@@ -93,10 +136,10 @@ class MyProfilePage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _roundIcon(Icons.settings, () {}),
-                      const Text(
+                      Text(
                         "Profile",
-                        style: TextStyle(
-                          fontSize: 18,
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
                           fontWeight: FontWeight.w600,
                           color: Colors.black,
                         ),
@@ -165,15 +208,15 @@ class MyProfilePage extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         user?.name ?? "User",
-                        style: const TextStyle(
+                        style: GoogleFonts.poppins(
                             color: Colors.black,
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.w600),
                       ),
                       Text(
                         user?.email ?? "",
-                        style: const TextStyle(
-                            color: Colors.black,
+                        style: GoogleFonts.poppins(
+                            color: Colors.black54,
                             fontSize: 14,
                             fontWeight: FontWeight.w400),
                       ),
@@ -223,11 +266,12 @@ class MyProfilePage extends StatelessWidget {
                                     child: Center(
                                       child: Text(
                                         "About me",
-                                        style: TextStyle(
+                                        style: GoogleFonts.poppins(
                                           color: controller.selectedTab.value == 0
-                                              ? Colors.black
+                                              ? Colors.black87
                                               : Colors.white,
                                           fontWeight: FontWeight.w600,
+                                          fontSize: 14,
                                         ),
                                       ),
                                     ),
@@ -248,11 +292,12 @@ class MyProfilePage extends StatelessWidget {
                                     child: Center(
                                       child: Text(
                                         "My Creations",
-                                        style: TextStyle(
+                                        style: GoogleFonts.poppins(
                                           color: controller.selectedTab.value == 1
-                                              ? Colors.black
+                                              ? Colors.black87
                                               : Colors.white,
                                           fontWeight: FontWeight.w600,
+                                          fontSize: 14,
                                         ),
                                       ),
                                     ),

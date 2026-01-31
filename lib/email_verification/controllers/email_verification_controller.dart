@@ -90,8 +90,11 @@ class EmailVerificationController extends GetxController {
             'token': _apiController.resetToken,
           });
         } else {
-          // Navigate to registration process or home
-          Get.offAllNamed(AppRoutes.userOnboarding);
+          // Navigate to login screen after successful verification
+          Get.offAllNamed(AppRoutes.login, arguments: {
+            'verifiedEmail': email,
+            'showVerificationSuccess': true,
+          });
         }
       } else {
         Get.snackbar(

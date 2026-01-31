@@ -4,6 +4,7 @@ class Urls{
   // static const String baseUrl = "http://10.0.2.2:5001"; // Reverted
 
   //auth api
+  static const String logoutUrl = "$baseUrl/api/v1/auth/logout";
   static const String signupUrl = "$baseUrl/api/v1/auth/signup";
   static const String loginUrl = "$baseUrl/api/v1/auth/custom-login";
   static const String verifyEmailUrl = "$baseUrl/api/v1/auth/verify-account";
@@ -21,6 +22,8 @@ class Urls{
 
   //scheduleing api
   static const String schedulingUrl = "$baseUrl/api/v1/content/my-contents?status=published";
+
+
   
 
 }

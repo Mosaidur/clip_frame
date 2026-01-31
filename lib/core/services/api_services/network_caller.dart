@@ -38,7 +38,7 @@ class NetworkCaller {
       final response = await get(uri, headers: headers).timeout(const Duration(seconds: 30));
       logResponse(url, response);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final decodedJson = jsonDecode(response.body);
         return NetworkResponse(
           isSuccess: true,
@@ -87,8 +87,12 @@ class NetworkCaller {
       // Add Authorization header if token is provided
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
+        debugPrint("🚀 DEBUG: Token added to headers: ${token.substring(0, 5)}...");
+      } else {
+        debugPrint("🚀 DEBUG: No token provided to NetworkCaller.");
       }
-          _logRequest(url, body, headers);
+      
+      _logRequest(url, body, headers);
       Response response = await post(
         uri,
         headers: headers,
@@ -96,7 +100,7 @@ class NetworkCaller {
       );
 
       logResponse(url, response);
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final decodedJson = jsonDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
@@ -143,10 +147,10 @@ class NetworkCaller {
 
   static void _logRequest(
       String url, Map<String, dynamic>? body, Map<String, String>? headers) {
-    debugPrint('=====================Request========================\n'
+    debugPrint('🚀🚀🚀 [NETWORK REQUEST] 🚀🚀🚀\n'
         'URL: $url \n'
-        'BODY:$body \n'
-        'HEADERS:$headers\n'
+        'BODY: ${jsonEncode(body)} \n'
+        'HEADERS: $headers\n'
         '==================================================');
   }
 

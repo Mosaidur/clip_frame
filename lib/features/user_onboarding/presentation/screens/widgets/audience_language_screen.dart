@@ -110,7 +110,7 @@ class AudienceLanguageScreen extends GetView<UserOnboardingPageController> {
                       ),
                     ),
                     child: Text(
-                      language,
+                      controller.getLanguageDisplayName(language), // Show full name instead of code
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         color: isSelected ? const Color(0xFF007CFE) : Colors.black87,

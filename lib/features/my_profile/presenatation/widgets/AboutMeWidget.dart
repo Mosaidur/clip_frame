@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../screen/MyProfileController.dart';
 
 class AboutMeWidget extends StatelessWidget {
@@ -25,56 +26,70 @@ class AboutMeWidget extends StatelessWidget {
           children: [
             _infoRow("Membership", user.membership.isNotEmpty ? user.membership : "N/A", valueColor: const Color(0xFFFF277F)),
             _infoRow("Business Name", user.businessType.isNotEmpty ? user.businessType : "N/A"),
-            // _infoRow("Description", "About some things"), // Description not in model yet
             _dropdownRow("Business Category", user.businessType.isNotEmpty ? user.businessType : "General"),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Platforms",
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                Row(
-                  children: user.platforms.map((platform) {
-                    String iconPath = "assets/images/facebook.png"; // Default
-                    if (platform.toLowerCase().contains("instagram")) iconPath = "assets/images/instagram.png";
-                    if (platform.toLowerCase().contains("tiktok")) iconPath = "assets/images/tiktok.png";
-                     // Add more mappings as needed
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Image.asset(iconPath, height: 20, errorBuilder: (ctx, err, stack) => const Icon(Icons.public, size: 20)),
-                    );
-                  }).toList(),
-                )
-              ],
-            ),
-            const SizedBox(height: 12),
-            _dropdownRow("Preferred Language", user.preferredLanguages.isNotEmpty ? user.preferredLanguages.first : "English"),
-            _dropdownRow("Timezone", user.timezone.isNotEmpty ? user.timezone : "UTC"),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Password",
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                GestureDetector(
-                  onTap: () {},
-                  child: const Text("Change Password",
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF007CFE))),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const Center(
-              child: Text(
-                "LOG OUT",
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFFF277F)),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   Text("Platforms",
+                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87)),
+                  Row(
+                    children: user.platforms.map((platform) {
+                      String iconPath = "assets/images/facebook.png"; // Default
+                      if (platform.toLowerCase().contains("instagram")) iconPath = "assets/images/instagram.png";
+                      if (platform.toLowerCase().contains("tiktok")) iconPath = "assets/images/tiktok.png";
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Image.asset(iconPath, height: 22, errorBuilder: (ctx, err, stack) => const Icon(Icons.public, size: 22, color: Colors.blue)),
+                      );
+                    }).toList(),
+                  )
+                ],
               ),
             ),
-            const SizedBox(height: 40),
+            
+            _dropdownRow("Preferred Language", user.preferredLanguages.isNotEmpty ? user.preferredLanguages.first : "English"),
+            _dropdownRow("Timezone", user.timezone.isNotEmpty ? user.timezone : "UTC"),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Password",
+                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87)),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Text("Change Password",
+                        style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF007CFE))),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: () {
+                // TODO: Implement Logout logic (AuthService.clearData + Navigate to Welcome)
+                Get.find<MyProfileController>().logout();
+              },
+              child: Center(
+                child: Text(
+                  "LOG OUT",
+                  style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: const Color(0xFFFF277F)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       );
@@ -83,17 +98,26 @@ class AboutMeWidget extends StatelessWidget {
 
   Widget _infoRow(String title, String value, {Color valueColor = Colors.black}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: valueColor)),
+          Expanded(
+            flex: 2,
+            child: Text(title,
+                style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: Text(value,
+                textAlign: TextAlign.right,
+                style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: valueColor)),
+          ),
         ],
       ),
     );
@@ -101,16 +125,27 @@ class AboutMeWidget extends StatelessWidget {
 
   Widget _dropdownRow(String title, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Expanded(
+            child: Text(title,
+                style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87)),
+          ),
           DropdownButton<String>(
             value: value,
             underline: const SizedBox(),
-            items: [value].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
+            icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
+            items: [value]
+                .map((e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(e,
+                        style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87))))
+                .toList(),
             onChanged: (val) {},
           )
         ],

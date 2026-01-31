@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/services/api_services/user_onboarding/user_onboarding_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/onboarding_status_service.dart';
 import '../../../Shared/routes/routes.dart';
 
 class UserOnboardingPageController extends GetxController {
@@ -52,14 +53,29 @@ class UserOnboardingPageController extends GetxController {
     "all"
   ];
 
-  var selectedLanguage = 'english'.obs; // Single selection for language
+  var selectedLanguage = 'en'.obs; // Language code for backend
   var languageOptions = [
-    "english",
-    "spanish",
-    "bengali",
-    "hindi",
-    "french"
+    "en",      // English
+    "es",      // Spanish
+    "bn",      // Bengali
+    "hi",      // Hindi
+    "fr"       // French
   ].obs;
+  
+  // Language code to display name mapping
+  final Map<String, String> languageDisplayNames = {
+    "en": "English",
+    "es": "Spanish",
+    "bn": "Bengali",
+    "hi": "Hindi",
+    "fr": "French"
+  };
+  
+  // Helper method to get display name from code
+  String getLanguageDisplayName(String code) {
+    return languageDisplayNames[code] ?? code;
+  }
+  
   final languageController = TextEditingController(); // For custom? Keeping it if needed
   
   void addCustomLanguage(String language) {
@@ -234,8 +250,15 @@ class UserOnboardingPageController extends GetxController {
     isLoading.value = false;
 
     if (success) {
-    Get.offAllNamed(AppRoutes.login); // Navigate to Login as requested
-  } else {
+      // Mark onboarding as complete for this specific user
+      String? email = OnboardingStatusService.getEmailFromToken(token ?? "");
+      if (email != null) {
+        await OnboardingStatusService.markOnboardingComplete(email);
+      }
+      
+      // Navigate to home
+      Get.offAllNamed(AppRoutes.HOME);
+    } else {
       Get.snackbar("Error", "Failed to submit onboarding data. Please try again.",
           backgroundColor: Colors.red, colorText: Colors.white);
     }
