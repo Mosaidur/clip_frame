@@ -51,21 +51,8 @@ class PostScrollContnet extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    /// Menu
-                    GestureDetector(
-                      onTap: () {
-                        Scaffold.of(context).openDrawer();
-                      },
-                      child: Container(
-                        width: 50,
-                        height: 50,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black26,
-                        ),
-                        child: const Icon(Icons.menu_outlined, color: Colors.white),
-                      ),
-                    ),
+                    /// Safe space for the parent's back button
+                    const SizedBox(width: 50),
 
                     /// Profile Image
                     Container(
@@ -191,7 +178,7 @@ class PostScrollContnet extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
                         child: const Text(
-                          "Create this Reel",
+                          "Create this Post",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,

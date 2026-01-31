@@ -1,3 +1,4 @@
+import 'package:clip_frame/features/homeController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -212,6 +213,7 @@ class DashBoardPage extends StatelessWidget {
   }
 
   Widget _buildSummaryGrid() {
+    final homeController = Get.find<HomeController>();
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 15.w),
       child: Column(
@@ -219,20 +221,26 @@ class DashBoardPage extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _SummaryCard(
-                  label: "Post\nPublished",
-                  value: total.toString(),
-                  icon: Icons.article_outlined,
-                  color: Colors.blue,
+                child: GestureDetector(
+                  onTap: () => homeController.navigateToPosts(),
+                  child: _SummaryCard(
+                    label: "Post\nPublished",
+                    value: total.toString(),
+                    icon: Icons.article_outlined,
+                    color: Colors.blue,
+                  ),
                 ),
               ),
               SizedBox(width: 12.w),
               Expanded(
-                child: _SummaryCard(
-                  label: "Reels\nPublished",
-                  value: total.toString(),
-                  icon: Icons.movie_outlined,
-                  color: Colors.orange,
+                child: GestureDetector(
+                  onTap: () => homeController.navigateToReels(),
+                  child: _SummaryCard(
+                    label: "Reels\nPublished",
+                    value: total.toString(),
+                    icon: Icons.movie_outlined,
+                    color: Colors.orange,
+                  ),
                 ),
               ),
             ],
@@ -241,11 +249,14 @@ class DashBoardPage extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _SummaryCard(
-                  label: "Story\nCreated",
-                  value: total.toString(),
-                  icon: Icons.history_edu_outlined,
-                  color: Colors.pink,
+                child: GestureDetector(
+                  onTap: () => homeController.navigateToStories(),
+                  child: _SummaryCard(
+                    label: "Story\nCreated",
+                    value: total.toString(),
+                    icon: Icons.history_edu_outlined,
+                    color: Colors.pink,
+                  ),
                 ),
               ),
               SizedBox(width: 12.w),

@@ -1,7 +1,8 @@
 import 'dart:math';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
-
+import 'package:clip_frame/features/homeController.dart';
+import 'package:get/get.dart';
 import '../widgets/PostListPage.dart';
 import '../widgets/allReelsInPostPage.dart';
 import '../widgets/reelContainer.dart';
@@ -16,6 +17,7 @@ class PostCreationPage extends StatefulWidget {
 }
 
 class _PostCreationPageState extends State<PostCreationPage> {
+  final HomeController homeController = Get.find<HomeController>();
   String? imageUrl;
   String? pageTitle = "Let’s Create your Next Post";
   String? pageSubTitle =
@@ -102,7 +104,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       GestureDetector(
-                        onTap: () => _scaffoldKey.currentState!.openDrawer(),
+                        onTap: () => Get.back(),
                         child: Container(
                           width: 50,
                           height: 50,
@@ -111,7 +113,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                             color: Colors.black12,
                           ),
                           child:
-                          const Icon(Icons.menu_outlined, color: Colors.black),
+                          const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
                         ),
                       ),
                       Container(
@@ -263,18 +265,16 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 ),
 
                 // Tab bar
-                SingleChildScrollView(
+                Obx(() => SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: List.generate(tabs.length, (index) {
-                      bool isSelected = index == selectedIndex;
+                      bool isSelected = index == homeController.postTabIndex.value;
                       return GestureDetector(
                         onTap: () {
-                          setState(() {
-                            selectedIndex = index;
-                          });
+                          homeController.postTabIndex.value = index;
                         },
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
@@ -298,44 +298,26 @@ class _PostCreationPageState extends State<PostCreationPage> {
                       );
                     }),
                   ),
-                ),
+                )),
 
                 // Content depending on selected tab
-                Builder(
-                  builder: (_) {
-                    if (selectedIndex == 0) {
-                      // Reels Container
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: ReelsListPage(reelsData: reelsData)
-
-                        // ReelsContainerPage(
-                        //   imagePath: 'assets/images/5.jpg',
-                        //   time: "5 s",
-                        //   title: "A good video always give good lesson and  good morals",
-                        //   // isFavorite: reel["isFavorite"],
-                        //   onCreate: () {
-                        //     debugPrint("Create clicked for:");
-                        //   },
-                        //   onFavoriteToggle: () {
-                        //     setState(() {
-                        //       debugPrint("=============Create clicked for:");
-                        //     });
-                        //   },
-                        //   width: MediaQuery.of(context).size.width/2-15,
-                        // ),
-                      );
-                    } else if (selectedIndex == 1) {
-                      // Posts Container
-                      return PostListPage();
-                    } else if (selectedIndex == 2) {
-                      // Videos Container
-                      return StoryListPage();
-                    } else {
-                      return const SizedBox.shrink();
-                    }
-                  },
-                ),
+                Obx(() {
+                  if (homeController.postTabIndex.value == 0) {
+                    // Reels Container
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ReelsListPage(reelsData: reelsData),
+                    );
+                  } else if (homeController.postTabIndex.value == 1) {
+                    // Posts Container
+                    return PostListPage();
+                  } else if (homeController.postTabIndex.value == 2) {
+                    // Videos Container
+                    return StoryListPage();
+                  } else {
+                    return const SizedBox.shrink();
+                  }
+                }),
 
                 SizedBox(height: 30,)
 

@@ -209,7 +209,7 @@ class HomePage extends StatelessWidget {
           ),
           
           // Floating Menu Items (Positioned based on image layout)
-          IgnorePointer(
+          Obx(() => IgnorePointer(
             ignoring: !controller.isExpanded.value,
             child: AnimatedBuilder(
               animation: controller.controller,
@@ -226,7 +226,13 @@ class HomePage extends StatelessWidget {
                       left: 0.5.sw - 32.5.r,
                       child: Opacity(
                         opacity: controller.animation.value,
-                        child: floatingButton("REEL", Icons.movie_outlined),
+                        child: GestureDetector(
+                          onTap: () {
+                            debugPrint("REEL tapped");
+                            controller.navigateToReels();
+                          },
+                          child: floatingButton("REEL", Icons.movie_outlined),
+                        ),
                       ),
                     ),
                     // POST (Left/West)
@@ -235,7 +241,13 @@ class HomePage extends StatelessWidget {
                       left: 0.5.sw - 32.5.r - (controller.animation.value * radius * 0.7),
                       child: Opacity(
                         opacity: controller.animation.value,
-                        child: floatingButton("POST", Icons.dashboard_customize_outlined),
+                        child: GestureDetector(
+                          onTap: () {
+                            debugPrint("POST tapped");
+                            controller.navigateToPosts();
+                          },
+                          child: floatingButton("POST", Icons.dashboard_customize_outlined),
+                        ),
                       ),
                     ),
                     // STORY (Right/East)
@@ -244,14 +256,20 @@ class HomePage extends StatelessWidget {
                       left: 0.5.sw - 32.5.r + (controller.animation.value * radius * 0.7),
                       child: Opacity(
                         opacity: controller.animation.value,
-                        child: floatingButton("STORY", Icons.amp_stories_outlined),
+                        child: GestureDetector(
+                          onTap: () {
+                            debugPrint("STORY tapped");
+                            controller.navigateToStories();
+                          },
+                          child: floatingButton("STORY", Icons.amp_stories_outlined),
+                        ),
                       ),
                     ),
                   ],
                 );
               },
             ),
-          ),
+          )),
         ],
       ),
     );

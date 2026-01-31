@@ -1,5 +1,6 @@
 import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../Screen_2/post_highlight.dart';
 import '../widgets/postContent.dart';
@@ -103,10 +104,10 @@ class StoryScrollPage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Menu Icon
+                    // Back Button
                     GestureDetector(
                       onTap: () {
-                        Scaffold.of(context).openDrawer();
+                        Get.back();
                       },
                       child: Container(
                         width: 50,
@@ -115,7 +116,7 @@ class StoryScrollPage extends StatelessWidget {
                           shape: BoxShape.circle,
                           color: Colors.black26,
                         ),
-                        child: const Icon(Icons.menu_outlined, color: Colors.white),
+                        child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
                       ),
                     ),
       

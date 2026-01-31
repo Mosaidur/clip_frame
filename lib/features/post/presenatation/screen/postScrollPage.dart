@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../widget2/postScrollContent.dart';
 
 class PostScrollPage extends StatefulWidget {
@@ -78,21 +79,40 @@ class _PostScrollPageState extends State<PostScrollPage> {
     }
 
     return Scaffold(
-      body: PageView.builder(
-        scrollDirection: Axis.vertical,
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
-          final post = posts[index];
-          return PostScrollContnet(
-            imageUrl: post["imageUrl"],
-            category: post["category"],
-            format: post["format"],
-            title: post["title"],
-            tags: List<String>.from(post["tags"]),
-            musicTitle: post["musicTitle"],
-            profileImageUrl: post["profileImageUrl"],
-          );
-        },
+      body: Stack(
+        children: [
+          PageView.builder(
+            scrollDirection: Axis.vertical,
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
+              final post = posts[index];
+              return PostScrollContnet(
+                imageUrl: post["imageUrl"],
+                category: post["category"],
+                format: post["format"],
+                title: post["title"],
+                tags: List<String>.from(post["tags"]),
+                musicTitle: post["musicTitle"],
+                profileImageUrl: post["profileImageUrl"],
+              );
+            },
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 20,
+            child: GestureDetector(
+              onTap: () => Get.back(),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black26,
+                ),
+                child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

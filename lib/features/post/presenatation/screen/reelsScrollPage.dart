@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../widget2/reelsScrollContent.dart';
 
@@ -82,21 +83,40 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
     }
 
     return Scaffold(
-      body: PageView.builder(
-        scrollDirection: Axis.vertical,
-        itemCount: videos.length,
-        itemBuilder: (context, index) {
-          final video = videos[index];
-          return ReelsScrollContnet(
-            videoUrl: video["videoUrl"],
-            category: video["category"],
-            format: video["format"],
-            title: video["title"],
-            tags: List<String>.from(video["tags"]),
-            musicTitle: video["musicTitle"],
-            profileImageUrl: video["thumbnailUrl"],
-          );
-        },
+      body: Stack(
+        children: [
+          PageView.builder(
+            scrollDirection: Axis.vertical,
+            itemCount: videos.length,
+            itemBuilder: (context, index) {
+              final video = videos[index];
+              return ReelsScrollContnet(
+                videoUrl: video["videoUrl"],
+                category: video["category"],
+                format: video["format"],
+                title: video["title"],
+                tags: List<String>.from(video["tags"]),
+                musicTitle: video["musicTitle"],
+                profileImageUrl: video["thumbnailUrl"],
+              );
+            },
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 20,
+            child: GestureDetector(
+              onTap: () => Get.back(),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black26,
+                ),
+                child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
