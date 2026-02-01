@@ -17,14 +17,17 @@ class PostContent extends StatelessWidget {
     required this.name,
     required this.likeCount,
     required this.repostCount,
-    this.padding = 0.0 ,
+    this.padding = 0.0,
   });
 
   // Format count: 1000 -> 1K, 1500 -> 1.5K
   String formatCount(int count) {
     if (count >= 1000) {
       double result = count / 1000;
-      return result.toStringAsFixed(result.truncateToDouble() == result ? 0 : 1) + 'K';
+      return result.toStringAsFixed(
+            result.truncateToDouble() == result ? 0 : 1,
+          ) +
+          'K';
     }
     return count.toString();
   }
@@ -37,7 +40,11 @@ class PostContent extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
         image: DecorationImage(
-          image: AssetImage(image),
+          image:
+              (image.startsWith('http')
+                      ? NetworkImage(image)
+                      : AssetImage(image))
+                  as ImageProvider,
           fit: BoxFit.cover,
         ),
       ),
@@ -60,9 +67,13 @@ class PostContent extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 12.5,
-                    backgroundImage: AssetImage(profileImage),
+                    backgroundImage:
+                        (profileImage.startsWith('http')
+                                ? NetworkImage(profileImage)
+                                : AssetImage(profileImage))
+                            as ImageProvider,
                   ),
-                  
+
                   const SizedBox(width: 5),
                   Text(
                     name,
@@ -107,10 +118,14 @@ class PostContent extends StatelessWidget {
                       style: TextStyle(color: Colors.white, fontSize: 10),
                     ),
                     // const SizedBox(width: 4),
-                    const Icon(Icons.favorite_border, color: Colors.white, size: 12),
+                    const Icon(
+                      Icons.favorite_border,
+                      color: Colors.white,
+                      size: 12,
+                    ),
                     // const SizedBox(width: 4),
                     Text(
-                       formatCount(likeCount),
+                      formatCount(likeCount),
                       overflow: TextOverflow.fade,
                       style: const TextStyle(color: Colors.white, fontSize: 10),
                     ),

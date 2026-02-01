@@ -1,11 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:clip_frame/core/model/content_template_model.dart';
+import 'package:clip_frame/core/services/api_services/content_template_service.dart';
+import 'package:clip_frame/features/post/presenatation/widget2/beautifulEmptyState.dart';
 import '../widget2/reelsScrollContent.dart';
-
-/// Import your VideoPage widget from before
-/// (make sure VideoPage & VideoPlayerWidget are in another file and imported)
 
 class Reelsscrollpage extends StatefulWidget {
   const Reelsscrollpage({super.key});
@@ -15,70 +13,44 @@ class Reelsscrollpage extends StatefulWidget {
 }
 
 class _ReelsscrollpageState extends State<Reelsscrollpage> {
-  List<dynamic> videos = [];
+  List<ContentTemplateModel> templates = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadVideos();
+    _loadTemplates();
   }
 
-  void _loadVideos() {
-    /// Mock JSON (can be replaced with API call)
-    const jsonString = '''
-    {
-      "videos": [
-        {
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-          "thumbnailUrl": "https://example.com/thumbnails/thumb1.jpg",
-          "category": "Education",
-          "format": "MP4",
-          "title": "Learn Flutter in 60 seconds",
-          "tags": ["flutter", "mobile", "dart"],
-          "musicTitle": "Inspiring Beats"
-        },
-        {
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-          "thumbnailUrl": "https://example.com/thumbnails/thumb2.jpg",
-          "category": "Travel",
-          "format": "MP4",
-          "title": "Exploring the mountains",
-          "tags": ["nature", "adventure", "travel"],
-          "musicTitle": "Calm Nature Sound"
-        },
-        {
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-          "thumbnailUrl": "https://example.com/thumbnails/thumb3.jpg",
-          "category": "Entertainment",
-          "format": "MOV",
-          "title": "Funny moments compilation",
-          "tags": ["funny", "comedy", "viral"],
-          "musicTitle": "Comedy Beats"
-        },
-        {
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-          "thumbnailUrl": "https://example.com/thumbnails/thumb4.jpg",
-          "category": "Sports",
-          "format": "MP4",
-          "title": "Top 10 football goals",
-          "tags": ["football", "sports", "goals"],
-          "musicTitle": "Stadium Energy"
-        }
-      ]
-    }
-    ''';
-
-    final data = json.decode(jsonString);
+  Future<void> _loadTemplates() async {
+    setState(() => isLoading = true);
+    final results = await ContentTemplateService.fetchTemplatesByType('reel');
     setState(() {
-      videos = data["videos"];
+      templates = results;
+      isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (videos.isEmpty) {
+    if (isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFFF277F)),
+        ),
+      );
+    }
+
+    if (templates.isEmpty) {
+      return Scaffold(
+        body: BeautifulEmptyState(
+          title: "No Reels Found",
+          subtitle:
+              "We couldn't find any reel templates at the moment. Please check back later or try refreshing.",
+          onRetry: _loadTemplates,
+          icon: Icons.movie_filter_outlined,
+        ),
       );
     }
 
@@ -87,17 +59,24 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
         children: [
           PageView.builder(
             scrollDirection: Axis.vertical,
-            itemCount: videos.length,
+            itemCount: templates.length,
             itemBuilder: (context, index) {
-              final video = videos[index];
+              final template = templates[index];
+              // Use the URL from the first step if available, otherwise use a placeholder
+              final videoUrl =
+                  (template.steps != null && template.steps!.isNotEmpty)
+                  ? template.steps![0].url ?? ""
+                  : "";
+
               return ReelsScrollContnet(
-                videoUrl: video["videoUrl"],
-                category: video["category"],
-                format: video["format"],
-                title: video["title"],
-                tags: List<String>.from(video["tags"]),
-                musicTitle: video["musicTitle"],
-                profileImageUrl: video["thumbnailUrl"],
+                videoUrl: videoUrl,
+                category: template.category ?? "General",
+                format: "MP4", // Default format
+                title: template.title ?? "Untitled Reel",
+                tags: template.hashtags ?? [],
+                musicTitle: "Original Audio",
+                profileImageUrl:
+                    template.thumbnail ?? template.createdBy?.email, // Fallback
               );
             },
           ),
@@ -112,7 +91,11 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
                   shape: BoxShape.circle,
                   color: Colors.black26,
                 ),
-                child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ),

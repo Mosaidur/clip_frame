@@ -7,18 +7,18 @@ import '../widgets/history.dart';
 import '../../../homeController.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 
-
 class ScheduleScreenPage extends StatelessWidget {
-
   const ScheduleScreenPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    String? imageUrl ;
+    String? imageUrl;
     // Inject the new controller
     // Inject the new controller
     final ScheduleController controller = Get.put(ScheduleController());
-    final MyProfileController profileController = Get.put(MyProfileController());
+    final MyProfileController profileController = Get.put(
+      MyProfileController(),
+    );
 
     return Scaffold(
       body: Container(
@@ -26,12 +26,15 @@ class ScheduleScreenPage extends StatelessWidget {
         height: double.infinity,
         color: Colors.transparent,
         child: SafeArea(
-          bottom: false, 
+          bottom: false,
           child: Column(
             children: [
               // Top Row
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -61,28 +64,31 @@ class ScheduleScreenPage extends StatelessWidget {
                         height: 50,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey.shade300, width: 1),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
                         ),
                         child: ClipOval(
                           child: Obx(() {
-                             final user = profileController.userModel.value;
-                             // Use the same logic as MyProfilePage
-                             return Image.network(
-                                "https://example.com/profile.jpg", // Placeholder until backend provides image
-                                fit: BoxFit.cover,
-                                width: 50,
-                                height: 50,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: Colors.grey,
-                                    child: const Icon(
-                                      Icons.person,
-                                      size: 30,
-                                      color: Colors.white,
-                                    ),
-                                  );
-                                },
-                              );
+                            final user = profileController.userModel.value;
+                            // Use the same logic as MyProfilePage
+                            return Image.network(
+                              "https://example.com/profile.jpg", // Placeholder until backend provides image
+                              fit: BoxFit.cover,
+                              width: 50,
+                              height: 50,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey,
+                                  child: const Icon(
+                                    Icons.person,
+                                    size: 30,
+                                    color: Colors.white,
+                                  ),
+                                );
+                              },
+                            );
                           }),
                         ),
                       ),
@@ -96,18 +102,17 @@ class ScheduleScreenPage extends StatelessWidget {
                   width: double.infinity,
                   // height: double.infinity,
                   decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(25),
-                        topRight: Radius.circular(25),
-                      ),
-                      color: Colors.white
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(25),
+                      topRight: Radius.circular(25),
+                    ),
+                    color: Colors.white,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(15.0),
                     child: Column(
                       children: [
-
-                        const SizedBox(height: 10,),
+                        const SizedBox(height: 10),
                         // Custom Tab Switcher
                         Obx(() {
                           return Container(
@@ -123,9 +128,12 @@ class ScheduleScreenPage extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: GestureDetector(
-                                    onTap: () => controller.selectedTab.value = 0,
+                                    onTap: () =>
+                                        controller.selectedTab.value = 0,
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 10,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: controller.selectedTab.value == 0
                                             ? Colors.white
@@ -136,7 +144,9 @@ class ScheduleScreenPage extends StatelessWidget {
                                         child: Text(
                                           "Scheduled",
                                           style: TextStyle(
-                                            color: controller.selectedTab.value == 0
+                                            color:
+                                                controller.selectedTab.value ==
+                                                    0
                                                 ? Colors.black
                                                 : Colors.white,
                                             fontWeight: FontWeight.w600,
@@ -148,9 +158,12 @@ class ScheduleScreenPage extends StatelessWidget {
                                 ),
                                 Expanded(
                                   child: GestureDetector(
-                                    onTap: () => controller.selectedTab.value = 1,
+                                    onTap: () =>
+                                        controller.selectedTab.value = 1,
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 10,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: controller.selectedTab.value == 1
                                             ? Colors.white
@@ -161,7 +174,9 @@ class ScheduleScreenPage extends StatelessWidget {
                                         child: Text(
                                           "History",
                                           style: TextStyle(
-                                            color: controller.selectedTab.value == 1
+                                            color:
+                                                controller.selectedTab.value ==
+                                                    1
                                                 ? Colors.black
                                                 : Colors.white,
                                             fontWeight: FontWeight.w600,
@@ -182,22 +197,27 @@ class ScheduleScreenPage extends StatelessWidget {
                         Expanded(
                           child: Obx(() {
                             if (controller.isLoading.value) {
-                              return const Center(child: CircularProgressIndicator());
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
                             }
-                            
+
                             if (controller.errorMessage.isNotEmpty) {
                               return Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(controller.errorMessage.value, textAlign: TextAlign.center),
+                                    Text(
+                                      controller.errorMessage.value,
+                                      textAlign: TextAlign.center,
+                                    ),
                                     ElevatedButton(
                                       onPressed: () {
                                         controller.fetchSchedules("scheduled");
                                         controller.fetchSchedules("published");
                                       },
                                       child: const Text("Retry"),
-                                    )
+                                    ),
                                   ],
                                 ),
                               );
@@ -301,7 +321,6 @@ class ScheduleScreenPage extends StatelessWidget {
                             }
                           }),
                         ),
-
                       ],
                     ),
                   ),

@@ -23,7 +23,8 @@ class Urls{
   //scheduleing api
   static const String schedulingUrl = "$baseUrl/api/v1/content/my-contents?status=published";
 
-
+  //content tamplate api 
+  static const String contentTemplateUrl = "$baseUrl/api/v1/contentTemplate?sortOrder=asc"; //all template api for reels.posts and stories
   
 
 }

@@ -1,6 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:clip_frame/core/model/content_template_model.dart';
+import 'package:clip_frame/core/services/api_services/content_template_service.dart';
+import 'package:clip_frame/features/post/presenatation/widget2/beautifulEmptyState.dart';
 import '../widget2/postScrollContent.dart';
 
 class PostScrollPage extends StatefulWidget {
@@ -11,70 +13,44 @@ class PostScrollPage extends StatefulWidget {
 }
 
 class _PostScrollPageState extends State<PostScrollPage> {
-  List<dynamic> posts = [];
+  List<ContentTemplateModel> templates = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadPosts();
+    _loadTemplates();
   }
 
-  void _loadPosts() {
-    // Mock JSON for posts
-    const jsonString = '''
-    {
-      "posts": [
-        {
-          "imageUrl": "https://picsum.photos/500/900?random=1",
-          "category": "Education",
-          "format": "JPEG",
-          "title": "Learn Flutter in 60 seconds",
-          "tags": ["flutter", "mobile", "dart"],
-          "musicTitle": "Inspiring Beats",
-          "profileImageUrl": "https://i.pravatar.cc/150?img=1"
-        },
-        {
-          "imageUrl": "https://picsum.photos/500/900?random=2",
-          "category": "Travel",
-          "format": "PNG",
-          "title": "Exploring the mountains",
-          "tags": ["nature", "adventure", "travel"],
-          "musicTitle": "Calm Nature Sound",
-          "profileImageUrl": "https://i.pravatar.cc/150?img=2"
-        },
-        {
-          "imageUrl": "https://picsum.photos/500/900?random=3",
-          "category": "Entertainment",
-          "format": "JPEG",
-          "title": "Funny moments compilation",
-          "tags": ["funny", "comedy", "viral"],
-          "musicTitle": "Comedy Beats",
-          "profileImageUrl": "https://i.pravatar.cc/150?img=3"
-        },
-        {
-          "imageUrl": "https://picsum.photos/500/900?random=4",
-          "category": "Sports",
-          "format": "PNG",
-          "title": "Top 10 football goals",
-          "tags": ["football", "sports", "goals"],
-          "musicTitle": "Stadium Energy",
-          "profileImageUrl": "https://i.pravatar.cc/150?img=4"
-        }
-      ]
-    }
-    ''';
-
-    final data = json.decode(jsonString);
+  Future<void> _loadTemplates() async {
+    setState(() => isLoading = true);
+    final results = await ContentTemplateService.fetchTemplatesByType('post');
     setState(() {
-      posts = data["posts"];
+      templates = results;
+      isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (posts.isEmpty) {
+    if (isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFFF277F)),
+        ),
+      );
+    }
+
+    if (templates.isEmpty) {
+      return Scaffold(
+        body: BeautifulEmptyState(
+          title: "No Posts Found",
+          subtitle:
+              "It seems like there are no post templates available right now. Stay tuned for updates!",
+          onRetry: _loadTemplates,
+          icon: Icons.post_add_outlined,
+        ),
       );
     }
 
@@ -83,17 +59,23 @@ class _PostScrollPageState extends State<PostScrollPage> {
         children: [
           PageView.builder(
             scrollDirection: Axis.vertical,
-            itemCount: posts.length,
+            itemCount: templates.length,
             itemBuilder: (context, index) {
-              final post = posts[index];
+              final template = templates[index];
+              final imageUrl =
+                  (template.steps != null && template.steps!.isNotEmpty)
+                  ? template.steps![0].url ?? ""
+                  : "";
+
               return PostScrollContnet(
-                imageUrl: post["imageUrl"],
-                category: post["category"],
-                format: post["format"],
-                title: post["title"],
-                tags: List<String>.from(post["tags"]),
-                musicTitle: post["musicTitle"],
-                profileImageUrl: post["profileImageUrl"],
+                imageUrl: imageUrl,
+                category: template.category ?? "General",
+                format: "JPEG",
+                title: template.title ?? "Untitled Post",
+                tags: template.hashtags ?? [],
+                musicTitle: "Original Audio",
+                profileImageUrl:
+                    template.thumbnail ?? template.createdBy?.email,
               );
             },
           ),
@@ -108,7 +90,11 @@ class _PostScrollPageState extends State<PostScrollPage> {
                   shape: BoxShape.circle,
                   color: Colors.black26,
                 ),
-                child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ),
