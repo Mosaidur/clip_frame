@@ -15,8 +15,26 @@ class CaptionGeneratorPage extends StatefulWidget {
 }
 
 class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
-  String selectedTone = "BOLD";
-  final TextEditingController _suggestionController = TextEditingController();
+  final TextEditingController _captionController = TextEditingController();
+  final TextEditingController _hashtagController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill from controller if exists
+    if (Get.isRegistered<ContentCreationController>()) {
+      final controller = Get.find<ContentCreationController>();
+      _captionController.text = controller.caption.value;
+      _hashtagController.text = controller.hashtags.join(' ');
+    }
+  }
+
+  @override
+  void dispose() {
+    _captionController.dispose();
+    _hashtagController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +47,7 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8E9D2),
-              Color(0xFFB49EF4),
-            ], // Adjusting to match the design (Peach to Purple)
+            colors: [Color(0xFFF8E9D2), Color(0xFFB49EF4)],
           ),
         ),
         child: Scaffold(
@@ -75,7 +90,7 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                     children: [
                       SizedBox(height: 20.h),
                       Text(
-                        "Caption Generator",
+                        "Add Post Details",
                         style: TextStyle(
                           fontSize: 22.sp,
                           fontWeight: FontWeight.bold,
@@ -84,7 +99,7 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                       ),
                       SizedBox(height: 8.h),
                       Text(
-                        "Let AI help you create your post description",
+                        "Enter your caption and hashtags below",
                         style: TextStyle(
                           fontSize: 14.sp,
                           color: Colors.black.withOpacity(0.6),
@@ -92,7 +107,7 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                       ),
                       SizedBox(height: 30.h),
 
-                      // Input Card
+                      // Caption Input Card
                       Container(
                         padding: EdgeInsets.all(20.r),
                         decoration: BoxDecoration(
@@ -103,61 +118,7 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Your Tone",
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            SizedBox(height: 10.h),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 15.w),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(10.r),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: selectedTone,
-                                  isExpanded: true,
-                                  icon: const Icon(Icons.keyboard_arrow_down),
-                                  items:
-                                      [
-                                            "BOLD",
-                                            "CASUAL",
-                                            "FUNNY",
-                                            "PROFESSIONAL",
-                                          ]
-                                          .map(
-                                            (tone) => DropdownMenuItem(
-                                              value: tone,
-                                              child: Row(
-                                                children: [
-                                                  const Text("👊 "),
-                                                  Text(
-                                                    tone,
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                  onChanged: (val) {
-                                    setState(() {
-                                      selectedTone = val!;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 20.h),
-                            Text(
-                              "Caption Suggestions",
+                              "Write Caption",
                               style: TextStyle(
                                 fontSize: 13.sp,
                                 fontWeight: FontWeight.bold,
@@ -166,10 +127,11 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                             ),
                             SizedBox(height: 10.h),
                             TextField(
-                              controller: _suggestionController,
+                              controller: _captionController,
+                              maxLines: 5,
+                              style: TextStyle(fontSize: 14.sp),
                               decoration: InputDecoration(
-                                hintText:
-                                    "What would you like to add to the caption",
+                                hintText: "Enter your caption here...",
                                 hintStyle: TextStyle(
                                   fontSize: 12.sp,
                                   color: Colors.grey,
@@ -195,55 +157,57 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
 
                       SizedBox(height: 20.h),
 
-                      // Generated Caption Section
-                      _buildSectionHeader("Your Generated Caption"),
+                      // Hashtags Input Card
                       Container(
-                        width: double.infinity,
                         padding: EdgeInsets.all(20.r),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(15.r),
                         ),
-                        child: Text(
-                          "“Check out our sizzling lunch specials! 🍕🍕 Come hungry, leave happy. #FoodieLove”",
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.black.withOpacity(0.8),
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: 20.h),
-
-                      // Emoji Suggestions
-                      _buildSectionHeader("Emoji Suggestions"),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(15.r),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFE8E1FF,
-                          ), // Light purple back for emojis
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildEmojiTile("🍕"),
-                            SizedBox(width: 10.w),
-                            _buildEmojiTile("🧀"),
-                            SizedBox(width: 10.w),
-                            _buildEmojiTile("🌮"),
-                            SizedBox(width: 10.w),
-                            _buildEmojiTile("🥩"),
+                            Text(
+                              "Hashtags",
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            SizedBox(height: 10.h),
+                            TextField(
+                              controller: _hashtagController,
+                              style: TextStyle(fontSize: 14.sp),
+                              decoration: InputDecoration(
+                                hintText: "e.g. #trending #food #daily",
+                                hintStyle: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.grey,
+                                ),
+                                contentPadding: EdgeInsets.all(15.r),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10.r),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10.r),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
 
                       SizedBox(height: 20.h),
 
-                      // Hashtag Suggestions
-                      _buildSectionHeader("Hashtag Suggestions"),
+                      // Emoji Quick Select
+                      _buildSectionHeader("Quick Emoji", showRefresh: false),
                       Container(
                         width: double.infinity,
                         padding: EdgeInsets.all(15.r),
@@ -255,9 +219,13 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                           spacing: 10.w,
                           runSpacing: 10.h,
                           children: [
-                            _buildHashtagTile("#Foodielover"),
-                            _buildHashtagTile("#Foodielover"),
-                            _buildHashtagTile("#Foodielover"),
+                            _buildEmojiTile("🍕"),
+                            _buildEmojiTile("🔥"),
+                            _buildEmojiTile("❤️"),
+                            _buildEmojiTile("🙌"),
+                            _buildEmojiTile("✨"),
+                            _buildEmojiTile("🎬"),
+                            _buildEmojiTile("😎"),
                           ],
                         ),
                       ),
@@ -271,12 +239,12 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                         child: ElevatedButton(
                           onPressed: () {
                             final String currentCaption =
-                                "“Check out our sizzling lunch specials! 🍕🍕 Come hungry, leave happy. #FoodieLove”";
-                            final List<String> currentHashtags = [
-                              "#Foodielover",
-                              "#Foodielover",
-                              "#Foodielover",
-                            ];
+                                _captionController.text;
+                            final List<String> currentHashtags =
+                                _hashtagController.text
+                                    .split(' ')
+                                    .where((s) => s.isNotEmpty)
+                                    .toList();
 
                             // Save to controller
                             if (Get.isRegistered<ContentCreationController>()) {
@@ -326,7 +294,7 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, {bool showRefresh = true}) {
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
       child: Row(
@@ -340,36 +308,30 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
               color: Colors.black,
             ),
           ),
-          Icon(Icons.refresh, color: const Color(0xFF0080FF), size: 20.sp),
+          if (showRefresh)
+            Icon(Icons.refresh, color: const Color(0xFF0080FF), size: 20.sp),
         ],
       ),
     );
   }
 
   Widget _buildEmojiTile(String emoji) {
-    return Container(
-      width: 45.r,
-      height: 45.r,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Center(
-        child: Text(emoji, style: TextStyle(fontSize: 20.sp)),
-      ),
-    );
-  }
-
-  Widget _buildHashtagTile(String tag) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Text(
-        tag,
-        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _captionController.text += emoji;
+        });
+      },
+      child: Container(
+        width: 45.r,
+        height: 45.r,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Center(
+          child: Text(emoji, style: TextStyle(fontSize: 20.sp)),
+        ),
       ),
     );
   }

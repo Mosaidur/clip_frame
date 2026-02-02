@@ -1,9 +1,9 @@
 // schedule_post_widget.dart
 import 'package:clip_frame/features/schedule/presenatation/widgets/schedulePostContent.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../data/model.dart';
-
 
 class SchedulePostWidget extends StatelessWidget {
   final SchedulePost post;
@@ -11,80 +11,183 @@ class SchedulePostWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFFDF8F2),
-          borderRadius: BorderRadius.circular(25),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image + overlay
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.network(
-                    post.imageUrl,
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text("Scheduled",
-                        style: TextStyle(color: Colors.white, fontSize: 10)),
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal:5, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+    return Container(
+      margin: EdgeInsets.only(bottom: 25.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.015),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image Section with Overlays
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+                child: post.imageUrl.isNotEmpty
+                    ? Image.network(
+                        post.imageUrl,
+                        width: double.infinity,
+                        height: 230.h,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildPlaceholder(),
+                      )
+                    : _buildPlaceholder(),
+              ),
 
-                    child: Column(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.white),
-                          onPressed: () {
-                            print("edit post");
-                          },
+              // Play Button Icon (Center) - Larger and more transparent
+              Container(
+                width: 65.r,
+                height: 65.r,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.25),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 45.r,
+                ),
+              ),
+
+              // Status Badge (Top Left) - Smaller
+              Positioned(
+                top: 15.h,
+                left: 15.w,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 4.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(15.r),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 5.r,
+                        height: 5.r,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
                         ),
-                        Divider(
-                          color: Colors.white, // line color
-                          thickness: 5,        // line thickness
-                          height: 10,          // space around line
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        post.status == "draft" ? "Draft" : "Scheduled",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w500,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.white),
-                          onPressed: () {
-                            print("Delete post");
-                          },
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
 
-            // Content Widget
-            SchedulePostContentWidget(post: post),
-          ],
+              // Actions (Top Right)
+              Positioned(
+                top: 15.h,
+                right: 15.w,
+                child: Column(
+                  children: [
+                    _buildCircledAction(Icons.edit_outlined),
+                    SizedBox(height: 8.h),
+                    _buildCircledAction(Icons.delete_outline_rounded),
+                  ],
+                ),
+              ),
+
+              // Social Icons (Bottom Left)
+              Positioned(
+                bottom: 15.h,
+                left: 15.w,
+                child: Row(
+                  children: [
+                    _buildSocialIcon(Icons.facebook, const Color(0xFF1877F2)),
+                    SizedBox(width: 8.w),
+                    _buildInstagramIcon(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Content Section
+          SchedulePostContentWidget(post: post),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: 230.h,
+      color: const Color(0xFFF1F5F9),
+      child: Icon(
+        Icons.image_outlined,
+        size: 50.r,
+        color: const Color(0xFFCBD5E1),
+      ),
+    );
+  }
+
+  Widget _buildCircledAction(IconData icon) {
+    return Container(
+      width: 28.r,
+      height: 28.r,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.15),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Icon(icon, color: Colors.white, size: 16.r),
+      ),
+    );
+  }
+
+  Widget _buildSocialIcon(IconData icon, Color color) {
+    return Container(
+      width: 24.r,
+      height: 24.r,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Icon(icon, color: color, size: 22.r),
+      ),
+    );
+  }
+
+  Widget _buildInstagramIcon() {
+    return Container(
+      width: 24.r,
+      height: 24.r,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Image.network(
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Instagram_icon.png/600px-Instagram_icon.png",
+          width: 18.r,
+          height: 18.r,
+          fit: BoxFit.cover,
         ),
       ),
     );

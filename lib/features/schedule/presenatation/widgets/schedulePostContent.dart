@@ -1,5 +1,6 @@
-// schedule_post_content_widget.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../data/model.dart';
 
 class SchedulePostContentWidget extends StatelessWidget {
@@ -9,31 +10,49 @@ class SchedulePostContentWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(12.0),
+      padding: EdgeInsets.fromLTRB(18.w, 14.h, 18.w, 18.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(post.title,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Color(0xFF6D6D73))),
-          const SizedBox(height: 5),
-          Wrap(
-            children: post.tags
-                .map((tag) => Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: Text("#$tag",
-                  style: const TextStyle(fontSize: 12)),
-            ))
-                .toList(),
+          // Title
+          Text(
+            post.title,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 14.sp,
+              color: const Color(0xFF334155),
+              height: 1.3,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 5),
-          Text(post.scheduleTime,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Colors.black)),
+          SizedBox(height: 5.h),
+
+          // Hashtags as plain text
+          if (post.tags.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(bottom: 5.h),
+              child: Text(
+                post.tags.map((tag) => "#$tag").join(" "),
+                style: GoogleFonts.poppins(
+                  fontSize: 11.sp,
+                  color: const Color(0xFF94A3B8),
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+          // Date & Time
+          Text(
+            post.scheduleTime,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 14.sp,
+              color: Colors.black,
+            ),
+          ),
         ],
       ),
     );

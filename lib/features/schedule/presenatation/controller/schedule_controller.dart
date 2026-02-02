@@ -16,63 +16,124 @@ class ScheduleController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Load both types on init, or load based on tab.
-    // Let's load both for now to be safe.
-    fetchSchedules("scheduled");
-    fetchSchedules("published");
+    print("🔥 [ScheduleController] onInit called");
   }
 
-  Future<void> fetchSchedules(String status) async {
+  @override
+  void onReady() {
+    super.onReady();
+    print("🔥 [ScheduleController] onReady called - starting data load");
+    loadAllData();
+  }
+
+  Future<void> loadAllData() async {
+    if (isLoading.value) return;
+
     isLoading.value = true;
     errorMessage.value = '';
 
+    try {
+      print("🚀 [ScheduleController] Starting to fetch all data...");
+      await fetchSchedules("scheduled", skipLoading: true);
+      await fetchSchedules("draft", skipLoading: true); // Added draft fetch
+      await fetchSchedules("published", skipLoading: true);
+      print("✅ [ScheduleController] All data fetching process completed.");
+    } catch (e) {
+      print("⛔ [ScheduleController] Error in _loadAllData: $e");
+      errorMessage.value = "Failed to load data: $e";
+    } finally {
+      isLoading.value = false;
+      print("🏁 [ScheduleController] isLoading set to false");
+    }
+  }
+
+  Future<void> fetchSchedules(String status, {bool skipLoading = false}) async {
+    if (!skipLoading) isLoading.value = true;
+    errorMessage.value = '';
+
+    print("📡 [ScheduleController] Preparing to fetch $status...");
     final String? token = await AuthService.getToken();
-    
-    // Construct URL with query parameter
-    // Base URL in Urls.dart already has ?status=published for schedulingUrl variable, 
-    // but better to construct cleanly if we want dynamic status.
-    // The user provided: static const String schedulingUrl = "$baseUrl/api/v1/content/my-contents?status=published";
-    // We should probably strip the query param from the constant or replace it.
-    // Let's assume we modify the URL dynamically.
-    
-    // Workaround: We'll take the base part of schedulingUrl or hardcode the path if needed.
-    // Assuming Urls.schedulingUrl is the base for this feature.
-    // Let's use a cleaner approach: base path + query.
-    
+
     String baseUrlClean = Urls.schedulingUrl.split('?')[0];
     String url = "$baseUrlClean?status=$status";
 
+    print("📡 [ScheduleController] Fetching $status from: $url");
+
     if (token == null) {
-      // Handle unauthorized or missing token
-      isLoading.value = false;
+      print("⛔ [ScheduleController] Token is null, cannot fetch $status.");
+      if (!skipLoading) isLoading.value = false;
       return;
     }
 
-    final response = await NetworkCaller.getRequest(url: url, token: token);
+    try {
+      final response = await NetworkCaller.getRequest(url: url, token: token);
 
-    if (response.isSuccess) {
-      if (response.responseBody != null && response.responseBody!['data'] != null) {
-        // Response structure: { success: true, data: { meta: {}, data: [] } }
-        var responseData = response.responseBody!['data'];
-        
-        List<dynamic> listData = [];
-        
-        if (responseData is Map && responseData['data'] != null) {
-           listData = responseData['data'];
-        } else if (responseData is List) {
-           // Fallback in case structure changes or is different for some endpoints
-           listData = responseData;
-        }
+      print(
+        "📥 [ScheduleController] Response for $status: ${response.statusCode}",
+      );
 
-        if (status == "scheduled") {
-           scheduledPosts.value = listData.map((json) => SchedulePost.fromJson(json)).toList();
-        } else if (status == "published") {
-           historyPosts.value = listData.map((json) => HistoryPost.fromJson(json)).toList();
+      if (response.isSuccess) {
+        if (response.responseBody != null &&
+            response.responseBody!['data'] != null) {
+          var responseData = response.responseBody!['data'];
+
+          List<dynamic> listData = [];
+
+          if (responseData is Map && responseData['data'] != null) {
+            listData = responseData['data'];
+          } else if (responseData is List) {
+            listData = responseData;
+          }
+
+          print(
+            "📦 [ScheduleController] Parsed ${listData.length} items for $status",
+          );
+
+          if (status == "scheduled") {
+            scheduledPosts.assignAll(
+              listData.map((json) {
+                if (json is Map<String, dynamic>) {
+                  json['status'] = 'scheduled';
+                }
+                return SchedulePost.fromJson(json);
+              }).toList(),
+            );
+          } else if (status == "draft") {
+            // Append drafts to scheduled posts
+            List<SchedulePost> drafts = listData.map((json) {
+              if (json is Map<String, dynamic>) {
+                json['status'] = 'draft';
+              }
+              return SchedulePost.fromJson(json);
+            }).toList();
+            scheduledPosts.addAll(drafts);
+          } else if (status == "published") {
+            historyPosts.assignAll(
+              listData.map((json) {
+                if (json is Map<String, dynamic>) {
+                  json['status'] = 'published';
+                }
+                return HistoryPost.fromJson(json);
+              }).toList(),
+            );
+          }
+        } else {
+          print(
+            "⚠️ [ScheduleController] Response body or data is null for $status",
+          );
         }
+      } else {
+        print(
+          "⛔ [ScheduleController] Fetch failed for $status: ${response.errorMessage}",
+        );
+        errorMessage.value =
+            response.errorMessage ?? 'Failed to fetch schedules';
       }
-    } else {
-      errorMessage.value = response.errorMessage ?? 'Failed to fetch schedules';
+    } catch (e) {
+      print("⛔ [ScheduleController] Exception in fetchSchedules ($status): $e");
+      errorMessage.value = "Error: $e";
     }
-    isLoading.value = false;
+
+    if (!skipLoading) isLoading.value = false;
   }
 }

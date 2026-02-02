@@ -1,8 +1,7 @@
-// history_widget.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../data/model.dart';
 import 'historyContent.dart';
-
 
 class HistoryWidget extends StatelessWidget {
   final HistoryPost post;
@@ -10,15 +9,21 @@ class HistoryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFFDF8F2),
-          borderRadius: BorderRadius.circular(25),
-        ),
-        child: Expanded(child: HistoryContentWidget(post: post)),
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
+      child: HistoryContentWidget(post: post),
     );
   }
 }
