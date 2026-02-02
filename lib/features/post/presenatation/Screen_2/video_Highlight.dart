@@ -4,9 +4,12 @@ import 'package:path/path.dart' as widget;
 import 'Content_Steps.dart';
 
 class VideoHighlight extends StatelessWidget {
-  final String url ; // ✅ make it final
+  final String url; // ✅ make it final
 
-  const VideoHighlight({super.key, required this.url }); // ✅ initialize via constructor
+  const VideoHighlight({
+    super.key,
+    required this.url,
+  }); // ✅ initialize via constructor
 
   @override
   Widget build(BuildContext context) {
@@ -24,12 +27,11 @@ class VideoHighlight extends StatelessWidget {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFEBC894),
-              Color(0xFFFFFFFF),
-              Color(0xFFB49EF4),
+              Color(0xFFFFF6E5), // Soft peach/cream top
+              Color(0xFFE5D9FF), // Soft purple bottom
             ],
           ),
         ),
@@ -42,22 +44,18 @@ class VideoHighlight extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Container(
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withOpacity(0.1),
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
                     child: IconButton(
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
                       icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.black87,
-                        size: 20,
+                        Icons.chevron_left,
+                        color: Colors.black,
+                        size: 28,
                       ),
                       onPressed: () {
                         Navigator.pop(context);
@@ -65,108 +63,120 @@ class VideoHighlight extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 15),
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  subTitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    height: 1.4,
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    subTitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.black.withOpacity(0.7),
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 25),
                 // Image section with border
                 Container(
-                  width: double.infinity  ,
-                  height: 400,
+                  width: double.infinity,
+                  height: 480,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blueAccent, width: 2),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
                   clipBehavior: Clip.hardEdge,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       Positioned.fill(
-                          child: url.startsWith('http')
-                              ? Image.network(
-                                  url,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (c, e, s) => Container(color: Colors.grey),
-                                )
-                              : Image.asset(
-                                  url,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (c, e, s) => Container(color: Colors.grey),
-                                ),
+                        child: url.startsWith('http')
+                            ? Image.network(
+                                url,
+                                fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) =>
+                                    Container(color: Colors.grey[200]),
+                              )
+                            : Image.asset(
+                                url,
+                                fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) =>
+                                    Container(color: Colors.grey[200]),
+                              ),
                       ),
-                      // Container(
-                      //   width: 60,
-                      //   height: 60,
-                      //   decoration: const BoxDecoration(
-                      //     shape: BoxShape.circle,
-                      //     color: Colors.white70,
-                      //   ),
-                      //   child: const Icon(
-                      //     Icons.play_arrow,
-                      //     color: Colors.black87,
-                      //     size: 40,
-                      //   ),
-                      // ),
+                      Container(
+                        width: 65,
+                        height: 65,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.9),
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.black,
+                          size: 45,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                const SizedBox(height: 25),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
                     tips,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black87,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black.withOpacity(0.6),
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(height: 25),
+                const SizedBox(height: 30),
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 60,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF007AFF),
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(15),
                       ),
                     ),
                     onPressed: () {
-
                       Navigator.push(
                         context,
-                        // MaterialPageRoute(builder: (context) => StepByStepContentScreen()),
-                        MaterialPageRoute(builder: (context) => StepByStepPage()),
+                        MaterialPageRoute(
+                          builder: (context) => StepByStepPage(),
+                        ),
                       );
-
                     },
                     child: const Text(
                       "Start Creating",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
