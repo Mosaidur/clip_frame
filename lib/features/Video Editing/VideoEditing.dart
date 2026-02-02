@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:get/get.dart';
 import 'AiVideoEditPage.dart';
 import 'ProfessionalCamera.dart';
@@ -2142,9 +2143,9 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         if (seg.speed != 1.0) {
           filter.write(',setpts=PTS/${seg.speed}');
         }
-        // Normalized scale and pad for mixed aspect ratios
+        // Normalized scale and pad for mixed aspect ratios (540p for faster upload)
         filter.write(
-          ',scale=w=720:h=1280:force_original_aspect_ratio=decrease,pad=720:1280:(720-iw)/2:(1280-ih)/2,setsar=1,fps=30[v$i]; ',
+          ',scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2,setsar=1,fps=30[v$i]; ',
         );
 
         // --- Audio Filter ---
@@ -2176,10 +2177,15 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       );
 
       final cmd =
-          '${inputs.toString()}-filter_complex "${filter.toString()}" -map "[outv]" -map "[outa]" -c:v libx264 -preset superfast -pix_fmt yuv420p -vsync cfr -c:a aac -b:a 128k -async 1 -y "$out"';
+          '${inputs.toString()}-filter_complex "${filter.toString()}" -map "[outv]" -map "[outa]" -c:v libx264 -preset superfast -b:v 2M -maxrate 2M -bufsize 4M -pix_fmt yuv420p -vsync cfr -c:a aac -b:a 128k -async 1 -y "$out"';
 
       final res = await _runFFmpeg(cmd, out);
       if (res == null) throw Exception("Export failed at FFmpeg stage");
+
+      // Set mediaPath in controller
+      if (Get.isRegistered<ContentCreationController>()) {
+        Get.find<ContentCreationController>().mediaPath.value = res;
+      }
 
       if (mounted) {
         if (initialized) {

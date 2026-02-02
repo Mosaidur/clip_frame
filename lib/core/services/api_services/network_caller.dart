@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
+import 'package:http_parser/http_parser.dart'; // For MediaType
+import 'package:path/path.dart' as p;
+import 'dart:io';
 import 'package:intl/date_symbols.dart';
 
 class NetworkResponse {
@@ -22,12 +25,13 @@ class NetworkCaller {
   static const String _defaultErrorMessage = "Something went wrong😢";
   static const String _unAuthorizeMessage = "Unauthorized Token😒";
   //get request
-  static Future<NetworkResponse> getRequest({required String url, String? token}) async {
+  static Future<NetworkResponse> getRequest({
+    required String url,
+    String? token,
+  }) async {
     try {
       Uri uri = Uri.parse(url);
-      final Map<String, String> headers = {
-        'content-type': 'application/json',
-      };
+      final Map<String, String> headers = {'content-type': 'application/json'};
       // Add Authorization header if token is provided
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
@@ -35,7 +39,10 @@ class NetworkCaller {
 
       _logRequest(url, null, headers);
 
-      final response = await get(uri, headers: headers).timeout(const Duration(seconds: 30));
+      final response = await get(
+        uri,
+        headers: headers,
+      ).timeout(const Duration(seconds: 30));
       logResponse(url, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -57,9 +64,11 @@ class NetworkCaller {
         final decodedJson = jsonDecode(response.body);
         // Try to extract error message from 'message' field first, then 'data' if it's a String
         String? errorMsg;
-        if (decodedJson['message'] != null && decodedJson['message'] is String) {
+        if (decodedJson['message'] != null &&
+            decodedJson['message'] is String) {
           errorMsg = decodedJson['message'];
-        } else if (decodedJson['data'] != null && decodedJson['data'] is String) {
+        } else if (decodedJson['data'] != null &&
+            decodedJson['data'] is String) {
           errorMsg = decodedJson['data'];
         }
         return NetworkResponse(
@@ -78,20 +87,25 @@ class NetworkCaller {
     }
   }
 
-   static Future<NetworkResponse> postRequest({required String url, Map<String, dynamic>? body, bool isFromLogin = false, String? token}) async {
+  static Future<NetworkResponse> postRequest({
+    required String url,
+    Map<String, dynamic>? body,
+    bool isFromLogin = false,
+    String? token,
+  }) async {
     try {
       Uri uri = Uri.parse(url);
-      final Map<String, String> headers = {
-            'content-type': 'application/json',
-          };
+      final Map<String, String> headers = {'content-type': 'application/json'};
       // Add Authorization header if token is provided
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
-        debugPrint("🚀 DEBUG: Token added to headers: ${token.substring(0, 5)}...");
+        debugPrint(
+          "🚀 DEBUG: Token added to headers: ${token.substring(0, 5)}...",
+        );
       } else {
         debugPrint("🚀 DEBUG: No token provided to NetworkCaller.");
       }
-      
+
       _logRequest(url, body, headers);
       Response response = await post(
         uri,
@@ -107,25 +121,25 @@ class NetworkCaller {
           isSuccess: true,
           responseBody: decodedJson,
         );
-      }
-      else if(response.statusCode == 401){
-        if(isFromLogin == false) {
+      } else if (response.statusCode == 401) {
+        if (isFromLogin == false) {
           // _onUnAuthorize();
         }
         final decodedJson = jsonDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: false,
-          errorMessage:_unAuthorizeMessage,
+          errorMessage: _unAuthorizeMessage,
         );
-      }
-      else {
+      } else {
         final decodedJson = jsonDecode(response.body);
         // Try to extract error message from 'message' field first, then 'data' if it's a String
         String? errorMsg;
-        if (decodedJson['message'] != null && decodedJson['message'] is String) {
+        if (decodedJson['message'] != null &&
+            decodedJson['message'] is String) {
           errorMsg = decodedJson['message'];
-        } else if (decodedJson['data'] != null && decodedJson['data'] is String) {
+        } else if (decodedJson['data'] != null &&
+            decodedJson['data'] is String) {
           errorMsg = decodedJson['data'];
         }
         return NetworkResponse(
@@ -144,22 +158,108 @@ class NetworkCaller {
     }
   }
 
+  static Future<NetworkResponse> postMultipartRequest({
+    required String url,
+    required Map<String, dynamic> body,
+    required String fileKey,
+    required File file,
+    String? token,
+  }) async {
+    try {
+      Uri uri = Uri.parse(url);
+      final request = MultipartRequest('POST', uri);
+
+      // Add Authorization header
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Wrap the whole JSON body into a single 'data' field if the backend expects it
+      // Based on the "Data is required" error, this is highly likely.
+      request.fields['data'] = jsonEncode(body);
+
+      // Add the file
+      final fileName = p.basename(file.path);
+      final mimeType = fileName.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg';
+      final fileSizeMB = (await file.length()) / (1024 * 1024);
+
+      request.files.add(
+        await MultipartFile.fromPath(
+          fileKey,
+          file.path,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+
+      debugPrint(
+        '🚀🚀🚀 [MULTIPART REQUEST] 🚀🚀🚀\n'
+        'URL: $url \n'
+        'FIELDS: ${request.fields} \n'
+        'FILE: ${file.path} (${fileSizeMB.toStringAsFixed(2)} MB) as $fileKey\n'
+        '==================================================',
+      );
+
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 300),
+      );
+      final response = await Response.fromStream(streamedResponse);
+
+      logResponse(url, response);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decodedJson = jsonDecode(response.body);
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: true,
+          responseBody: decodedJson,
+        );
+      } else {
+        final decodedJson = jsonDecode(response.body);
+        debugPrint("⛔ [NetworkCaller] Multipart failed: $decodedJson");
+        String? errorMsg;
+        if (decodedJson['message'] != null &&
+            decodedJson['message'] is String) {
+          errorMsg = decodedJson['message'];
+        }
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseBody: decodedJson,
+          errorMessage: errorMsg ?? _defaultErrorMessage,
+        );
+      }
+    } catch (e) {
+      debugPrint("⛔ [NetworkCaller] Multipart error: $e");
+      return NetworkResponse(
+        statusCode: -1,
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
 
   static void _logRequest(
-      String url, Map<String, dynamic>? body, Map<String, String>? headers) {
-    debugPrint('🚀🚀🚀 [NETWORK REQUEST] 🚀🚀🚀\n'
-        'URL: $url \n'
-        'BODY: ${jsonEncode(body)} \n'
-        'HEADERS: $headers\n'
-        '==================================================');
+    String url,
+    Map<String, dynamic>? body,
+    Map<String, String>? headers,
+  ) {
+    debugPrint(
+      '🚀🚀🚀 [NETWORK REQUEST] 🚀🚀🚀\n'
+      'URL: $url \n'
+      'BODY: ${jsonEncode(body)} \n'
+      'HEADERS: $headers\n'
+      '==================================================',
+    );
   }
 
   static void logResponse(String url, Response response) {
-    debugPrint('=====================Response========================\n'
-        'URL: $url \n'
-        'BODY:${response.body}\n'
-        'STATUS CODE:${response.statusCode}\n'
-        '=================================================================');
+    debugPrint(
+      '=====================Response========================\n'
+      'URL: $url \n'
+      'BODY:${response.body}\n'
+      'STATUS CODE:${response.statusCode}\n'
+      '=================================================================',
+    );
   }
 
   // static Future<void> _onUnAuthorize() async {
@@ -167,5 +267,4 @@ class NetworkCaller {
   //   Navigator.of(TaskManager.navigator.currentContext!)
   //       .pushNamedAndRemoveUntil(SignInScreen.name, (predicate) => false);
   // }
-
 }

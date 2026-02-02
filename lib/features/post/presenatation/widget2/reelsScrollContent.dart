@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../Screen_2/video_Highlight.dart';
+import 'package:get/get.dart';
+import '../controller/content_creation_controller.dart';
 import 'customTabBar.dart';
 
 class ReelsScrollContnet extends StatelessWidget {
+  final String templateId;
   final String videoUrl;
   final String category;
   final String format;
@@ -14,9 +17,9 @@ class ReelsScrollContnet extends StatelessWidget {
   final String musicTitle;
   final String? profileImageUrl;
 
-
   const ReelsScrollContnet({
     super.key,
+    required this.templateId,
     required this.videoUrl,
     required this.category,
     required this.format,
@@ -32,9 +35,7 @@ class ReelsScrollContnet extends StatelessWidget {
       body: Stack(
         children: [
           /// Fullscreen Video
-          Positioned.fill(
-            child: MediaDisplayWidget(videoUrl: videoUrl),
-          ),
+          Positioned.fill(child: MediaDisplayWidget(videoUrl: videoUrl)),
 
           /// Top Bar
           Positioned(
@@ -43,7 +44,10 @@ class ReelsScrollContnet extends StatelessWidget {
             right: 0,
             child: SafeArea(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -59,15 +63,19 @@ class ReelsScrollContnet extends StatelessWidget {
                         color: Colors.grey,
                       ),
                       child: profileImageUrl == null || profileImageUrl!.isEmpty
-                          ? const Icon(Icons.person, size: 40, color: Colors.white)
+                          ? const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.white,
+                            )
                           : ClipOval(
-                        child: Image.network(
-                          profileImageUrl!,
-                          fit: BoxFit.cover,
-                          width: 70,
-                          height: 70,
-                        ),
-                      ),
+                              child: Image.network(
+                                profileImageUrl!,
+                                fit: BoxFit.cover,
+                                width: 70,
+                                height: 70,
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -76,12 +84,7 @@ class ReelsScrollContnet extends StatelessWidget {
           ),
 
           /// Tabs
-          Positioned(
-            top: 120,
-            left: 10,
-            right: 0,
-            child: CustomTabBar(),
-          ),
+          Positioned(top: 120, left: 10, right: 0, child: CustomTabBar()),
 
           /// Bottom Left Info Panel
           Positioned(
@@ -133,8 +136,11 @@ class ReelsScrollContnet extends StatelessWidget {
                     /// Music Row
                     Row(
                       children: [
-                        const Icon(Icons.music_note,
-                            color: Colors.white, size: 14),
+                        const Icon(
+                          Icons.music_note,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                         const SizedBox(width: 5),
                         Expanded(
                           child: Text(
@@ -158,14 +164,19 @@ class ReelsScrollContnet extends StatelessWidget {
                       height: 50,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Your action here
+                          // Set templateId in controller
+                          final controller =
+                              Get.find<ContentCreationController>();
+                          controller.reset();
+                          controller.templateId.value = templateId;
 
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => VideoHighlight(url: videoUrl ,)),
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  VideoHighlight(url: videoUrl),
+                            ),
                           );
-
-
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF007CFE),
@@ -183,8 +194,7 @@ class ReelsScrollContnet extends StatelessWidget {
                           ),
                         ),
                       ),
-                    )
-
+                    ),
                   ],
                 ),
               ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:clip_frame/core/services/api_services/content_service.dart';
+import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
+import 'package:get/get.dart';
 import 'scheduling_success_screen.dart';
 
 class SchedulePostScreen extends StatefulWidget {
@@ -28,6 +31,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   int selectedMinute = 0;
   String period = "PM";
   int selectedDateIndex = 11;
+  bool isApiLoading = false;
 
   late FixedExtentScrollController hourController;
   late FixedExtentScrollController minuteController;
@@ -38,7 +42,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   @override
   void initState() {
     super.initState();
-    hourController = FixedExtentScrollController(initialItem: selectedHour == 12 ? 0 : selectedHour);
+    hourController = FixedExtentScrollController(
+      initialItem: selectedHour == 12 ? 0 : selectedHour,
+    );
     minuteController = FixedExtentScrollController(initialItem: selectedMinute);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showSuggestedDialog();
@@ -57,7 +63,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       context: context,
       barrierDismissible: true,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
         child: Container(
           padding: EdgeInsets.all(24.w),
           decoration: BoxDecoration(
@@ -73,7 +81,11 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                   color: Color(0xFFFF2D78),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.info_outline_rounded, color: Colors.white, size: 30.sp),
+                child: Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.white,
+                  size: 30.sp,
+                ),
               ),
               SizedBox(height: 20.h),
               Text(
@@ -99,11 +111,19 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                   children: [
                     Text(
                       "Tuesday",
-                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: const Color(0xFF007AFF)),
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF007AFF),
+                      ),
                     ),
                     Text(
                       "05:00 PM",
-                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                   ],
                 ),
@@ -116,26 +136,45 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                       onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF2D78),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
                         padding: EdgeInsets.symmetric(vertical: 12.h),
                         elevation: 0,
                       ),
-                      child: Text("Schedule", style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        "Schedule",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
 
                   SizedBox(width: 12.w),
-                  
+
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF007AFF),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
                         padding: EdgeInsets.symmetric(vertical: 12.h),
                         elevation: 0,
                       ),
-                      child: Text("Choose different date", style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                      child: Text(
+                        "Choose different date",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                 ],
@@ -148,7 +187,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   }
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.white,
@@ -168,7 +207,6 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           ),
         ),
         child: SafeArea(
-        
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 20.w),
             child: Column(
@@ -179,13 +217,21 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                 Text(
                   "Schedule Your Post",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: TextStyle(
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
                 SizedBox(height: 10.h),
                 Text(
                   "Select platform ad pick the best time to\npublish.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14.sp, color: Colors.black45, height: 1.4),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.black45,
+                    height: 1.4,
+                  ),
                 ),
                 SizedBox(height: 30.h),
                 _buildPlatformChips(),
@@ -219,7 +265,11 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
             color: Colors.black.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20.sp),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black,
+            size: 20.sp,
+          ),
         ),
       ),
     );
@@ -232,7 +282,11 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       runSpacing: 12.h,
       children: [
         _buildPlatformChip("Facebook", Icons.facebook, const Color(0xFF1877F2)),
-        _buildPlatformChip("Instagram", Icons.camera_alt, const Color(0xFFE4405F)),
+        _buildPlatformChip(
+          "Instagram",
+          Icons.camera_alt,
+          const Color(0xFFE4405F),
+        ),
         _buildPlatformChip("Tiktok", Icons.music_note, Colors.black),
       ],
     );
@@ -247,7 +301,10 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(25.r),
-          border: Border.all(color: isSelected ? color : Colors.transparent, width: 1.5),
+          border: Border.all(
+            color: isSelected ? color : Colors.transparent,
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -281,7 +338,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10.r)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10.r),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,30 +348,46 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Schedule date", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.black)),
+              Text(
+                "Schedule date",
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
             ],
           ),
           SizedBox(height: 15.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => Text(d, style: TextStyle(fontSize: 10.sp, color: Colors.black38))).toList(),
+            children: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                .map(
+                  (d) => Text(
+                    d,
+                    style: TextStyle(fontSize: 10.sp, color: Colors.black38),
+                  ),
+                )
+                .toList(),
           ),
           SizedBox(height: 10.h),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+            ),
             itemCount: 35,
             itemBuilder: (context, index) {
-               // Roughly matching design june 2025 start sun
+              // Roughly matching design june 2025 start sun
               int dayNum = index - 4; // adjusted to match design roughly
               if (index < 5) dayNum = 31 - (4 - index);
               if (index > 34) dayNum = index - 34;
-              
+
               bool isSelected = index == selectedDateIndex;
               bool isDimmed = index < 5 || dayNum > 30;
               if (dayNum < 1) dayNum = 31 + dayNum;
-               if (dayNum > 30) dayNum = dayNum - 30;
+              if (dayNum > 30) dayNum = dayNum - 30;
 
               return GestureDetector(
                 onTap: () => setState(() => selectedDateIndex = index),
@@ -323,7 +398,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                       width: 32.r,
                       height: 32.r,
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFFFF2D78) : Colors.transparent,
+                        color: isSelected
+                            ? const Color(0xFFFF2D78)
+                            : Colors.transparent,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
@@ -331,8 +408,14 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                         dayNum.toString(),
                         style: TextStyle(
                           fontSize: 13.sp,
-                          color: isSelected ? Colors.white : (isDimmed ? Colors.black26 : const Color(0xFF636D91)),
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? Colors.white
+                              : (isDimmed
+                                    ? Colors.black26
+                                    : const Color(0xFF636D91)),
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -354,17 +437,27 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
     // Semi-mocked dots to match screenshot
     List<Color> dotColors = [];
     if (index % 3 == 0) dotColors = [const Color(0xFF007AFF)];
-    if (index % 5 == 0) dotColors = [const Color(0xFFFF2D78), const Color(0xFF007AFF)];
-    if (index % 7 == 0) dotColors = [const Color(0xFF007AFF), const Color(0xFFFF2D78), Colors.black];
+    if (index % 5 == 0)
+      dotColors = [const Color(0xFFFF2D78), const Color(0xFF007AFF)];
+    if (index % 7 == 0)
+      dotColors = [
+        const Color(0xFF007AFF),
+        const Color(0xFFFF2D78),
+        Colors.black,
+      ];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: dotColors.map((c) => Container(
-        margin: EdgeInsets.symmetric(horizontal: 1.w),
-        width: 3.r,
-        height: 3.r,
-        decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-      )).toList(),
+      children: dotColors
+          .map(
+            (c) => Container(
+              margin: EdgeInsets.symmetric(horizontal: 1.w),
+              width: 3.r,
+              height: 3.r,
+              decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -385,16 +478,22 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                 padding: EdgeInsets.symmetric(vertical: 12.h),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20.r),
-                  gradient: isSelected ? const LinearGradient(
-                    colors: [Color(0xFFFF52D9), Color(0xFFB53CFF)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ) : null,
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          colors: [Color(0xFFFF52D9), Color(0xFFB53CFF)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        )
+                      : null,
                 ),
                 child: Text(
                   mode,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12.sp, color: isSelected ? Colors.white : Colors.black45, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: isSelected ? Colors.white : Colors.black45,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -410,13 +509,18 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10.r)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10.r),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildTimeWheel(12, true),
-          Text("  :  ", style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold)),
+          Text(
+            "  :  ",
+            style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold),
+          ),
           _buildTimeWheel(60, false),
           SizedBox(width: 20.w),
           Column(
@@ -457,14 +561,18 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           children: List.generate(max, (index) {
             int displayVal = isHour ? (index == 0 ? 12 : index) : index;
             String text = displayVal.toString().padLeft(2, '0');
-            bool isSelected = isHour ? selectedHour == displayVal : selectedMinute == displayVal;
+            bool isSelected = isHour
+                ? selectedHour == displayVal
+                : selectedMinute == displayVal;
             return Center(
               child: Text(
                 text,
                 style: TextStyle(
                   fontSize: 24.sp,
                   fontWeight: FontWeight.bold,
-                  color: isSelected ? const Color(0xFF007AFF) : Colors.blueGrey[700],
+                  color: isSelected
+                      ? const Color(0xFF007AFF)
+                      : Colors.blueGrey[700],
                 ),
               ),
             );
@@ -483,9 +591,18 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF007AFF) : Colors.transparent,
           borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: isSelected ? Colors.transparent : Colors.black12),
+          border: Border.all(
+            color: isSelected ? Colors.transparent : Colors.black12,
+          ),
         ),
-        child: Text(p, style: TextStyle(fontSize: 10.sp, color: isSelected ? Colors.white : Colors.black45, fontWeight: FontWeight.bold)),
+        child: Text(
+          p,
+          style: TextStyle(
+            fontSize: 10.sp,
+            color: isSelected ? Colors.white : Colors.black45,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
@@ -494,7 +611,10 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text("Remind me", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
+        Text(
+          "Remind me",
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+        ),
         Switch(
           value: remindMe,
           onChanged: (v) => setState(() => remindMe = v),
@@ -504,20 +624,109 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
     );
   }
 
+  Future<void> _handleSchedulePost() async {
+    if (!Get.isRegistered<ContentCreationController>()) {
+      Get.snackbar(
+        "Error",
+        "Content creation data not found",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final controller = Get.find<ContentCreationController>();
+
+    setState(() => isApiLoading = true);
+
+    try {
+      // Prepare metadata
+      final String templateId = controller.templateId.value;
+      final String caption = controller.caption.value;
+      final List<String> hashtags = controller.hashtags;
+      final String mediaPath = controller.mediaPath.value;
+
+      // Use mediaPath from controller or fallback to widget path
+      final String finalMediaPath = mediaPath.isNotEmpty
+          ? mediaPath
+          : widget.mediaPath;
+
+      final DateTime scheduleDateTime =
+          controller.scheduledDate.value ?? DateTime.now();
+      final String formattedDate =
+          "${scheduleDateTime.year}-${scheduleDateTime.month.toString().padLeft(2, '0')}-${scheduleDateTime.day.toString().padLeft(2, '0')}";
+
+      // Convert 12-hour selection to 24-hour HH:mm
+      int hour24 = selectedHour;
+      if (period == "PM" && hour24 < 12) hour24 += 12;
+      if (period == "AM" && hour24 == 12) hour24 = 0;
+      final String formattedTime =
+          "${hour24.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}";
+
+      final Map<String, dynamic> scheduledAt = {
+        "type": "single",
+        "date": formattedDate,
+        "time": formattedTime,
+      };
+
+      final response = await ContentService.createContent(
+        templateId: templateId,
+        caption: caption,
+        mediaPath: finalMediaPath,
+        contentType: widget.isImage ? "post" : "reel",
+        scheduledAt: scheduledAt,
+        remindMe: remindMe,
+        platform: [selectedPlatform.toLowerCase()],
+        tags: hashtags,
+      );
+
+      if (response.isSuccess) {
+        if (mounted) {
+          _showCongratulationsOverlay();
+        }
+      } else {
+        Get.snackbar(
+          "Export Failed",
+          response.errorMessage ?? "Failed to create content",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        "Error",
+        e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      if (mounted) setState(() => isApiLoading = false);
+    }
+  }
+
   Widget _buildScheduleButton() {
     return SizedBox(
       width: double.infinity,
       height: 55.h,
       child: ElevatedButton(
-        onPressed: () {
-          _showCongratulationsOverlay();
-        },
+        onPressed: isApiLoading ? null : _handleSchedulePost,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF007AFF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.r),
+          ),
           elevation: 0,
         ),
-        child: Text("Schedule Post", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.bold)),
+        child: isApiLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Text(
+                "Schedule Post",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
   }
@@ -540,7 +749,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                   Image.asset(
+                  Image.asset(
                     'assets/images/image.png',
                     width: 100.w,
                     height: 100.h,
@@ -551,8 +760,15 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                     top: 0,
                     child: Container(
                       padding: EdgeInsets.all(2.r),
-                      decoration: const BoxDecoration(color: Color(0xFF007AFF), shape: BoxShape.circle),
-                      child: Icon(Icons.check, color: Colors.white, size: 12.sp),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF007AFF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 12.sp,
+                      ),
                     ),
                   ),
                 ],
@@ -582,17 +798,27 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                           isImage: widget.isImage,
                           caption: widget.caption,
                           hashtags: widget.hashtags,
-                          scheduledTime: "${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} $period",
+                          scheduledTime:
+                              "${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} $period",
                         ),
                       ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF007AFF),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
                     padding: EdgeInsets.symmetric(vertical: 12.h),
                   ),
-                  child: Text("Continue", style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    "Continue",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],

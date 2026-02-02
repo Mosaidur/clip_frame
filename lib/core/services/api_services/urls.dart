@@ -25,6 +25,5 @@ class Urls{
 
   //content tamplate api 
   static const String contentTemplateUrl = "$baseUrl/api/v1/contentTemplate?sortOrder=asc"; //all template api for reels.posts and stories
-  
-
+  static  String createContentUrl(String contentId) => "$baseUrl/api/v1/content/create/${contentId}";
 }

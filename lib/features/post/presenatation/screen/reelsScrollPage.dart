@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:clip_frame/core/model/content_template_model.dart';
 import 'package:clip_frame/core/services/api_services/content_template_service.dart';
 import 'package:clip_frame/features/post/presenatation/widget2/beautifulEmptyState.dart';
+import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import '../widget2/reelsScrollContent.dart';
 
 class Reelsscrollpage extends StatefulWidget {
@@ -19,6 +20,7 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
   @override
   void initState() {
     super.initState();
+    Get.put(ContentCreationController());
     _loadTemplates();
   }
 
@@ -69,6 +71,7 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
                   : "";
 
               return ReelsScrollContnet(
+                templateId: template.id ?? "",
                 videoUrl: videoUrl,
                 category: template.category ?? "General",
                 format: "MP4", // Default format
