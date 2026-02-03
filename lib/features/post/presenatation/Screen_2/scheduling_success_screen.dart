@@ -1,18 +1,21 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+import 'dart:io';
 
 class SchedulingSuccessScreen extends StatelessWidget {
+  final String? imageUrl;
   final String mediaPath;
   final bool isImage;
   final String? caption;
   final List<String>? hashtags;
-  final String scheduledTime;
+  final DateTime scheduledDateTime;
 
   const SchedulingSuccessScreen({
     super.key,
     required this.mediaPath,
-    required this.scheduledTime,
+    required this.scheduledDateTime,
+    this.imageUrl,
     this.isImage = true,
     this.caption,
     this.hashtags,
@@ -89,25 +92,7 @@ class SchedulingSuccessScreen extends StatelessWidget {
               topLeft: Radius.circular(25.r),
               topRight: Radius.circular(25.r),
             ),
-            child: isImage
-                ? Image.file(
-                    File(mediaPath),
-                    height: 250.h,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  )
-                : Container(
-                    height: 250.h,
-                    width: double.infinity,
-                    color: Colors.black,
-                    child: Center(
-                      child: Icon(
-                        Icons.video_collection_rounded,
-                        color: Colors.white,
-                        size: 50.r,
-                      ),
-                    ),
-                  ),
+            child: _buildMediaPreview(),
           ),
           Padding(
             padding: EdgeInsets.all(16.w),
@@ -157,7 +142,7 @@ class SchedulingSuccessScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          "Tue, 24 Jun 2025\n$scheduledTime",
+                          "${DateFormat('EEE, d MMM yyyy').format(scheduledDateTime)}\n${DateFormat('hh:mm a').format(scheduledDateTime)}",
                           textAlign: TextAlign.right,
                           style: TextStyle(
                             fontSize: 12.sp,
@@ -195,6 +180,57 @@ class SchedulingSuccessScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMediaPreview() {
+    // If imageUrl is available and it looks like a URL, use it
+    if (imageUrl != null && imageUrl!.startsWith('http')) {
+      return Image.network(
+        imageUrl!,
+        height: 250.h,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
+      );
+    }
+
+    // Otherwise try to use local file if path is not empty
+    if (mediaPath.isNotEmpty && !mediaPath.startsWith('http')) {
+      try {
+        final file = File(mediaPath);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            height: 250.h,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
+          );
+        }
+      } catch (e) {
+        debugPrint("Error loading local file: $e");
+      }
+    }
+
+    // Default placeholder
+    return _buildErrorIcon();
+  }
+
+  Widget _buildErrorIcon() {
+    return Container(
+      height: 250.h,
+      width: double.infinity,
+      color: Colors.black12,
+      child: Center(
+        child: Icon(
+          isImage
+              ? Icons.image_not_supported_outlined
+              : Icons.videocam_off_outlined,
+          color: Colors.black26,
+          size: 50.r,
+        ),
       ),
     );
   }

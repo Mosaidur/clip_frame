@@ -158,6 +158,159 @@ class NetworkCaller {
     }
   }
 
+  static Future<NetworkResponse> putRequest({
+    required String url,
+    Map<String, dynamic>? body,
+    String? token,
+  }) async {
+    try {
+      Uri uri = Uri.parse(url);
+      final Map<String, String> headers = {'content-type': 'application/json'};
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      _logRequest(url, body, headers);
+      Response response = await put(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 30));
+
+      logResponse(url, response);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decodedJson = jsonDecode(response.body);
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: true,
+          responseBody: decodedJson,
+        );
+      } else {
+        final decodedJson = jsonDecode(response.body);
+        String? errorMsg;
+        if (decodedJson['message'] != null &&
+            decodedJson['message'] is String) {
+          errorMsg = decodedJson['message'];
+        }
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseBody: decodedJson,
+          errorMessage: errorMsg ?? _defaultErrorMessage,
+        );
+      }
+    } catch (e) {
+      return NetworkResponse(
+        statusCode: -1,
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  static Future<NetworkResponse> patchRequest({
+    required String url,
+    Map<String, dynamic>? body,
+    String? token,
+  }) async {
+    try {
+      Uri uri = Uri.parse(url);
+      final Map<String, String> headers = {'content-type': 'application/json'};
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      _logRequest(url, body, headers);
+      Response response = await patch(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 30));
+
+      logResponse(url, response);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decodedJson = jsonDecode(response.body);
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: true,
+          responseBody: decodedJson,
+        );
+      } else {
+        final decodedJson = jsonDecode(response.body);
+        String? errorMsg;
+        if (decodedJson['message'] != null &&
+            decodedJson['message'] is String) {
+          errorMsg = decodedJson['message'];
+        }
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseBody: decodedJson,
+          errorMessage: errorMsg ?? _defaultErrorMessage,
+        );
+      }
+    } catch (e) {
+      return NetworkResponse(
+        statusCode: -1,
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  static Future<NetworkResponse> deleteRequest({
+    required String url,
+    String? token,
+  }) async {
+    try {
+      Uri uri = Uri.parse(url);
+      final Map<String, String> headers = {'content-type': 'application/json'};
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      _logRequest(url, null, headers);
+      Response response = await delete(
+        uri,
+        headers: headers,
+      ).timeout(const Duration(seconds: 30));
+
+      logResponse(url, response);
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        final decodedJson = response.body.isNotEmpty
+            ? jsonDecode(response.body)
+            : null;
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: true,
+          responseBody: decodedJson,
+        );
+      } else {
+        final decodedJson = response.body.isNotEmpty
+            ? jsonDecode(response.body)
+            : null;
+        String? errorMsg;
+        if (decodedJson != null &&
+            decodedJson['message'] != null &&
+            decodedJson['message'] is String) {
+          errorMsg = decodedJson['message'];
+        }
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseBody: decodedJson,
+          errorMessage: errorMsg ?? _defaultErrorMessage,
+        );
+      }
+    } catch (e) {
+      return NetworkResponse(
+        statusCode: -1,
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
   static Future<NetworkResponse> postMultipartRequest({
     required String url,
     required Map<String, dynamic> body,

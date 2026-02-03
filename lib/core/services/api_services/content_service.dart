@@ -52,4 +52,44 @@ class ContentService {
       );
     }
   }
+
+  static Future<NetworkResponse> updateContent({
+    required String id,
+    required String caption,
+    required Map<String, dynamic> scheduledAt,
+    required bool remindMe,
+    required List<String> platform,
+    required List<String> tags,
+  }) async {
+    try {
+      final token = await AuthService.getToken();
+      final url = Urls.updateContentUrl(id);
+
+      final Map<String, dynamic> body = {
+        "caption": caption,
+        "scheduledAt": scheduledAt,
+        "remindMe": remindMe,
+        "platform": platform,
+        "tags": tags,
+      };
+
+      debugPrint(
+        "🚀 [ContentService] Updating content for ID: $id at URL: $url (Using PATCH)",
+      );
+      final response = await NetworkCaller.patchRequest(
+        url: url,
+        body: body,
+        token: token,
+      );
+
+      return response;
+    } catch (e) {
+      debugPrint("⛔ [ContentService] Error updating content: $e");
+      return NetworkResponse(
+        isSuccess: false,
+        statusCode: -1,
+        errorMessage: e.toString(),
+      );
+    }
+  }
 }

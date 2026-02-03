@@ -187,11 +187,16 @@ class ScheduleScreenPage extends StatelessWidget {
         subtitle: "Your scheduled posts will appear here.",
       );
     }
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      itemCount: controller.scheduledPosts.length,
-      itemBuilder: (context, index) =>
-          SchedulePostWidget(post: controller.scheduledPosts[index]),
+    return RefreshIndicator(
+      onRefresh: () => controller.loadAllData(),
+      child: ListView.builder(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        itemCount: controller.scheduledPosts.length,
+        itemBuilder: (context, index) =>
+            SchedulePostWidget(post: controller.scheduledPosts[index]),
+      ),
     );
   }
 
@@ -203,11 +208,16 @@ class ScheduleScreenPage extends StatelessWidget {
         subtitle: "Your published content will appear here.",
       );
     }
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      itemCount: controller.historyPosts.length,
-      itemBuilder: (context, index) =>
-          HistoryWidget(post: controller.historyPosts[index]),
+    return RefreshIndicator(
+      onRefresh: () => controller.loadAllData(),
+      child: ListView.builder(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        itemCount: controller.historyPosts.length,
+        itemBuilder: (context, index) =>
+            HistoryWidget(post: controller.historyPosts[index]),
+      ),
     );
   }
 

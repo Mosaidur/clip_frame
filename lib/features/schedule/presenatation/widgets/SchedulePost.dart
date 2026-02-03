@@ -1,5 +1,8 @@
-// schedule_post_widget.dart
+import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
+import 'package:clip_frame/features/post/presenatation/Screen_2/schedule_post_screen.dart';
+import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
 import 'package:clip_frame/features/schedule/presenatation/widgets/schedulePostContent.dart';
+import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +14,8 @@ class SchedulePostWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<ScheduleController>();
+
     return Container(
       margin: EdgeInsets.only(bottom: 25.h),
       decoration: BoxDecoration(
@@ -104,9 +109,45 @@ class SchedulePostWidget extends StatelessWidget {
                 right: 15.w,
                 child: Column(
                   children: [
-                    _buildCircledAction(Icons.edit_outlined),
+                    _buildCircledAction(
+                      Icons.edit_outlined,
+                      onTap: () async {
+                        if (post.id.isNotEmpty) {
+                          // Ensure ContentCreationController is registered
+                          if (!Get.isRegistered<ContentCreationController>()) {
+                            Get.put(ContentCreationController());
+                          }
+
+                          // Navigate to SchedulePostScreen in edit mode
+                          await Get.to(
+                            () => SchedulePostScreen(
+                              postToEdit: post,
+                              isImage:
+                                  true, // Posts are usually images in this context
+                            ),
+                          );
+
+                          // If successfully updated (result would typically be true or handled by success screen)
+                          // We trigger a refresh to show the updated content
+                          controller.fetchSchedules("scheduled");
+                          controller.fetchSchedules("draft");
+                        }
+                      },
+                    ),
                     SizedBox(height: 8.h),
-                    _buildCircledAction(Icons.delete_outline_rounded),
+                    _buildCircledAction(
+                      Icons.delete_outline_rounded,
+                      onTap: () {
+                        if (post.id.isNotEmpty) {
+                          controller.deletePost(post.id);
+                        } else {
+                          Get.snackbar(
+                            "Error",
+                            "Cannot delete: Post ID is missing",
+                          );
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -146,16 +187,19 @@ class SchedulePostWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildCircledAction(IconData icon) {
-    return Container(
-      width: 28.r,
-      height: 28.r,
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.15),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Icon(icon, color: Colors.white, size: 16.r),
+  Widget _buildCircledAction(IconData icon, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28.r,
+        height: 28.r,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.15),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Icon(icon, color: Colors.white, size: 16.r),
+        ),
       ),
     );
   }

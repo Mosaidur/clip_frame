@@ -1,22 +1,26 @@
+import 'package:clip_frame/features/schedule/data/model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/services/api_services/content_service.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:get/get.dart';
 import 'scheduling_success_screen.dart';
+import 'dart:io';
 
 class SchedulePostScreen extends StatefulWidget {
-  final String mediaPath;
+  final String? mediaPath;
   final String? caption;
   final List<String>? hashtags;
   final bool isImage;
+  final SchedulePost? postToEdit;
 
   const SchedulePostScreen({
     super.key,
-    required this.mediaPath,
+    this.mediaPath,
     this.caption,
     this.hashtags,
     this.isImage = true,
+    this.postToEdit,
   });
 
   @override
@@ -46,9 +50,75 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       initialItem: selectedHour == 12 ? 0 : selectedHour,
     );
     minuteController = FixedExtentScrollController(initialItem: selectedMinute);
+
+    if (widget.postToEdit != null) {
+      _prefillEditData();
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showSuggestedDialog();
+      if (widget.postToEdit == null) {
+        _showSuggestedDialog();
+      }
     });
+  }
+
+  void _prefillEditData() {
+    final post = widget.postToEdit!;
+    final controller = Get.find<ContentCreationController>();
+
+    // Basic data
+    controller.caption.value = post.title;
+    controller.hashtags.assignAll(post.tags);
+    controller.mediaPath.value =
+        post.imageUrl; // Use remote URL as fallback for mediaPath
+
+    // Time parsing
+    try {
+      DateTime? dt;
+      if (post.rawScheduleTime.contains('date:')) {
+        final datePart = post.rawScheduleTime
+            .split('date:')[1]
+            .split(',')[0]
+            .trim();
+        final timePart = post.rawScheduleTime
+            .split('time:')[1]
+            .split('}')[0]
+            .trim();
+        DateTime date = DateTime.parse(datePart);
+        final timeSplit = timePart.split(':');
+        int h = int.parse(timeSplit[0]);
+        int m = int.parse(timeSplit[1]);
+        dt = DateTime(date.year, date.month, date.day, h, m);
+      } else {
+        dt = DateTime.tryParse(post.rawScheduleTime);
+      }
+
+      if (dt != null) {
+        controller.scheduledDate.value = dt;
+        selectedHour = dt.hour > 12
+            ? dt.hour - 12
+            : (dt.hour == 0 ? 12 : dt.hour);
+        selectedMinute = dt.minute;
+        period = dt.hour >= 12 ? "PM" : "AM";
+
+        // Approx calendar selection (matching GridView logic)
+        // This is tricky without the exact calendar start date,
+        // but since it's just a mockup style picker, we'll just show the date.
+      }
+    } catch (e) {
+      print("Error pre-filling date: $e");
+    }
+
+    // Update selectedDateIndex based on actual day
+    if (controller.scheduledDate.value != null) {
+      // June 2025 starts on Sunday (index 0 is previous month day? No, index 5 is June 1st)
+      // Reference: GridView itemCount 35, dayNum = index - 4.
+      // If index 5, dayNum = 1.
+      final dt = controller.scheduledDate.value!;
+      if (dt.year == 2025 && dt.month == 6) {
+        selectedDateIndex = dt.day + 4;
+      }
+    }
   }
 
   @override
@@ -224,6 +294,8 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                   ),
                 ),
                 SizedBox(height: 10.h),
+                _buildMediaPreview(),
+                SizedBox(height: 10.h),
                 Text(
                   "Select platform ad pick the best time to\npublish.",
                   textAlign: TextAlign.center,
@@ -333,6 +405,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   }
 
   Widget _buildCalendarSection() {
+    final controller = Get.find<ContentCreationController>();
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
@@ -390,7 +463,23 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               if (dayNum > 30) dayNum = dayNum - 30;
 
               return GestureDetector(
-                onTap: () => setState(() => selectedDateIndex = index),
+                onTap: () {
+                  setState(() {
+                    selectedDateIndex = index;
+                    // Calculate actual date (roughly targeting June 2025 as per mockup)
+                    int d = index - 4;
+                    int m = 6;
+                    int y = 2025;
+                    if (index < 5) {
+                      d = 31 + d;
+                      m = 5;
+                    } else if (d > 30) {
+                      d = d - 30;
+                      m = 7;
+                    }
+                    controller.scheduledDate.value = DateTime(y, m, d);
+                  });
+                },
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -649,19 +738,27 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       // Use mediaPath from controller or fallback to widget path
       final String finalMediaPath = mediaPath.isNotEmpty
           ? mediaPath
-          : widget.mediaPath;
+          : (widget.mediaPath ?? "");
 
-      final DateTime scheduleDateTime =
-          controller.scheduledDate.value ?? DateTime.now();
-      final String formattedDate =
-          "${scheduleDateTime.year}-${scheduleDateTime.month.toString().padLeft(2, '0')}-${scheduleDateTime.day.toString().padLeft(2, '0')}";
-
-      // Convert 12-hour selection to 24-hour HH:mm
+      // Merge date with selected time
       int hour24 = selectedHour;
       if (period == "PM" && hour24 < 12) hour24 += 12;
       if (period == "AM" && hour24 == 12) hour24 = 0;
+
+      final DateTime selectedBaseDate =
+          controller.scheduledDate.value ?? DateTime(2025, 6, 1);
+      final DateTime scheduledDateTime = DateTime(
+        selectedBaseDate.year,
+        selectedBaseDate.month,
+        selectedBaseDate.day,
+        hour24,
+        selectedMinute,
+      );
+
+      final String formattedDate =
+          "${scheduledDateTime.year}-${scheduledDateTime.month.toString().padLeft(2, '0')}-${scheduledDateTime.day.toString().padLeft(2, '0')}";
       final String formattedTime =
-          "${hour24.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}";
+          "${scheduledDateTime.hour.toString().padLeft(2, '0')}:${scheduledDateTime.minute.toString().padLeft(2, '0')}";
 
       final Map<String, dynamic> scheduledAt = {
         "type": "single",
@@ -669,20 +766,34 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
         "time": formattedTime,
       };
 
-      final response = await ContentService.createContent(
-        templateId: templateId,
-        caption: caption,
-        mediaPath: finalMediaPath,
-        contentType: widget.isImage ? "post" : "reel",
-        scheduledAt: scheduledAt,
-        remindMe: remindMe,
-        platform: [selectedPlatform.toLowerCase()],
-        tags: hashtags,
-      );
+      final response = widget.postToEdit != null
+          ? await ContentService.updateContent(
+              id: widget.postToEdit!.id,
+              caption: caption,
+              scheduledAt: scheduledAt,
+              remindMe: remindMe,
+              platform: [selectedPlatform.toLowerCase()],
+              tags: hashtags,
+            )
+          : await ContentService.createContent(
+              templateId: templateId,
+              caption: caption,
+              mediaPath: finalMediaPath,
+              contentType: widget.isImage ? "post" : "reel",
+              scheduledAt: scheduledAt,
+              remindMe: remindMe,
+              platform: [selectedPlatform.toLowerCase()],
+              tags: hashtags,
+            );
 
       if (response.isSuccess) {
         if (mounted) {
-          _showCongratulationsOverlay();
+          _showCongratulationsOverlay(
+            caption: caption,
+            hashtags: hashtags,
+            finalMediaPath: finalMediaPath,
+            scheduledDateTime: scheduledDateTime,
+          );
         }
       } else {
         Get.snackbar(
@@ -720,7 +831,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
         child: isApiLoading
             ? const CircularProgressIndicator(color: Colors.white)
             : Text(
-                "Schedule Post",
+                widget.postToEdit != null ? "Update Post" : "Schedule Post",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16.sp,
@@ -731,7 +842,13 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
     );
   }
 
-  void _showCongratulationsOverlay() {
+  void _showCongratulationsOverlay({
+    required String caption,
+    required List<String> hashtags,
+    required String finalMediaPath,
+    required DateTime scheduledDateTime,
+  }) {
+    final controller = Get.find<ContentCreationController>();
     showDialog(
       context: context,
       barrierColor: Colors.black54,
@@ -780,7 +897,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               ),
               SizedBox(height: 10.h),
               Text(
-                "Your content are successfully created and scheduled.",
+                widget.postToEdit != null
+                    ? "Your content has been successfully updated."
+                    : "Your content are successfully created and scheduled.",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12.sp, color: Colors.black54),
               ),
@@ -794,12 +913,14 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => SchedulingSuccessScreen(
-                          mediaPath: widget.mediaPath,
+                          mediaPath: finalMediaPath,
+                          imageUrl:
+                              widget.postToEdit?.imageUrl ??
+                              controller.mediaPath.value,
                           isImage: widget.isImage,
-                          caption: widget.caption,
-                          hashtags: widget.hashtags,
-                          scheduledTime:
-                              "${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} $period",
+                          caption: caption,
+                          hashtags: hashtags,
+                          scheduledDateTime: scheduledDateTime,
                         ),
                       ),
                     );
@@ -824,6 +945,82 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMediaPreview() {
+    final controller = Get.find<ContentCreationController>();
+    final mediaPath = controller.mediaPath.value;
+    final imageUrl = widget.postToEdit?.imageUrl;
+
+    return Center(
+      child: Container(
+        width: 120.w,
+        height: 120.h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15.r),
+          child: _getPreviewWidget(mediaPath, imageUrl),
+        ),
+      ),
+    );
+  }
+
+  Widget _getPreviewWidget(String mediaPath, String? imageUrl) {
+    // If it's a network image from edit mode
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
+      );
+    }
+
+    // If it's a local file
+    if (mediaPath.isNotEmpty && !mediaPath.startsWith('http')) {
+      try {
+        final file = File(mediaPath);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
+          );
+        }
+      } catch (e) {
+        debugPrint("Error loading preview: $e");
+      }
+    }
+
+    // Fallback if mediaPath is a URL (some edge cases)
+    if (mediaPath.startsWith('http')) {
+      return Image.network(
+        mediaPath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
+      );
+    }
+
+    return _buildErrorIcon();
+  }
+
+  Widget _buildErrorIcon() {
+    return Container(
+      color: Colors.black12,
+      child: Icon(
+        widget.isImage ? Icons.image_outlined : Icons.video_collection_outlined,
+        color: Colors.black26,
+        size: 40.r,
       ),
     );
   }

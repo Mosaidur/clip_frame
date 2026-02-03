@@ -8,7 +8,8 @@ class LogoutController extends GetxController {
   var _errorMessage = ''.obs;
 
   bool get inProgress => _inProgress.value;
-  String? get errorMessage => _errorMessage.value.isEmpty ? null : _errorMessage.value;
+  String? get errorMessage =>
+      _errorMessage.value.isEmpty ? null : _errorMessage.value;
 
   Future<bool> logout() async {
     _inProgress.value = true;
@@ -18,18 +19,22 @@ class LogoutController extends GetxController {
     // Fetch token
     print("🔍 Fetching token from AuthService...");
     String? token = await AuthService.getToken();
-    
+
     if (token == null || token.isEmpty) {
-      print("⚠️ WARNING: Logout attempted but no token was found in local storage.");
+      print(
+        "⚠️ WARNING: Logout attempted but no token was found in local storage.",
+      );
     } else {
-      print("🔑 Logout Token Found: ${token.substring(0, 10)}..."); // Log first 10 chars for safety
+      print(
+        "🔑 Logout Token Found: ${token.substring(0, 10)}...",
+      ); // Log first 10 chars for safety
     }
 
     // Call logout API
     print("📡 Sending POST request to ${Urls.logoutUrl}");
     NetworkResponse response = await NetworkCaller.postRequest(
       url: Urls.logoutUrl,
-      body: {}, 
+      body: {},
       token: token,
     );
 

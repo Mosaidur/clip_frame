@@ -22,7 +22,8 @@ class ClipSegment {
   Duration startOffset;
   Duration endOffset;
   double speed;
-  final String? filter; // placeholder for filter name
+  final String? filter;
+  int rotation; // 0, 90, 180, 270
 
   ClipSegment({
     required this.originalFile,
@@ -30,6 +31,7 @@ class ClipSegment {
     required this.endOffset,
     this.speed = 1.0,
     this.filter,
+    this.rotation = 0,
   });
 
   Duration get duration => Duration(
@@ -43,6 +45,7 @@ class ClipSegment {
     endOffset: endOffset,
     speed: speed,
     filter: filter,
+    rotation: rotation,
   );
 }
 
@@ -102,6 +105,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   late VideoPlayerController _controller;
   bool initialized = false;
   int currentVideoIndex = 0;
+  double projectAspectRatio = 9 / 16; // Default to vertical/Reels
 
   // History stacks
   final List<EditAction> _history = [];
@@ -2068,46 +2072,103 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   }
 
   // 9) Overlay text (canvas)
-  Future<void> overlayText(String text) async {
+  void overlayText(String text) {
     if (currentSegment == null) return;
-    final beforeSegments = videoSegments.map((s) => s.copy()).toList();
-    final beforeFile = currentSegment!.originalFile;
-    final out = await _tempFilePath("_text.mp4");
+    // Simple placeholder
+  }
 
-    // Drawtext filter (v-align top, h-align center)
-    final cmd =
-        '-i "${beforeFile.path}" -vf "drawtext=text=\'$text\':fontcolor=white:fontsize=30:x=(w-text_w)/2:y=20" -c:v libx264 -preset ultrafast -c:a copy -y "$out"';
+  void _rotateCurrentClip() {
+    if (currentSegment == null) return;
+    setState(() {
+      currentSegment!.rotation = (currentSegment!.rotation + 90) % 360;
+    });
 
-    setState(() => isExporting = true);
-    final res = await _runFFmpeg(cmd, out);
-    setState(() => isExporting = false);
+    _pushHistory(
+      EditAction(
+        type: EditType.crop,
+        description: "Rotated clip to ${currentSegment!.rotation}°",
+        beforeSegments: videoSegments.map((s) => s.copy()).toList(),
+        afterSegments: videoSegments.map((s) => s.copy()).toList(),
+        affectedIndex: currentVideoIndex,
+      ),
+    );
+  }
 
-    if (res != null) {
-      final afterFile = File(res);
-      final dur = await _getVideoDuration(afterFile);
-
-      setState(() {
-        currentSegment!.originalFile = afterFile;
-        currentSegment!.startOffset = Duration.zero;
-        currentSegment!.endOffset = dur;
-      });
-
-      _pushHistory(
-        EditAction(
-          type: EditType.overlayText,
-          description: "Text overlay added",
-          beforeSegments: beforeSegments,
-          afterSegments: videoSegments.map((s) => s.copy()).toList(),
-          affectedIndex: currentVideoIndex,
+  void _showRatioSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(20.r),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Canvas / Ratio",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18.sp),
+            ),
+            SizedBox(height: 20.h),
+            Wrap(
+              spacing: 15.w,
+              runSpacing: 15.h,
+              children: [
+                _ratioTile("9:16", 9 / 16, Icons.portrait),
+                _ratioTile("16:9", 16 / 9, Icons.landscape),
+                _ratioTile("1:1", 1.0, Icons.crop_square),
+                _ratioTile("4:5", 0.8, Icons.stay_current_portrait),
+                _ratioTile("3:4", 0.75, Icons.stay_current_portrait),
+              ],
+            ),
+            SizedBox(height: 30.h),
+          ],
         ),
-      );
+      ),
+    );
+  }
 
-      originalDurations[afterFile.path] = dur;
-      _generateThumbnailForOriginal(afterFile);
-      _generateFilmstripForOriginal(afterFile);
-
-      await _setCurrentSegment(currentSegment!, currentVideoIndex);
-    }
+  Widget _ratioTile(String label, double ratio, IconData icon) {
+    bool isSelected = (projectAspectRatio - ratio).abs() < 0.01;
+    return GestureDetector(
+      onTap: () {
+        setState(() => projectAspectRatio = ratio);
+        Navigator.pop(context);
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: EdgeInsets.all(12.r),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Colors.blue.withOpacity(0.1)
+                  : Colors.grey[100],
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: isSelected ? Colors.blue : Colors.transparent,
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: isSelected ? Colors.blue : Colors.black54,
+              size: 28.sp,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: isSelected ? Colors.blue : Colors.black87,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // 10) Save/export all clips as one video to Gallery
@@ -2702,17 +2763,32 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 _controller.value.isInitialized)
               Center(
                 child: AspectRatio(
-                  aspectRatio: _controller.value.aspectRatio,
-                  child: Stack(
-                    children: [
-                      ColorFiltered(
-                        colorFilter: ColorFilter.matrix(
-                          _getInterpolatedFilterMatrix(),
+                  aspectRatio: projectAspectRatio,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors
+                          .black, // Background for the chosen canvas ratio
+                      border: Border.all(color: Colors.white24, width: 0.5),
+                    ),
+                    child: Center(
+                      child: RotatedBox(
+                        quarterTurns: (currentSegment!.rotation / 90).round(),
+                        child: AspectRatio(
+                          aspectRatio: _controller.value.aspectRatio,
+                          child: Stack(
+                            children: [
+                              ColorFiltered(
+                                colorFilter: ColorFilter.matrix(
+                                  _getInterpolatedFilterMatrix(),
+                                ),
+                                child: VideoPlayer(_controller),
+                              ),
+                              if (_isCropping) _buildCropOverlay(),
+                            ],
+                          ),
                         ),
-                        child: VideoPlayer(_controller),
                       ),
-                      if (_isCropping) _buildCropOverlay(),
-                    ],
+                    ),
                   ),
                 ),
               )
@@ -3643,14 +3719,12 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                 _actionIcon(
                   Icons.crop_free_rounded,
                   "Canvas",
-                  onTap: () async {
-                    final txt = await _inputDialog(
-                      "Canvas text",
-                      "Enter overlay text",
-                    );
-                    if (txt != null && txt.trim().isNotEmpty)
-                      overlayText(txt.trim());
-                  },
+                  onTap: () => _showRatioSelector(),
+                ),
+                _actionIcon(
+                  Icons.rotate_right_rounded,
+                  "Rotate",
+                  onTap: () => _rotateCurrentClip(),
                 ),
                 _actionIcon(
                   Icons.layers_clear_rounded,

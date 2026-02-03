@@ -1,17 +1,21 @@
 import 'package:intl/intl.dart';
 
 class SchedulePost {
+  final String id;
   final String imageUrl;
   final String title;
   final List<String> tags;
   final String scheduleTime;
+  final String rawScheduleTime;
   final String status;
 
   SchedulePost({
+    required this.id,
     required this.imageUrl,
     required this.title,
     required this.tags,
     required this.scheduleTime,
+    required this.rawScheduleTime,
     this.status = 'scheduled',
   });
 
@@ -25,7 +29,15 @@ class SchedulePost {
 
     // Robust parsing to handle nulls and different key names
     return SchedulePost(
-      imageUrl: json['imageUrl']?.toString() ?? json['media']?.toString() ?? '',
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      imageUrl:
+          json['imageUrl']?.toString() ??
+          json['media']?.toString() ??
+          json['content']?.toString() ??
+          json['url']?.toString() ??
+          json['videoUrl']?.toString() ??
+          json['thumbnail']?.toString() ??
+          '',
       title:
           json['title']?.toString() ??
           json['caption']?.toString() ??
@@ -37,6 +49,7 @@ class SchedulePost {
           ? List<String>.from(json['hashtags'].map((e) => e.toString()))
           : [],
       scheduleTime: formattedTime,
+      rawScheduleTime: rawTime,
       status: json['status']?.toString() ?? 'scheduled',
     );
   }
