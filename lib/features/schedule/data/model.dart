@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 class SchedulePost {
   final String id;
   final String imageUrl;
+  final String? thumbnailUrl;
   final String title;
   final List<String> tags;
   final String scheduleTime;
@@ -12,6 +13,7 @@ class SchedulePost {
   SchedulePost({
     required this.id,
     required this.imageUrl,
+    this.thumbnailUrl,
     required this.title,
     required this.tags,
     required this.scheduleTime,
@@ -27,7 +29,6 @@ class SchedulePost {
 
     String formattedTime = _formatScheduleTime(rawTime);
 
-    // Robust parsing to handle nulls and different key names
     return SchedulePost(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       imageUrl:
@@ -36,8 +37,12 @@ class SchedulePost {
           json['content']?.toString() ??
           json['url']?.toString() ??
           json['videoUrl']?.toString() ??
-          json['thumbnail']?.toString() ??
           '',
+      thumbnailUrl:
+          json['thumbnail']?.toString() ??
+          json['cover']?.toString() ??
+          json['coverImage']?.toString() ??
+          json['image']?.toString(), // Try to find a specific thumbnail field
       title:
           json['title']?.toString() ??
           json['caption']?.toString() ??

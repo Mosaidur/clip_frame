@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -977,8 +979,19 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   }
 
   Widget _getPreviewWidget(String mediaPath, String? imageUrl) {
+    // Check if it's a video based on flag or extension
+    bool isVideo = !widget.isImage;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      if (_isVideoUrl(imageUrl)) isVideo = true;
+    } else if (mediaPath.isNotEmpty && !mediaPath.startsWith('http')) {
+      if (_isVideoUrl(mediaPath)) isVideo = true;
+    }
+
     // If it's a network image from edit mode
     if (imageUrl != null && imageUrl.isNotEmpty) {
+      if (isVideo) {
+        return _buildVideoThumbnail(imageUrl);
+      }
       return Image.network(
         imageUrl,
         fit: BoxFit.cover,
@@ -991,6 +1004,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       try {
         final file = File(mediaPath);
         if (file.existsSync()) {
+          if (isVideo) {
+            return _buildVideoThumbnail(mediaPath);
+          }
           return Image.file(
             file,
             fit: BoxFit.cover,
@@ -1004,6 +1020,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
 
     // Fallback if mediaPath is a URL (some edge cases)
     if (mediaPath.startsWith('http')) {
+      if (isVideo) {
+        return _buildVideoThumbnail(mediaPath);
+      }
       return Image.network(
         mediaPath,
         fit: BoxFit.cover,
@@ -1012,6 +1031,55 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
     }
 
     return _buildErrorIcon();
+  }
+
+  bool _isVideoUrl(String url) {
+    final lowercase = url.toLowerCase();
+    return lowercase.endsWith('.mp4') ||
+        lowercase.endsWith('.mov') ||
+        lowercase.endsWith('.avi') ||
+        lowercase.endsWith('.mkv');
+  }
+
+  Widget _buildVideoThumbnail(String pathOrUrl) {
+    return FutureBuilder<Uint8List?>(
+      future: VideoThumbnail.thumbnailData(
+        video: pathOrUrl,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 200,
+        quality: 50,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            color: Colors.black12,
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+        if (snapshot.hasData && snapshot.data != null) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.memory(
+                snapshot.data!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildErrorIcon(),
+              ),
+              Center(
+                child: Icon(
+                  Icons.play_circle_outline,
+                  color: Colors.white,
+                  size: 40.r,
+                ),
+              ),
+            ],
+          );
+        }
+        return _buildErrorIcon();
+      },
+    );
   }
 
   Widget _buildErrorIcon() {

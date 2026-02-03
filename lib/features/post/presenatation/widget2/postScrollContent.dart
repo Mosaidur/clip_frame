@@ -2,11 +2,15 @@ import 'package:clip_frame/features/post/presenatation/widget2/MediaDisplayWidge
 import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:get/get.dart';
+import 'package:clip_frame/core/model/content_template_model.dart';
+import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 
 import '../Screen_2/post_highlight.dart';
 import '../Screen_2/video_Highlight.dart';
 
 class PostScrollContnet extends StatelessWidget {
+  final ContentTemplateModel template;
   final String imageUrl;
   final String category;
   final String format;
@@ -15,9 +19,9 @@ class PostScrollContnet extends StatelessWidget {
   final String musicTitle;
   final String? profileImageUrl;
 
-
   const PostScrollContnet({
     super.key,
+    required this.template,
     required this.imageUrl,
     required this.category,
     required this.format,
@@ -47,7 +51,10 @@ class PostScrollContnet extends StatelessWidget {
             right: 0,
             child: SafeArea(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -63,15 +70,19 @@ class PostScrollContnet extends StatelessWidget {
                         color: Colors.grey,
                       ),
                       child: profileImageUrl == null || profileImageUrl!.isEmpty
-                          ? const Icon(Icons.person, size: 40, color: Colors.white)
+                          ? const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.white,
+                            )
                           : ClipOval(
-                        child: Image.network(
-                          profileImageUrl!,
-                          fit: BoxFit.cover,
-                          width: 70,
-                          height: 70,
-                        ),
-                      ),
+                              child: Image.network(
+                                profileImageUrl!,
+                                fit: BoxFit.cover,
+                                width: 70,
+                                height: 70,
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -80,12 +91,7 @@ class PostScrollContnet extends StatelessWidget {
           ),
 
           /// Tabs
-          Positioned(
-            top: 120,
-            left: 10,
-            right: 0,
-            child: CustomTabBar(),
-          ),
+          Positioned(top: 120, left: 10, right: 0, child: CustomTabBar()),
 
           /// Bottom Left Info Panel
           Positioned(
@@ -137,8 +143,11 @@ class PostScrollContnet extends StatelessWidget {
                     /// Music Row
                     Row(
                       children: [
-                        const Icon(Icons.music_note,
-                            color: Colors.white, size: 14),
+                        const Icon(
+                          Icons.music_note,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                         const SizedBox(width: 5),
                         Expanded(
                           child: Text(
@@ -162,13 +171,28 @@ class PostScrollContnet extends StatelessWidget {
                       height: 50,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Your action here
+                          // Initialize ContentCreationController with template data
+                          if (!Get.isRegistered<ContentCreationController>()) {
+                            Get.put(ContentCreationController());
+                          }
+
+                          final controller =
+                              Get.find<ContentCreationController>();
+                          controller.templateId.value = template.id ?? '';
+                          controller.caption.value = template.title ?? '';
+                          controller.hashtags.assignAll(
+                            template.hashtags ?? [],
+                          );
 
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => PostHighlight(url: imageUrl, contentType: 'Post' ,)),
+                            MaterialPageRoute(
+                              builder: (context) => PostHighlight(
+                                url: imageUrl,
+                                contentType: 'Post',
+                              ),
+                            ),
                           );
-
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF007CFE),
@@ -186,8 +210,7 @@ class PostScrollContnet extends StatelessWidget {
                           ),
                         ),
                       ),
-                    )
-
+                    ),
                   ],
                 ),
               ),

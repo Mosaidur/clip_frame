@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:clip_frame/features/post/presenatation/Screen_2/schedule_post_screen.dart';
 import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
@@ -11,6 +13,30 @@ import '../../data/model.dart';
 class SchedulePostWidget extends StatelessWidget {
   final SchedulePost post;
   const SchedulePostWidget({super.key, required this.post});
+
+  bool _isVideo(String url) {
+    if (url.isEmpty) return false;
+    try {
+      final uri = Uri.parse(url);
+      final path = uri.path.toLowerCase();
+      // Also check standard method just in case
+      final lowercase = url.toLowerCase();
+
+      return path.endsWith('.mp4') ||
+          path.endsWith('.mov') ||
+          path.endsWith('.avi') ||
+          path.endsWith('.mkv') ||
+          lowercase.contains('video') || // existing robust check
+          path.contains('video');
+    } catch (e) {
+      final lowercase = url.toLowerCase();
+      return lowercase.endsWith('.mp4') ||
+          lowercase.endsWith('.mov') ||
+          lowercase.endsWith('.avi') ||
+          lowercase.endsWith('.mkv') ||
+          lowercase.contains('video');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,32 +65,24 @@ class SchedulePostWidget extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-                child: post.imageUrl.isNotEmpty
-                    ? Image.network(
-                        post.imageUrl,
-                        width: double.infinity,
-                        height: 230.h,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildPlaceholder(),
-                      )
-                    : _buildPlaceholder(),
+                child: _buildMediaContent(),
               ),
 
               // Play Button Icon (Center) - Larger and more transparent
-              Container(
-                width: 65.r,
-                height: 65.r,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.25),
-                  shape: BoxShape.circle,
+              if (_isVideo(post.imageUrl))
+                Container(
+                  width: 65.r,
+                  height: 65.r,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 45.r,
+                  ),
                 ),
-                child: Icon(
-                  Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 45.r,
-                ),
-              ),
 
               // Status Badge (Top Left) - Smaller
               Positioned(
@@ -122,8 +140,9 @@ class SchedulePostWidget extends StatelessWidget {
                           await Get.to(
                             () => SchedulePostScreen(
                               postToEdit: post,
-                              isImage:
-                                  true, // Posts are usually images in this context
+                              isImage: !_isVideo(
+                                post.imageUrl,
+                              ), // Determine based on URL
                             ),
                           );
 
@@ -172,6 +191,91 @@ class SchedulePostWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildMediaContent() {
+    // 1. Try to show server-provided thumbnail first (Best Quality/Correct Cover)
+    if (post.thumbnailUrl != null && post.thumbnailUrl!.isNotEmpty) {
+      return Image.network(
+        post.thumbnailUrl!,
+        width: double.infinity,
+        height: 230.h,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildFallbackMedia(),
+      );
+    }
+
+    // 2. If no thumbnail, check if main URL is video and generate locally
+    if (_isVideo(post.imageUrl)) {
+      return FutureBuilder<Uint8List?>(
+        future: VideoThumbnail.thumbnailData(
+          video: post.imageUrl,
+          imageFormat: ImageFormat.JPEG,
+          maxWidth: 400,
+          quality: 50,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Container(
+              width: double.infinity,
+              height: 230.h,
+              color: Colors.black12,
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.memory(
+              snapshot.data!,
+              width: double.infinity,
+              height: 230.h,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _buildPlaceholder(),
+            );
+          }
+          return _buildPlaceholder();
+        },
+      );
+    }
+
+    // 3. Last resort: Try treating imageUrl as an image
+    if (post.imageUrl.isNotEmpty) {
+      return Image.network(
+        post.imageUrl,
+        width: double.infinity,
+        height: 230.h,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+
+    return _buildPlaceholder();
+  }
+
+  // Wrapper for fallback logic to avoid infinite loop or deep nesting
+  Widget _buildFallbackMedia() {
+    if (_isVideo(post.imageUrl)) {
+      // Retry generation if the provided thumbnail failed
+      return FutureBuilder<Uint8List?>(
+        future: VideoThumbnail.thumbnailData(
+          video: post.imageUrl,
+          imageFormat: ImageFormat.JPEG,
+          maxWidth: 400,
+          quality: 50,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.memory(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              height: 230.h,
+              width: double.infinity,
+            );
+          }
+          return _buildPlaceholder();
+        },
+      );
+    }
+    return _buildPlaceholder();
   }
 
   Widget _buildPlaceholder() {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 class SchedulingSuccessScreen extends StatelessWidget {
   final String? imageUrl;
@@ -185,8 +187,19 @@ class SchedulingSuccessScreen extends StatelessWidget {
   }
 
   Widget _buildMediaPreview() {
-    // If imageUrl is available and it looks like a URL, use it
+    bool isVideoFile = !isImage;
+    if (mediaPath.isNotEmpty) {
+      if (_isVideoUrl(mediaPath)) isVideoFile = true;
+    }
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      if (_isVideoUrl(imageUrl!)) isVideoFile = true;
+    }
+
+    // 1. If imageUrl is available and it looks like a URL
     if (imageUrl != null && imageUrl!.startsWith('http')) {
+      if (isVideoFile) {
+        return _buildVideoThumbnail(imageUrl!);
+      }
       return Image.network(
         imageUrl!,
         height: 250.h,
@@ -196,11 +209,14 @@ class SchedulingSuccessScreen extends StatelessWidget {
       );
     }
 
-    // Otherwise try to use local file if path is not empty
+    // 2. Otherwise try to use local file if path is not empty
     if (mediaPath.isNotEmpty && !mediaPath.startsWith('http')) {
       try {
         final file = File(mediaPath);
         if (file.existsSync()) {
+          if (isVideoFile) {
+            return _buildVideoThumbnail(mediaPath);
+          }
           return Image.file(
             file,
             height: 250.h,
@@ -216,6 +232,69 @@ class SchedulingSuccessScreen extends StatelessWidget {
 
     // Default placeholder
     return _buildErrorIcon();
+  }
+
+  bool _isVideoUrl(String url) {
+    if (url.isEmpty) return false;
+    try {
+      final uri = Uri.parse(url);
+      final path = uri.path.toLowerCase();
+      return path.endsWith('.mp4') ||
+          path.endsWith('.mov') ||
+          path.endsWith('.avi') ||
+          path.endsWith('.mkv');
+    } catch (e) {
+      final lowercase = url.toLowerCase();
+      return lowercase.endsWith('.mp4') ||
+          lowercase.endsWith('.mov') ||
+          lowercase.endsWith('.avi') ||
+          lowercase.endsWith('.mkv');
+    }
+  }
+
+  Widget _buildVideoThumbnail(String pathOrUrl) {
+    return FutureBuilder<Uint8List?>(
+      future: VideoThumbnail.thumbnailData(
+        video: pathOrUrl,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 400,
+        quality: 50,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            height: 250.h,
+            width: double.infinity,
+            color: Colors.black12,
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+        if (snapshot.hasData && snapshot.data != null) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.memory(
+                snapshot.data!,
+                fit: BoxFit.cover,
+                height: 250.h,
+                width: double.infinity,
+                errorBuilder: (_, __, ___) => _buildErrorIcon(),
+              ),
+              Center(
+                child: Icon(
+                  Icons.play_circle_outline,
+                  color: Colors.white,
+                  size: 50.r,
+                ),
+              ),
+            ],
+          );
+        }
+        return _buildErrorIcon();
+      },
+    );
   }
 
   Widget _buildErrorIcon() {

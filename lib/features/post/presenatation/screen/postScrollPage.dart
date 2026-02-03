@@ -63,11 +63,15 @@ class _PostScrollPageState extends State<PostScrollPage> {
             itemBuilder: (context, index) {
               final template = templates[index];
               final imageUrl =
-                  (template.steps != null && template.steps!.isNotEmpty)
-                  ? template.steps![0].url ?? ""
-                  : "";
+                  (template.steps != null &&
+                      template.steps!.isNotEmpty &&
+                      template.steps![0].url != null &&
+                      template.steps![0].url!.isNotEmpty)
+                  ? template.steps![0].url!
+                  : (template.thumbnail ?? "");
 
               return PostScrollContnet(
+                template: template,
                 imageUrl: imageUrl,
                 category: template.category ?? "General",
                 format: "JPEG",

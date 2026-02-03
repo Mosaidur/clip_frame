@@ -5,13 +5,21 @@ import 'package:clip_frame/core/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
 
 class ContentTemplateService {
-  static Future<List<ContentTemplateModel>> fetchTemplates() async {
+  static Future<List<ContentTemplateModel>> fetchTemplates({
+    String? type,
+  }) async {
     try {
       final token = await AuthService.getToken();
-      final response = await NetworkCaller.getRequest(
-        url: Urls.contentTemplateUrl,
-        token: token,
-      );
+      String url = Urls.contentTemplateUrl;
+      if (type != null && type.isNotEmpty) {
+        if (url.contains('?')) {
+          url += '&type=$type';
+        } else {
+          url += '?type=$type';
+        }
+      }
+
+      final response = await NetworkCaller.getRequest(url: url, token: token);
 
       if (response.isSuccess && response.responseBody != null) {
         final dynamic body = response.responseBody;
@@ -53,11 +61,6 @@ class ContentTemplateService {
   static Future<List<ContentTemplateModel>> fetchTemplatesByType(
     String type,
   ) async {
-    final allTemplates = await fetchTemplates();
-    if (allTemplates.isEmpty) return [];
-
-    return allTemplates
-        .where((t) => t.type?.toLowerCase() == type.toLowerCase())
-        .toList();
+    return fetchTemplates(type: type);
   }
 }

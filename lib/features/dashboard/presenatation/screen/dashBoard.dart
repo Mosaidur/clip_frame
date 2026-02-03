@@ -2,18 +2,27 @@ import 'package:clip_frame/features/homeController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:clip_frame/core/services/api_services/schedule_service.dart';
+import 'package:clip_frame/features/schedule/data/model.dart';
+import 'package:intl/intl.dart';
 
 import '../widgets/schedule_list.dart';
 
-class DashBoardPage extends StatelessWidget {
+class DashBoardPage extends StatefulWidget {
+  const DashBoardPage({super.key});
+
+  @override
+  State<DashBoardPage> createState() => _DashBoardPageState();
+}
+
+class _DashBoardPageState extends State<DashBoardPage> {
   final TextEditingController customTypeController = TextEditingController();
-  final String date = 'March 25, 2024';
-  final String day = 'Today';
+  String date = '';
+  String day = '';
   final String? imageUrl = null;
-  final List<int?> postCounts = [1, 2, 5, 0, 3, 4, 2]; // one value per day
-  final List<String> weekdays = ["S", "M", "T", "W", "T", "F", "S"];
-  final List<int?> dates = [1, 2, 3, 4, 5, 6, 7]; // replace with actual dates
-  final int currentIndex = DateTime.now().weekday % 7; // 0 for Sunday
+  List<SchedulePost> scheduledPosts = [];
+  Map<DateTime, List<SchedulePost>> groupedPosts = {};
+  bool isLoading = true;
   final int total = 11;
   final List<Map<String, dynamic>> posts = [
     {
@@ -21,23 +30,65 @@ class DashBoardPage extends StatelessWidget {
       "profileImage": "assets/images/profile_image.png",
       "name": "Alice",
       "repostCount": 5,
-      "likeCount": 120
+      "likeCount": 120,
     },
     {
       "image": "assets/images/2.jpg",
       "profileImage": "assets/images/profile_image.png",
       "name": "Bob",
       "repostCount": 2,
-      "likeCount": 800
+      "likeCount": 800,
     },
     {
       "image": "assets/images/3.jpg",
       "profileImage": "assets/images/profile_image.png",
       "name": "Charlie",
       "repostCount": 700,
-      "likeCount": 20
+      "likeCount": 20,
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    final now = DateTime.now();
+    date = DateFormat('MMMM d, y').format(now);
+
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    if (now.difference(today).inDays == 0) {
+      day = "Today";
+    } else if (now.difference(tomorrow).inDays == 0) {
+      day = "Tomorrow";
+    } else {
+      day = DateFormat('EEEE').format(now);
+    }
+
+    // Fetch scheduled posts
+    debugPrint("🔵 DashBoard: Starting to fetch scheduled posts...");
+    final posts = await ScheduleService.fetchScheduledPosts();
+    debugPrint("🔵 DashBoard: Received ${posts.length} posts from API");
+
+    if (posts.isNotEmpty) {
+      debugPrint(
+        "🔵 DashBoard: First post - ${posts[0].title} on ${posts[0].scheduleTime}",
+      );
+    } else {
+      debugPrint("🔴 DashBoard: No posts received from API!");
+    }
+
+    setState(() {
+      scheduledPosts = posts;
+      groupedPosts = ScheduleService.groupPostsByDate(posts);
+      debugPrint("🔵 DashBoard: Grouped into ${groupedPosts.length} dates");
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +148,10 @@ class DashBoardPage extends StatelessWidget {
                     SizedBox(height: 10.h),
                     Text(
                       date,
-                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.grey[600],
+                      ),
                     ),
                     SizedBox(height: 5.h),
                     Text(
@@ -133,7 +187,7 @@ class DashBoardPage extends StatelessWidget {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             spreadRadius: 2,
-          )
+          ),
         ],
       ),
       child: imageUrl == null || imageUrl!.isEmpty
@@ -150,45 +204,62 @@ class DashBoardPage extends StatelessWidget {
   }
 
   Widget _buildCalendarStrip() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(7, (index) {
-        bool isToday = index == currentIndex;
-        int? postCount = postCounts[index];
+    final now = DateTime.now();
+    final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+    final daysInMonth = lastDayOfMonth.day;
 
-        return Expanded(
-          child: Column(
-            children: [
-              Text(
-                weekdays[index],
-                style: TextStyle(
-                  color: isToday ? Colors.black : Colors.grey,
-                  fontSize: 12.sp,
-                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-              SizedBox(height: 4.h),
-              Container(
-                padding: EdgeInsets.all(8.r),
-                decoration: isToday ? BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ) : null,
-                child: Text(
-                  dates[index].toString(),
+    final weekdays = ["S", "M", "T", "W", "T", "F", "S"];
+
+    return SizedBox(
+      height: 80.h,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 10.w),
+        itemCount: daysInMonth,
+        itemBuilder: (context, index) {
+          final date = DateTime(now.year, now.month, index + 1);
+          final postCount = ScheduleService.getPostCountForDate(
+            groupedPosts,
+            date,
+          );
+          final weekdayIndex = date.weekday % 7;
+
+          return Container(
+            width: 50.w,
+            margin: EdgeInsets.symmetric(horizontal: 4.w),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Weekday label
+                Text(
+                  weekdays[weekdayIndex],
                   style: TextStyle(
-                    color: isToday ? Colors.blue : Colors.grey,
-                    fontSize: 14.sp,
-                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                    color: Colors.grey[600],
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-              SizedBox(height: 6.h),
-              _buildDotsIndicator(postCount ?? 0),
-            ],
-          ),
-        );
-      }),
+                SizedBox(height: 6.h),
+                // Date number
+                Container(
+                  padding: EdgeInsets.all(8.r),
+                  child: Text(
+                    date.day.toString(),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                // Colored dots
+                _buildDotsIndicator(postCount),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -317,7 +388,10 @@ class DashBoardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSection({required String title, required VoidCallback onSeeAll}) {
+  Widget _buildSection({
+    required String title,
+    required VoidCallback onSeeAll,
+  }) {
     return Padding(
       padding: EdgeInsets.fromLTRB(15.w, 10.h, 15.w, 12.h),
       child: Row(
@@ -337,7 +411,11 @@ class DashBoardPage extends StatelessWidget {
               children: [
                 Text(
                   "See All",
-                  style: TextStyle(color: Colors.blue, fontSize: 13.sp, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Icon(Icons.chevron_right, color: Colors.blue, size: 18.sp),
               ],
@@ -374,7 +452,7 @@ class DashBoardPage extends StatelessWidget {
               color: Colors.black12,
               blurRadius: 10,
               offset: const Offset(0, 5),
-            )
+            ),
           ],
         ),
         clipBehavior: Clip.hardEdge,
@@ -413,7 +491,9 @@ class _SummaryCard extends StatelessWidget {
         border: Border.all(color: Colors.white.withOpacity(0.4)),
       ),
       child: Row(
-        mainAxisAlignment: isWide ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
+        mainAxisAlignment: isWide
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.start,
         children: [
           Container(
             padding: EdgeInsets.all(8.r),
@@ -427,12 +507,20 @@ class _SummaryCard extends StatelessWidget {
           if (isWide) ...[
             Text(
               label,
-              style: TextStyle(color: Colors.grey[600], fontSize: 13.sp, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const Spacer(),
             Text(
               value,
-              style: TextStyle(color: Colors.black, fontSize: 22.sp, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 22.sp,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ] else
             Expanded(
@@ -441,7 +529,11 @@ class _SummaryCard extends StatelessWidget {
                 children: [
                   Text(
                     value,
-                    style: TextStyle(color: Colors.black, fontSize: 22.sp, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     label.replaceAll("\n", " "),
@@ -488,7 +580,7 @@ class _ActionButton extends StatelessWidget {
                 color: color.withOpacity(0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
-              )
+              ),
             ],
           ),
           child: Row(
@@ -499,7 +591,11 @@ class _ActionButton extends StatelessWidget {
               Flexible(
                 child: Text(
                   label,
-                  style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -538,7 +634,12 @@ class _PostCard extends StatelessWidget {
         children: [
           _buildGradientOverlay(),
           Positioned(top: 10.h, left: 10.w, child: _buildProfileTag()),
-          Positioned(bottom: 10.h, left: 10.w, right: 10.w, child: _buildStatsTag()),
+          Positioned(
+            bottom: 10.h,
+            left: 10.w,
+            right: 10.w,
+            child: _buildStatsTag(),
+          ),
         ],
       ),
     );
@@ -579,7 +680,11 @@ class _PostCard extends StatelessWidget {
           Flexible(
             child: Text(
               post['name'],
-              style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10.sp,
+                fontWeight: FontWeight.bold,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -621,7 +726,14 @@ class _StatItem extends StatelessWidget {
       children: [
         Icon(icon, color: Colors.white, size: 12.r),
         SizedBox(width: 4.w),
-        Text(count, style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w600)),
+        Text(
+          count,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 10.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
