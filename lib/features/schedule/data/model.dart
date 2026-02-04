@@ -9,6 +9,7 @@ class SchedulePost {
   final String scheduleTime;
   final String rawScheduleTime;
   final String status;
+  final String contentType;
 
   SchedulePost({
     required this.id,
@@ -19,9 +20,20 @@ class SchedulePost {
     required this.scheduleTime,
     required this.rawScheduleTime,
     this.status = 'scheduled',
+    this.contentType = 'post',
   });
 
-  factory SchedulePost.fromJson(Map<String, dynamic> json) {
+  factory SchedulePost.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return SchedulePost(
+        id: '',
+        imageUrl: '',
+        title: 'Unknown',
+        tags: [],
+        scheduleTime: '',
+        rawScheduleTime: '',
+      );
+    }
     String rawTime =
         json['scheduleTime']?.toString() ??
         json['scheduledAt']?.toString() ??
@@ -56,6 +68,7 @@ class SchedulePost {
       scheduleTime: formattedTime,
       rawScheduleTime: rawTime,
       status: json['status']?.toString() ?? 'scheduled',
+      contentType: json['contentType']?.toString() ?? 'post',
     );
   }
 
@@ -103,6 +116,7 @@ class HistoryPost {
   final int facebookReach;
   final int instagramReach;
   final int tiktokReach;
+  final String contentType;
 
   HistoryPost({
     required this.imageUrl,
@@ -114,9 +128,23 @@ class HistoryPost {
     required this.facebookReach,
     required this.instagramReach,
     required this.tiktokReach,
+    this.contentType = 'post',
   });
 
-  factory HistoryPost.fromJson(Map<String, dynamic> json) {
+  factory HistoryPost.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return HistoryPost(
+        imageUrl: '',
+        title: 'Unknown',
+        tags: [],
+        scheduleTime: '',
+        totalAudience: 0,
+        percentageGrowth: 0.0,
+        facebookReach: 0,
+        instagramReach: 0,
+        tiktokReach: 0,
+      );
+    }
     String rawTime =
         json['scheduleTime']?.toString() ??
         json['scheduledAt']?.toString() ??
@@ -140,6 +168,7 @@ class HistoryPost {
       facebookReach: _toInt(json['facebookReach']),
       instagramReach: _toInt(json['instagramReach']),
       tiktokReach: _toInt(json['tiktokReach']),
+      contentType: json['contentType']?.toString() ?? 'post',
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:clip_frame/core/services/api_services/schedule_service.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
 import 'package:intl/intl.dart';
 
+import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
 import '../widgets/schedule_list.dart';
 
 class DashBoardPage extends StatefulWidget {
@@ -69,25 +70,8 @@ class _DashBoardPageState extends State<DashBoardPage> {
       day = DateFormat('EEEE').format(now);
     }
 
-    // Fetch scheduled posts
-    debugPrint("🔵 DashBoard: Starting to fetch scheduled posts...");
-    final posts = await ScheduleService.fetchScheduledPosts();
-    debugPrint("🔵 DashBoard: Received ${posts.length} posts from API");
-
-    if (posts.isNotEmpty) {
-      debugPrint(
-        "🔵 DashBoard: First post - ${posts[0].title} on ${posts[0].scheduleTime}",
-      );
-    } else {
-      debugPrint("🔴 DashBoard: No posts received from API!");
-    }
-
-    setState(() {
-      scheduledPosts = posts;
-      groupedPosts = ScheduleService.groupPostsByDate(posts);
-      debugPrint("🔵 DashBoard: Grouped into ${groupedPosts.length} dates");
-      isLoading = false;
-    });
+    // UI local initialization
+    isLoading = false;
   }
 
   @override
@@ -96,29 +80,45 @@ class _DashBoardPageState extends State<DashBoardPage> {
       width: double.infinity,
       height: double.infinity,
       color: Colors.transparent,
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            SizedBox(height: 15.h),
-            _buildSummaryGrid(),
-            _buildActionButtons(context),
-            _buildSection(
-              title: "Most Recent",
-              onSeeAll: () => debugPrint("See All Most Recent"),
-            ),
-            _buildHorizontalPostList(),
-            SizedBox(height: 20.h),
-            _buildPromotionBanner(),
-            _buildSection(
-              title: "For you",
-              onSeeAll: () => debugPrint("See All For You"),
-            ),
-            _buildHorizontalPostList(),
-            SizedBox(height: 100.h),
-          ],
+      child: RefreshIndicator(
+        onRefresh: () => Get.find<ScheduleController>().loadAllData(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(context),
+              SizedBox(height: 15.h),
+              Obx(() {
+                if (!Get.isRegistered<ScheduleController>()) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+                final controller = Get.find<ScheduleController>();
+                return _buildSummaryGrid(controller);
+              }),
+              _buildActionButtons(context),
+              _buildSection(
+                title: "Most Recent",
+                onSeeAll: () => debugPrint("See All Most Recent"),
+              ),
+              _buildHorizontalPostList(),
+              SizedBox(height: 20.h),
+              _buildPromotionBanner(),
+              _buildSection(
+                title: "For you",
+                onSeeAll: () => debugPrint("See All For You"),
+              ),
+              _buildHorizontalPostList(),
+              SizedBox(height: 100.h),
+            ],
+          ),
         ),
       ),
     );
@@ -283,75 +283,126 @@ class _DashBoardPageState extends State<DashBoardPage> {
     );
   }
 
-  Widget _buildSummaryGrid() {
-    final homeController = Get.find<HomeController>();
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 15.w),
-      child: Column(
-        children: [
-          Row(
+  Widget _buildSummaryGrid(ScheduleController scheduleController) {
+    try {
+      final homeController = Get.find<HomeController>();
+      // final scheduleController = Get.find<ScheduleController>(); // Removed as it is now passed as parameter
+
+      // Calculate dynamic values
+      final publishedPosts = scheduleController.historyPosts
+          .where((p) => p.contentType == 'post')
+          .length;
+      final publishedReels = scheduleController.historyPosts
+          .where((p) => p.contentType == 'reel')
+          .length;
+      final createdStories = scheduleController.historyPosts
+          .where((p) => p.contentType == 'story')
+          .length;
+
+      int totalViews = 0;
+      double totalGrowth = 0;
+      for (var post in scheduleController.historyPosts) {
+        totalViews += post.totalAudience;
+        totalGrowth += post.percentageGrowth;
+      }
+
+      final avgEngagement = scheduleController.historyPosts.isEmpty
+          ? 0.0
+          : (totalGrowth / scheduleController.historyPosts.length);
+
+      final displayEngagement =
+          (avgEngagement.isNaN || avgEngagement.isInfinite)
+          ? 0.0
+          : avgEngagement;
+
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 15.w),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => homeController.navigateToPosts(),
+                    child: _SummaryCard(
+                      label: "Post\nPublished",
+                      value: publishedPosts.toString(),
+                      icon: Icons.article_outlined,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => homeController.navigateToReels(),
+                    child: _SummaryCard(
+                      label: "Reels\nPublished",
+                      value: publishedReels.toString(),
+                      icon: Icons.movie_outlined,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => homeController.navigateToStories(),
+                    child: _SummaryCard(
+                      label: "Story\nCreated",
+                      value: createdStories.toString(),
+                      icon: Icons.history_edu_outlined,
+                      color: Colors.pink,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: _SummaryCard(
+                    label: "Weekly\nViews",
+                    value: totalViews.toString(),
+                    icon: Icons.remove_red_eye_outlined,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            _SummaryCard(
+              label: "Average Engagement",
+              value: "${displayEngagement.toStringAsFixed(1)}%",
+              icon: Icons.query_stats,
+              color: Colors.purple,
+              isWide: true,
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      debugPrint("⛔ Dashboard Grid Error: $e");
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.r),
+          child: Column(
             children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => homeController.navigateToPosts(),
-                  child: _SummaryCard(
-                    label: "Post\nPublished",
-                    value: total.toString(),
-                    icon: Icons.article_outlined,
-                    color: Colors.blue,
-                  ),
-                ),
+              Text(
+                "Error loading stats: $e",
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
               ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => homeController.navigateToReels(),
-                  child: _SummaryCard(
-                    label: "Reels\nPublished",
-                    value: total.toString(),
-                    icon: Icons.movie_outlined,
-                    color: Colors.orange,
-                  ),
-                ),
+              TextButton(
+                onPressed: () => scheduleController.loadAllData(),
+                child: const Text("Retry"),
               ),
             ],
           ),
-          SizedBox(height: 12.h),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => homeController.navigateToStories(),
-                  child: _SummaryCard(
-                    label: "Story\nCreated",
-                    value: total.toString(),
-                    icon: Icons.history_edu_outlined,
-                    color: Colors.pink,
-                  ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: _SummaryCard(
-                  label: "Weekly\nViews",
-                  value: total.toString(),
-                  icon: Icons.remove_red_eye_outlined,
-                  color: Colors.green,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          _SummaryCard(
-            label: "Average Engagement",
-            value: "$total%",
-            icon: Icons.query_stats,
-            color: Colors.purple,
-            isWide: true,
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+    }
   }
 
   Widget _buildActionButtons(BuildContext context) {
