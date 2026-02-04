@@ -105,7 +105,7 @@ class ScheduleService {
         debugPrint("📅 Processing post: ${post.title}");
         debugPrint("📅 Raw schedule time: ${post.rawScheduleTime}");
 
-        DateTime date = _extractDate(post.rawScheduleTime);
+        DateTime date = extractDate(post);
         debugPrint("📅 Extracted DateTime: $date");
 
         DateTime dateOnly = DateTime(date.year, date.month, date.day);
@@ -135,45 +135,28 @@ class ScheduleService {
   }
 
   /// Extract DateTime from raw schedule time string
-  static DateTime _extractDate(String rawTime) {
+  static DateTime extractDate(SchedulePost post) {
+    String rawTime = post.rawScheduleTime;
     try {
-      debugPrint("📅 _extractDate: Input rawTime = '$rawTime'");
-
-      if (rawTime.isEmpty) {
-        debugPrint("❌ _extractDate: rawTime is empty!");
-        throw Exception("Empty rawTime");
+      if (rawTime.isEmpty || rawTime == "{type: any}") {
+        return (post.createdAt ?? DateTime.now()).toLocal();
       }
 
       if (rawTime.contains('date:') && rawTime.contains('time:')) {
-        debugPrint(
-          "📅 _extractDate: Parsing custom format {date:..., time:...}",
-        );
         final datePart = rawTime.split('date:')[1].split(',')[0].trim();
         final timePart = rawTime.split('time:')[1].split('}')[0].trim();
-
-        debugPrint(
-          "📅 _extractDate: datePart = '$datePart', timePart = '$timePart'",
-        );
 
         DateTime date = DateTime.parse(datePart);
         final timeSplit = timePart.split(':');
         int hour = int.parse(timeSplit[0]);
         int minute = int.parse(timeSplit[1]);
 
-        final result = DateTime(date.year, date.month, date.day, hour, minute);
-        debugPrint("📅 _extractDate: Result = $result");
-        return result;
+        return DateTime(date.year, date.month, date.day, hour, minute); // Local
       }
 
-      debugPrint("📅 _extractDate: Parsing as ISO format");
-      final result = DateTime.parse(rawTime);
-      debugPrint("📅 _extractDate: Result = $result");
-      return result;
-    } catch (e, stackTrace) {
-      debugPrint("❌ _extractDate: Failed to parse '$rawTime'");
-      debugPrint("❌ Error: $e");
-      debugPrint("❌ StackTrace: $stackTrace");
-      rethrow;
+      return DateTime.parse(rawTime).toLocal();
+    } catch (e) {
+      return (post.createdAt ?? DateTime.now()).toLocal();
     }
   }
 

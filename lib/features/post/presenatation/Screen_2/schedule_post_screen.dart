@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:intl/intl.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +37,8 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   int selectedHour = 5;
   int selectedMinute = 0;
   String period = "PM";
-  int selectedDateIndex = 11;
+  int selectedDateIndex = -1;
+  DateTime focusedMonth = DateTime.now();
   bool isApiLoading = false;
 
   late FixedExtentScrollController hourController;
@@ -113,14 +115,23 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
 
     // Update selectedDateIndex based on actual day
     if (controller.scheduledDate.value != null) {
-      // June 2025 starts on Sunday (index 0 is previous month day? No, index 5 is June 1st)
-      // Reference: GridView itemCount 35, dayNum = index - 4.
-      // If index 5, dayNum = 1.
       final dt = controller.scheduledDate.value!;
-      if (dt.year == 2025 && dt.month == 6) {
-        selectedDateIndex = dt.day + 4;
-      }
+      focusedMonth = DateTime(dt.year, dt.month);
+
+      final firstDay = DateTime(dt.year, dt.month, 1);
+      final offset = firstDay.weekday - 1; // Mon=0, Tue=1, etc.
+      selectedDateIndex = dt.day + offset - 1;
     }
+  }
+
+  int _daysInMonth(DateTime date) {
+    return DateTime(date.year, date.month + 1, 0).day;
+  }
+
+  int _firstDayOffset(DateTime date) {
+    // weekday is 1-7 (Mon-Sun)
+    // We want 0-6 (Mon-Sun)
+    return DateTime(date.year, date.month, 1).weekday - 1;
   }
 
   @override
@@ -423,13 +434,37 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left, color: Colors.black54),
+                onPressed: () {
+                  setState(() {
+                    focusedMonth = DateTime(
+                      focusedMonth.year,
+                      focusedMonth.month - 1,
+                    );
+                    selectedDateIndex = -1;
+                  });
+                },
+              ),
               Text(
-                "Schedule date",
+                DateFormat('MMMM yyyy').format(focusedMonth),
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, color: Colors.black54),
+                onPressed: () {
+                  setState(() {
+                    focusedMonth = DateTime(
+                      focusedMonth.year,
+                      focusedMonth.month + 1,
+                    );
+                    selectedDateIndex = -1;
+                  });
+                },
               ),
             ],
           ),
@@ -452,34 +487,54 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
             ),
-            itemCount: 35,
+            itemCount: 42, // Show up to 6 weeks
             itemBuilder: (context, index) {
-              // Roughly matching design june 2025 start sun
-              int dayNum = index - 4; // adjusted to match design roughly
-              if (index < 5) dayNum = 31 - (4 - index);
-              if (index > 34) dayNum = index - 34;
+              final offset = _firstDayOffset(focusedMonth);
+              final daysInFocused = _daysInMonth(focusedMonth);
+              final prevMonth = DateTime(
+                focusedMonth.year,
+                focusedMonth.month - 1,
+              );
+              final daysInPrev = _daysInMonth(prevMonth);
+
+              int dayNum;
+              bool isDimmed = false;
+              int currentYear = focusedMonth.year;
+              int currentMonth = focusedMonth.month;
+
+              if (index < offset) {
+                dayNum = daysInPrev - (offset - index - 1);
+                isDimmed = true;
+                final dtPrev = DateTime(
+                  focusedMonth.year,
+                  focusedMonth.month - 1,
+                );
+                currentYear = dtPrev.year;
+                currentMonth = dtPrev.month;
+              } else if (index >= offset + daysInFocused) {
+                dayNum = index - (offset + daysInFocused) + 1;
+                isDimmed = true;
+                final dtNext = DateTime(
+                  focusedMonth.year,
+                  focusedMonth.month + 1,
+                );
+                currentYear = dtNext.year;
+                currentMonth = dtNext.month;
+              } else {
+                dayNum = index - offset + 1;
+              }
 
               bool isSelected = index == selectedDateIndex;
-              bool isDimmed = index < 5 || dayNum > 30;
-              if (dayNum < 1) dayNum = 31 + dayNum;
-              if (dayNum > 30) dayNum = dayNum - 30;
 
               return GestureDetector(
                 onTap: () {
                   setState(() {
                     selectedDateIndex = index;
-                    // Calculate actual date (roughly targeting June 2025 as per mockup)
-                    int d = index - 4;
-                    int m = 6;
-                    int y = 2025;
-                    if (index < 5) {
-                      d = 31 + d;
-                      m = 5;
-                    } else if (d > 30) {
-                      d = d - 30;
-                      m = 7;
-                    }
-                    controller.scheduledDate.value = DateTime(y, m, d);
+                    controller.scheduledDate.value = DateTime(
+                      currentYear,
+                      currentMonth,
+                      dayNum,
+                    );
                   });
                 },
                 child: Column(

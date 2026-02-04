@@ -22,8 +22,8 @@ class _DashBoardPageState extends State<DashBoardPage> {
   String day = '';
   final String? imageUrl = null;
   List<SchedulePost> scheduledPosts = [];
-  Map<DateTime, List<SchedulePost>> groupedPosts = {};
-  bool isLoading = true;
+  bool isLoading =
+      true; // Still used for initial local init if needed, but mostly redundant now
   final int total = 11;
   final List<Map<String, dynamic>> posts = [
     {
@@ -211,75 +211,103 @@ class _DashBoardPageState extends State<DashBoardPage> {
     final weekdays = ["S", "M", "T", "W", "T", "F", "S"];
 
     return SizedBox(
-      height: 80.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 10.w),
-        itemCount: daysInMonth,
-        itemBuilder: (context, index) {
-          final date = DateTime(now.year, now.month, index + 1);
-          final postCount = ScheduleService.getPostCountForDate(
-            groupedPosts,
-            date,
-          );
-          final weekdayIndex = date.weekday % 7;
+      height: 85.h,
+      child: Obx(() {
+        final controller = Get.find<ScheduleController>();
+        // Access length to ensure Obx tracks this RxList,
+        // as itemBuilder is lazy and might not touch it during initial builder execution.
+        final _ = controller.scheduledPosts.length;
+        final posts = controller.scheduledPosts;
 
-          return Container(
-            width: 50.w,
-            margin: EdgeInsets.symmetric(horizontal: 4.w),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Weekday label
-                Text(
-                  weekdays[weekdayIndex],
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 6.h),
-                // Date number
-                Container(
-                  padding: EdgeInsets.all(8.r),
-                  child: Text(
-                    date.day.toString(),
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: 10.w),
+          itemCount: daysInMonth,
+          itemBuilder: (context, index) {
+            final date = DateTime(now.year, now.month, index + 1);
+            // Count posts for this date using unified extraction logic
+            final dayPosts = posts.where((p) {
+              final d = ScheduleService.extractDate(p);
+              return d.year == date.year &&
+                  d.month == date.month &&
+                  d.day == date.day;
+            }).toList();
+
+            final types = dayPosts
+                .map((p) => p.contentType.toLowerCase())
+                .toSet();
+
+            final weekdayIndex = date.weekday % 7;
+            final isToday =
+                date.day == now.day &&
+                date.month == now.month &&
+                date.year == now.year;
+
+            return Container(
+              width: 50.w,
+              margin: EdgeInsets.symmetric(horizontal: 4.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    weekdays[weekdayIndex],
                     style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.normal,
+                      color: Colors.grey[600],
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                SizedBox(height: 6.h),
-                // Colored dots
-                _buildDotsIndicator(postCount),
-              ],
-            ),
-          );
-        },
-      ),
+                  SizedBox(height: 6.h),
+                  Container(
+                    padding: EdgeInsets.all(8.r),
+                    decoration: isToday
+                        ? BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          )
+                        : null,
+                    child: Text(
+                      date.day.toString(),
+                      style: TextStyle(
+                        color: isToday ? Colors.blue : Colors.grey,
+                        fontSize: 14.sp,
+                        fontWeight: isToday
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+                  _buildDotsIndicator(types),
+                ],
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 
-  Widget _buildDotsIndicator(int count) {
-    int displayCount = count > 3 ? 3 : count;
+  Widget _buildDotsIndicator(Set<String> types) {
     return SizedBox(
       height: 6.h,
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: List.generate(displayCount, (i) {
-          Color dotColor = [Colors.blue, Colors.orange, Colors.pink][i % 3];
-          if (count > 3 && i == 2) dotColor = Colors.black;
-          return Container(
-            margin: EdgeInsets.symmetric(horizontal: 1.w),
-            width: 5.r,
-            height: 5.r,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: dotColor),
-          );
-        }),
+        children: [
+          if (types.contains('post')) _buildDot(Colors.blue),
+          if (types.contains('reel')) _buildDot(Colors.orange),
+          if (types.contains('story')) _buildDot(Colors.pink),
+        ],
       ),
+    );
+  }
+
+  Widget _buildDot(Color color) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 1.w),
+      width: 5.r,
+      height: 5.r,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 

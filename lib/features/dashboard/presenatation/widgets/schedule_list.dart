@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/services/api_services/schedule_service.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
 
@@ -12,9 +13,8 @@ class SchedulePage extends StatefulWidget {
 
 class _SchedulePageState extends State<SchedulePage> {
   String selectedView = "Weekly";
-  String selectedDate = "24"; // example selected date
-  String? date;
-  String? day;
+  DateTime selectedDate = DateTime.now();
+  List<DateTime> displayDates = [];
   String? imageUrl;
   List<SchedulePost> scheduledPosts = [];
   Map<int, List<SchedulePost>> postsByHour = {};
@@ -23,10 +23,28 @@ class _SchedulePageState extends State<SchedulePage> {
   @override
   void initState() {
     super.initState();
-    final result = getFormattedDate();
-    date = result["date"]!;
-    day = result["day"]!;
+    _updateDisplayDates();
     _loadScheduledPosts();
+  }
+
+  void _updateDisplayDates() {
+    final now = DateTime.now();
+    if (selectedView == "Weekly") {
+      // Find current week (Sunday to Saturday)
+      DateTime firstDayOfWeek = now.subtract(Duration(days: now.weekday % 7));
+      displayDates = List.generate(
+        7,
+        (i) => firstDayOfWeek.add(Duration(days: i)),
+      );
+    } else {
+      // Find all days in the current month
+      int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+      DateTime firstDayOfMonth = DateTime(now.year, now.month, 1);
+      displayDates = List.generate(
+        daysInMonth,
+        (i) => firstDayOfMonth.add(Duration(days: i)),
+      );
+    }
   }
 
   Future<void> _loadScheduledPosts() async {
@@ -43,55 +61,33 @@ class _SchedulePageState extends State<SchedulePage> {
 
     for (var post in posts) {
       try {
-        final dateTime = _extractDateFromRaw(post.rawScheduleTime);
-        final hour = dateTime.hour;
+        final dateTime = ScheduleService.extractDate(post);
 
-        if (!grouped.containsKey(hour)) {
-          grouped[hour] = [];
+        // Only include posts for the selected date
+        if (dateTime.year == selectedDate.year &&
+            dateTime.month == selectedDate.month &&
+            dateTime.day == selectedDate.day) {
+          final hour = dateTime.hour;
+          grouped.putIfAbsent(hour, () => []).add(post);
         }
-        grouped[hour]!.add(post);
       } catch (e) {
-        debugPrint("Error grouping post by hour: $e");
+        debugPrint("Error grouping post by hour: $e for post ${post.title}");
       }
     }
 
     return grouped;
   }
 
-  DateTime _extractDateFromRaw(String rawTime) {
-    if (rawTime.contains('date:') && rawTime.contains('time:')) {
-      final datePart = rawTime.split('date:')[1].split(',')[0].trim();
-      final timePart = rawTime.split('time:')[1].split('}')[0].trim();
-
-      DateTime date = DateTime.parse(datePart);
-      final timeSplit = timePart.split(':');
-      int hour = int.parse(timeSplit[0]);
-      int minute = int.parse(timeSplit[1]);
-
-      return DateTime(date.year, date.month, date.day, hour, minute);
-    }
-
-    return DateTime.parse(rawTime);
-  }
-
-  Map<String, String> getFormattedDate() {
-    DateTime now = DateTime.now();
-
-    String date = DateFormat('MMMM d, y').format(now);
-
-    String day;
-    DateTime today = DateTime(now.year, now.month, now.day);
-    DateTime tomorrow = today.add(const Duration(days: 1));
-
-    if (now.difference(today).inDays == 0) {
-      day = "Today";
-    } else if (now.difference(tomorrow).inDays == 0) {
-      day = "Tomorrow";
-    } else {
-      day = DateFormat('EEEE').format(now);
-    }
-
-    return {"date": date, "day": day};
+  Set<String> _getTypesOnDate(DateTime date) {
+    return scheduledPosts
+        .where((post) {
+          final postDate = ScheduleService.extractDate(post);
+          return postDate.year == date.year &&
+              postDate.month == date.month &&
+              postDate.day == date.day;
+        })
+        .map((p) => p.contentType.toLowerCase())
+        .toSet();
   }
 
   // ✅ Weekday list (Sun → Sat, only first letters)
@@ -140,16 +136,24 @@ class _SchedulePageState extends State<SchedulePage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(height: 20),
+                        SizedBox(height: 20.h),
                         Text(
-                          date!,
-                          style: TextStyle(fontSize: 16, color: Colors.black),
-                        ),
-                        SizedBox(height: 5),
-                        Text(
-                          day!,
+                          DateFormat('MMMM d, yyyy').format(selectedDate),
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 16.sp,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 5.h),
+                        Text(
+                          selectedDate.day == DateTime.now().day &&
+                                  selectedDate.month == DateTime.now().month &&
+                                  selectedDate.year == DateTime.now().year
+                              ? "Today"
+                              : DateFormat('EEEE').format(selectedDate),
+                          style: TextStyle(
+                            fontSize: 24.sp,
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
                           ),
@@ -158,31 +162,27 @@ class _SchedulePageState extends State<SchedulePage> {
                     ),
 
                     Container(
-                      width: 50,
-                      height: 50,
+                      width: 50.r,
+                      height: 50.r,
                       decoration: const BoxDecoration(
-                        shape: BoxShape.circle, // Round shape
-                        color: Colors.grey, // Background color (optional)
+                        shape: BoxShape.circle,
+                        color: Colors.grey,
                       ),
                       child: imageUrl == null || imageUrl!.isEmpty
-                          ? const Icon(
-                              Icons.person,
-                              size: 40,
-                              color: Colors.white,
-                            )
+                          ? Icon(Icons.person, size: 35.r, color: Colors.white)
                           : ClipOval(
                               child: Image.network(
                                 imageUrl!,
                                 fit: BoxFit.cover,
-                                width: 70,
-                                height: 70,
+                                width: 50.r,
+                                height: 50.r,
                               ),
                             ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: 20.h),
               // Top header with view selector
               Container(
                 padding: const EdgeInsets.all(12),
@@ -209,31 +209,38 @@ class _SchedulePageState extends State<SchedulePage> {
                           selectedView = selectedView == "Weekly"
                               ? "Monthly"
                               : "Weekly";
+                          _updateDisplayDates();
                         });
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 6.h,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.purple.shade100,
-                          borderRadius: BorderRadius.circular(30),
+                          color: Colors.purple.shade50,
+                          borderRadius: BorderRadius.circular(30.r),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.calendar_month,
                               color: Colors.purple,
+                              size: 18.r,
                             ),
-                            const SizedBox(width: 6),
+                            SizedBox(width: 6.w),
                             Text(
                               selectedView,
-                              style: const TextStyle(color: Colors.purple),
+                              style: TextStyle(
+                                color: Colors.purple,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.arrow_drop_down,
                               color: Colors.purple,
+                              size: 20.r,
                             ),
                           ],
                         ),
@@ -243,54 +250,82 @@ class _SchedulePageState extends State<SchedulePage> {
                 ),
               ),
 
-              // Date row (Sun → Sat)
               Container(
                 color: Colors.white,
                 child: SizedBox(
-                  height: 80,
+                  height: 85.h,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: 7,
+                    itemCount: displayDates.length,
+                    padding: EdgeInsets.symmetric(horizontal: 10.w),
                     itemBuilder: (_, i) {
-                      String date = (21 + i).toString();
-                      bool isSelected = selectedDate == date;
+                      DateTime date = displayDates[i];
+                      bool isSelected =
+                          selectedDate.year == date.year &&
+                          selectedDate.month == date.month &&
+                          selectedDate.day == date.day;
                       return GestureDetector(
-                        onTap: () => setState(() => selectedDate = date),
+                        onTap: () => setState(() {
+                          selectedDate = date;
+                          postsByHour = _groupPostsByHour(scheduledPosts);
+                        }),
                         child: Container(
-                          width: 60,
-                          // margin: const EdgeInsets.all(8),
-                          // padding: const EdgeInsets.all(8),
+                          width: 55.w,
+                          margin: EdgeInsets.symmetric(
+                            vertical: 8.h,
+                            horizontal: 4.w,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Color(0xFF007CFE)
+                                ? const Color(0xFF007CFE)
                                 : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                            // border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // ✅ First letter of weekday
                               Text(
-                                weekDays[i],
+                                weekDays[date.weekday % 7],
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black45,
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                date.day.toString(),
+                                style: TextStyle(
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.bold,
                                   color: isSelected
                                       ? Colors.white
                                       : Colors.black,
                                 ),
                               ),
-                              Text(
-                                date,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.black,
+                              if (!isSelected)
+                                Padding(
+                                  padding: EdgeInsets.only(top: 4.h),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (_getTypesOnDate(
+                                        date,
+                                      ).contains('post'))
+                                        _buildSmallDot(const Color(0xFF007CFE)),
+                                      if (_getTypesOnDate(
+                                        date,
+                                      ).contains('reel'))
+                                        _buildSmallDot(Colors.orange),
+                                      if (_getTypesOnDate(
+                                        date,
+                                      ).contains('story'))
+                                        _buildSmallDot(const Color(0xFFFF277F)),
+                                    ],
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -334,16 +369,20 @@ class _SchedulePageState extends State<SchedulePage> {
                               children: [
                                 // Time label
                                 Container(
-                                  width: 70,
-                                  color: Colors.purple.shade100,
+                                  width: 70.w,
+                                  color: Colors.purple.shade50,
                                   alignment: Alignment.center,
                                   child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 20.h,
+                                      horizontal: 8.w,
+                                    ),
                                     child: Text(
                                       timeLabel,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Colors.purple,
-                                        fontSize: 12,
+                                        fontSize: 13.sp,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -384,12 +423,19 @@ class _SchedulePageState extends State<SchedulePage> {
 
   Widget _buildPostCard(SchedulePost post) {
     return Container(
-      width: 200,
-      margin: const EdgeInsets.all(8),
-      padding: const EdgeInsets.all(10),
+      width: 220.w,
+      margin: EdgeInsets.all(10.r),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: Colors.blue.shade100,
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFFEDF6FF),
+        borderRadius: BorderRadius.circular(18.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -401,22 +447,23 @@ class _SchedulePageState extends State<SchedulePage> {
               children: [
                 // Blue rectangle line
                 Container(
-                  width: 3,
+                  width: 3.w,
                   decoration: BoxDecoration(
                     color: const Color(0xFF007CFE),
-                    borderRadius: BorderRadius.circular(25),
+                    borderRadius: BorderRadius.circular(2).r,
                   ),
                 ),
-                const SizedBox(width: 6), // spacing between line & text
+                SizedBox(width: 8.w), // spacing between line & text
                 // Title
                 Expanded(
                   child: Text(
                     post.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 13.sp,
+                      color: const Color(0xFF1E293B),
                     ),
                   ),
                 ),
@@ -442,27 +489,44 @@ class _SchedulePageState extends State<SchedulePage> {
           const SizedBox(height: 8),
           // Image
           ClipRRect(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(15.r),
             child: post.imageUrl.isNotEmpty
                 ? Image.network(
                     post.thumbnailUrl ?? post.imageUrl,
-                    height: 60,
+                    height: 80.h,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
-                      height: 60,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.image, color: Colors.grey),
+                      height: 80.h,
+                      color: Colors.grey[100],
+                      child: Icon(
+                        Icons.image,
+                        color: Colors.grey[400],
+                        size: 30.r,
+                      ),
                     ),
                   )
                 : Container(
-                    height: 60,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.image, color: Colors.grey),
+                    height: 80.h,
+                    color: Colors.grey[100],
+                    child: Icon(
+                      Icons.image,
+                      color: Colors.grey[400],
+                      size: 30.r,
+                    ),
                   ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSmallDot(Color color) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 1.w),
+      width: 4.r,
+      height: 4.r,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

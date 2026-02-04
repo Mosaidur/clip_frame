@@ -10,6 +10,7 @@ class SchedulePost {
   final String rawScheduleTime;
   final String status;
   final String contentType;
+  final DateTime? createdAt;
 
   SchedulePost({
     required this.id,
@@ -21,6 +22,7 @@ class SchedulePost {
     required this.rawScheduleTime,
     this.status = 'scheduled',
     this.contentType = 'post',
+    this.createdAt,
   });
 
   factory SchedulePost.fromJson(Map<String, dynamic>? json) {
@@ -39,7 +41,12 @@ class SchedulePost {
         json['scheduledAt']?.toString() ??
         '';
 
-    String formattedTime = _formatScheduleTime(rawTime);
+    DateTime? createdAt;
+    if (json['createdAt'] != null) {
+      createdAt = DateTime.tryParse(json['createdAt'].toString());
+    }
+
+    String formattedTime = _formatScheduleTime(rawTime, createdAt: createdAt);
 
     return SchedulePost(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
@@ -69,11 +76,17 @@ class SchedulePost {
       rawScheduleTime: rawTime,
       status: json['status']?.toString() ?? 'scheduled',
       contentType: json['contentType']?.toString() ?? 'post',
+      createdAt: createdAt,
     );
   }
 
-  static String _formatScheduleTime(String raw) {
-    if (raw.isEmpty) return '';
+  static String _formatScheduleTime(String raw, {DateTime? createdAt}) {
+    if (raw.isEmpty || raw == "{type: any}") {
+      if (createdAt != null) {
+        return DateFormat('EEE, d MMM yyyy - hh:mma').format(createdAt);
+      }
+      return '';
+    }
     try {
       // Handle format: {type: single, date: 2026-02-03T00:00:00.000Z, time: 17:00}
       if (raw.contains('date:') && raw.contains('time:')) {
@@ -99,6 +112,9 @@ class SchedulePost {
       DateTime parsedDate = DateTime.parse(raw);
       return DateFormat('EEE, d MMM yyyy - hh:mma').format(parsedDate);
     } catch (e) {
+      if (createdAt != null) {
+        return DateFormat('EEE, d MMM yyyy - hh:mma').format(createdAt);
+      }
       print("Error parsing date: $raw -> $e");
       return raw; // Return original if parsing fails
     }
