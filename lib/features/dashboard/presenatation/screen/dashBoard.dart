@@ -136,16 +136,16 @@ class _DashBoardPageState extends State<DashBoardPage> {
       ),
       child: Column(
         children: [
-          SizedBox(height: MediaQuery.of(context).padding.top + 10.h),
+          SizedBox(height: MediaQuery.of(context).padding.top + 5.h),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 10.h),
+                    SizedBox(height: 5.h),
                     Text(
                       date,
                       style: TextStyle(
@@ -153,7 +153,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
                         color: Colors.grey[600],
                       ),
                     ),
-                    SizedBox(height: 5.h),
+                    SizedBox(height: 2.h),
                     Text(
                       day,
                       style: TextStyle(
@@ -169,7 +169,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
             ),
           ),
           _buildCalendarStrip(),
-          SizedBox(height: 20.h),
+          SizedBox(height: 10.h),
         ],
       ),
     );
@@ -211,7 +211,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
     final weekdays = ["S", "M", "T", "W", "T", "F", "S"];
 
     return SizedBox(
-      height: 85.h,
+      height: 75.h,
       child: Obx(() {
         final controller = Get.find<ScheduleController>();
         // Access length to ensure Obx tracks this RxList,
