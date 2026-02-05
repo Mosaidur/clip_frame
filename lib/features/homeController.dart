@@ -12,6 +12,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'dashboard/presenatation/screen/dashBoard.dart';
+import 'dashboard/presenatation/controller/dashboard_controller.dart';
 import 'schedule/presenatation/controller/schedule_controller.dart';
 import 'dashboard/presenatation/widgets/schedule_list.dart';
 import 'my_profile/presenatation/screen/MyProfileController.dart';
@@ -45,6 +46,7 @@ class HomeController extends GetxController
     super.onInit();
     // Initialize ScheduleController early so it's ready for refresh requests
     Get.put(ScheduleController());
+    Get.put(DashboardController());
 
     controller = AnimationController(
       vsync: this,

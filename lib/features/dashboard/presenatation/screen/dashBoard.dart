@@ -1,3 +1,5 @@
+import 'package:clip_frame/core/model/content_template_model.dart';
+import 'package:clip_frame/features/dashboard/presenatation/controller/dashboard_controller.dart';
 import 'package:clip_frame/features/homeController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -25,29 +27,6 @@ class _DashBoardPageState extends State<DashBoardPage> {
   bool isLoading =
       true; // Still used for initial local init if needed, but mostly redundant now
   final int total = 11;
-  final List<Map<String, dynamic>> posts = [
-    {
-      "image": "assets/images/1.jpg",
-      "profileImage": "assets/images/profile_image.png",
-      "name": "Alice",
-      "repostCount": 5,
-      "likeCount": 120,
-    },
-    {
-      "image": "assets/images/2.jpg",
-      "profileImage": "assets/images/profile_image.png",
-      "name": "Bob",
-      "repostCount": 2,
-      "likeCount": 800,
-    },
-    {
-      "image": "assets/images/3.jpg",
-      "profileImage": "assets/images/profile_image.png",
-      "name": "Charlie",
-      "repostCount": 700,
-      "likeCount": 20,
-    },
-  ];
 
   @override
   void initState() {
@@ -81,7 +60,10 @@ class _DashBoardPageState extends State<DashBoardPage> {
       height: double.infinity,
       color: Colors.transparent,
       child: RefreshIndicator(
-        onRefresh: () => Get.find<ScheduleController>().loadAllData(),
+        onRefresh: () async {
+          await Get.find<ScheduleController>().loadAllData();
+          await Get.find<DashboardController>().fetchDashboardData();
+        },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
@@ -106,16 +88,36 @@ class _DashBoardPageState extends State<DashBoardPage> {
               _buildActionButtons(context),
               _buildSection(
                 title: "Most Recent",
-                onSeeAll: () => debugPrint("See All Most Recent"),
+                onSeeAll: () => Get.find<HomeController>().navigateToPosts(),
               ),
-              _buildHorizontalPostList(),
+              Obx(() {
+                final controller = Get.find<DashboardController>();
+                if (controller.isLoading.value &&
+                    controller.recentTemplates.isEmpty) {
+                  return SizedBox(
+                    height: 200.h,
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return _buildHorizontalPostList(controller.recentTemplates);
+              }),
               SizedBox(height: 20.h),
               _buildPromotionBanner(),
               _buildSection(
                 title: "For you",
-                onSeeAll: () => debugPrint("See All For You"),
+                onSeeAll: () => Get.find<HomeController>().navigateToPosts(),
               ),
-              _buildHorizontalPostList(),
+              Obx(() {
+                final controller = Get.find<DashboardController>();
+                if (controller.isLoading.value &&
+                    controller.forYouTemplates.isEmpty) {
+                  return SizedBox(
+                    height: 200.h,
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return _buildHorizontalPostList(controller.forYouTemplates);
+              }),
               SizedBox(height: 100.h),
             ],
           ),
@@ -505,16 +507,27 @@ class _DashBoardPageState extends State<DashBoardPage> {
     );
   }
 
-  Widget _buildHorizontalPostList() {
+  Widget _buildHorizontalPostList(List<ContentTemplateModel> templates) {
+    if (templates.isEmpty) {
+      return SizedBox(
+        height: 200.h,
+        child: const Center(
+          child: Text(
+            "No templates available",
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
     return SizedBox(
       height: 200.h,
       child: ListView.separated(
         padding: EdgeInsets.symmetric(horizontal: 15.w),
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: posts.length,
+        itemCount: templates.length,
         separatorBuilder: (_, __) => SizedBox(width: 12.w),
-        itemBuilder: (context, index) => _PostCard(post: posts[index]),
+        itemBuilder: (context, index) => _PostCard(template: templates[index]),
       ),
     );
   }
@@ -687,9 +700,9 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _PostCard extends StatelessWidget {
-  final Map<String, dynamic> post;
+  final ContentTemplateModel template;
 
-  const _PostCard({required this.post});
+  const _PostCard({required this.template});
 
   @override
   Widget build(BuildContext context) {
@@ -697,10 +710,13 @@ class _PostCard extends StatelessWidget {
       width: 140.w,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20.r),
-        image: DecorationImage(
-          image: AssetImage(post['image']),
-          fit: BoxFit.cover,
-        ),
+        color: Colors.grey[200],
+        image: template.thumbnail != null && template.thumbnail!.isNotEmpty
+            ? DecorationImage(
+                image: NetworkImage(template.thumbnail!),
+                fit: BoxFit.cover,
+              )
+            : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -753,12 +769,13 @@ class _PostCard extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 10.r,
-            backgroundImage: AssetImage(post['profileImage']),
+            backgroundColor: Colors.blueAccent,
+            child: Icon(Icons.person, size: 10.r, color: Colors.white),
           ),
           SizedBox(width: 6.w),
           Flexible(
             child: Text(
-              post['name'],
+              template.createdBy?.name ?? "Admin",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 10.sp,
@@ -784,9 +801,15 @@ class _PostCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _StatItem(icon: Icons.repeat, count: post['repostCount'].toString()),
+          _StatItem(
+            icon: Icons.repeat,
+            count: (template.stats?.reuseCount ?? 0).toString(),
+          ),
           VerticalDivider(color: Colors.white24, width: 1.w, thickness: 1),
-          _StatItem(icon: Icons.favorite, count: post['likeCount'].toString()),
+          _StatItem(
+            icon: Icons.favorite,
+            count: (template.stats?.loveCount ?? 0).toString(),
+          ),
         ],
       ),
     );
