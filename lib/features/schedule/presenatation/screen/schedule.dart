@@ -1,3 +1,4 @@
+import 'package:clip_frame/features/home/presentation/controller/homeController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,7 +8,6 @@ import '../../data/model.dart';
 import '../controller/schedule_controller.dart';
 import '../widgets/SchedulePost.dart';
 import '../widgets/history.dart';
-import '../../../homeController.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 
 class ScheduleScreenPage extends StatelessWidget {

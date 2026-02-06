@@ -13,16 +13,25 @@ import '../widgets/AboutMeWidget.dart';
 import '../widgets/MyCreationsWidget.dart';
 import 'package:clip_frame/core/model/my_content_model.dart';
 import 'package:clip_frame/core/services/api_services/my_content_service.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:clip_frame/features/my_profile/presenatation/screen/EditProfileScreen.dart';
 
 class MyProfileController extends GetxController {
   var selectedTab = 0.obs; // 0 = About Me, 1 = My Creations
   var isLoading = false.obs;
   var errorMessage = ''.obs;
 
+  // Update Profile
+  var isUpdating = false.obs;
+  Rx<File?> selectedImage = Rx<File?>(null);
+  final ImagePicker _picker = ImagePicker();
+
   // Logout API Controller
   final api.LogoutController _logoutController = Get.put(
     api.LogoutController(),
   );
+
   Rx<UserModel?> userModel = Rx<UserModel?>(null);
 
   // My Creations
@@ -130,6 +139,89 @@ class MyProfileController extends GetxController {
     }
   }
 
+  Future<void> pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        selectedImage.value = File(image.path);
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to pick image: $e');
+    }
+  }
+
+  Future<void> updateProfile({
+    required String name,
+    required String phone,
+  }) async {
+    isUpdating.value = true;
+    try {
+      String? token = await AuthService.getToken();
+      Map<String, dynamic> body = {'name': name, 'phone': phone};
+
+      NetworkResponse response;
+      if (selectedImage.value != null) {
+        response =
+            await NetworkCaller.patchMultipartRequest(
+              url: Urls.updateUserProfileUrl,
+              body: body,
+              file: selectedImage.value!,
+              fileKey:
+                  'profilePicture', // Common key, can be 'image' or 'avatar'
+              token: token,
+            ).timeout(
+              const Duration(seconds: 30),
+              onTimeout: () {
+                return NetworkResponse(
+                  isSuccess: false,
+                  statusCode: 408,
+                  errorMessage: 'Request timed out',
+                );
+              },
+            );
+      } else {
+        response =
+            await NetworkCaller.patchRequest(
+              url: Urls.updateUserProfileUrl,
+              body: body,
+              token: token,
+            ).timeout(
+              const Duration(seconds: 30),
+              onTimeout: () {
+                return NetworkResponse(
+                  isSuccess: false,
+                  statusCode: 408,
+                  errorMessage: 'Request timed out',
+                );
+              },
+            );
+      }
+
+      if (response.isSuccess) {
+        Get.snackbar(
+          'Success',
+          'Profile updated successfully',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+        Get.back(); // Close edit screen immediately
+        await getUserProfile(); // Refresh data
+      } else {
+        Get.snackbar(
+          'Error',
+          response.errorMessage ?? 'Update failed',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Update failed: $e');
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
   Future<void> logout() async {
     try {
       isLoading.value = true;
@@ -212,7 +304,7 @@ class MyProfilePage extends StatelessWidget {
                         ),
                       ),
                       _roundIcon(Icons.edit, () {
-                        // TODO: Navigate to Edit Profile
+                        Get.to(() => const EditProfileScreen());
                       }),
                     ],
                   ),

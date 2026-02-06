@@ -11,12 +11,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'dashboard/presenatation/screen/dashBoard.dart';
-import 'dashboard/presenatation/controller/dashboard_controller.dart';
-import 'schedule/presenatation/controller/schedule_controller.dart';
-import 'dashboard/presenatation/widgets/schedule_list.dart';
-import 'my_profile/presenatation/screen/MyProfileController.dart';
-import 'post/presenatation/widget2/customTabBar.dart' as tab_bar;
+import 'package:clip_frame/features/dashboard/presenatation/screen/dashBoard.dart';
+import 'package:clip_frame/features/dashboard/presenatation/controller/dashboard_controller.dart';
+import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
+import 'package:clip_frame/features/dashboard/presenatation/widgets/schedule_list.dart';
+import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
+import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart' as tab_bar;
 
 class HomeController extends GetxController
     with GetSingleTickerProviderStateMixin {

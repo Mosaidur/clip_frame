@@ -1,3 +1,4 @@
+import 'package:clip_frame/core/model/content_template_model.dart';
 import 'package:clip_frame/features/post/presenatation/widgets/postContent.dart';
 import 'package:flutter/material.dart';
 
@@ -5,70 +6,16 @@ import '../Screen_2/post_highlight.dart';
 import '../screen/postScrollPage.dart';
 
 class PostListPage extends StatelessWidget {
-  const PostListPage({super.key});
+  final List<ContentTemplateModel> templates;
 
-  // Demo posts
-  final List<Map<String, dynamic>> posts = const [
-    {
-      'image': 'assets/images/1.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Alice Wonderland',
-      'likeCount': 1200,
-      'repostCount': 345,
-    },
-    {
-      'image': 'assets/images/2.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Bob Builder',
-      'likeCount': 987,
-      'repostCount': 55,
-    },
-    {
-      'image': 'assets/images/3.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Charlie Chaplin',
-      'likeCount': 5400,
-      'repostCount': 230,
-    },
-    {
-      'image': 'assets/images/5.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Diana Prince',
-      'likeCount': 120,
-      'repostCount': 12,
-    },
-    {
-      'image': 'assets/images/6.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Eve Online',
-      'likeCount': 1500,
-      'repostCount': 70,
-    },
-    {
-      'image': 'assets/images/7.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Frank Ocean',
-      'likeCount': 2200,
-      'repostCount': 150,
-    },
-    {
-      'image': 'assets/images/8.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Grace Hopper',
-      'likeCount': 3100,
-      'repostCount': 400,
-    },
-    {
-      'image': 'assets/images/9.png',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Hank Pym',
-      'likeCount': 890,
-      'repostCount': 60,
-    },
-  ];
+  const PostListPage({super.key, required this.templates});
 
   @override
   Widget build(BuildContext context) {
+    if (templates.isEmpty) {
+      return const Center(child: Text("No post templates found"));
+    }
+
     double screenWidth = MediaQuery.of(context).size.width;
     double spacing = 2;
     double itemHeight = 180;
@@ -81,33 +28,29 @@ class PostListPage extends StatelessWidget {
       child: Wrap(
         spacing: spacing,
         runSpacing: spacing,
-        children: posts.map((post) {
+        children: templates.map((template) {
           return SizedBox(
             width: itemWidth,
             height: itemHeight,
-            child: Expanded(
-              child: GestureDetector(
-                onTap: (){
-
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(builder: (context) => const PostScrollPage()),
-                  // );
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => PostHighlight(url: post['image'], contentType: 'Post' ,)),
-                  );
-
-                },
-                child: PostContent(
-                  width: itemWidth,
-                  image: post['image'],
-                  profileImage: post['profileImage'],
-                  name: post['name'],
-                  likeCount: post['likeCount'],
-                  repostCount: post['repostCount'],
-                ),
+            child: GestureDetector(
+              onTap: (){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PostHighlight(
+                      url: template.thumbnail ?? "", 
+                      contentType: 'Post'
+                    )
+                  ),
+                );
+              },
+              child: PostContent(
+                width: itemWidth,
+                image: template.thumbnail ?? "assets/images/1.jpg",
+                profileImage: 'assets/images/profile_image.png', // Fallback
+                name: template.title ?? "Untitled",
+                likeCount: 0, // Placeholder
+                repostCount: 0, // Placeholder
               ),
             ),
           );

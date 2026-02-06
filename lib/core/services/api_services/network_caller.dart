@@ -1,7 +1,8 @@
 import 'dart:convert';
-
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart';
+import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart'; // For MediaType
 import 'package:path/path.dart' as p;
 import 'dart:io';
@@ -28,6 +29,7 @@ class NetworkCaller {
   static Future<NetworkResponse> getRequest({
     required String url,
     String? token,
+    bool showDialog = false,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -39,10 +41,9 @@ class NetworkCaller {
 
       _logRequest(url, null, headers);
 
-      final response = await get(
-        uri,
-        headers: headers,
-      ).timeout(const Duration(seconds: 30));
+      final http.Response response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 30));
       logResponse(url, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -71,6 +72,19 @@ class NetworkCaller {
             decodedJson['data'] is String) {
           errorMsg = decodedJson['data'];
         }
+
+        if (showDialog) {
+          Get.snackbar(
+            "Error",
+            errorMsg ?? _defaultErrorMessage,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.redAccent,
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(10),
+            borderRadius: 10,
+          );
+        }
+
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
@@ -92,6 +106,7 @@ class NetworkCaller {
     Map<String, dynamic>? body,
     bool isFromLogin = false,
     String? token,
+    bool showDialog = false,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -107,7 +122,7 @@ class NetworkCaller {
       }
 
       _logRequest(url, body, headers);
-      Response response = await post(
+      http.Response response = await http.post(
         uri,
         headers: headers,
         body: jsonEncode(body),
@@ -142,6 +157,19 @@ class NetworkCaller {
             decodedJson['data'] is String) {
           errorMsg = decodedJson['data'];
         }
+
+        if (showDialog) {
+          Get.snackbar(
+            "Error",
+            errorMsg ?? _defaultErrorMessage,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.redAccent,
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(10),
+            borderRadius: 10,
+          );
+        }
+
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: false,
@@ -171,11 +199,9 @@ class NetworkCaller {
       }
 
       _logRequest(url, body, headers);
-      Response response = await put(
-        uri,
-        headers: headers,
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 30));
+      http.Response response = await http
+          .put(uri, headers: headers, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 30));
 
       logResponse(url, response);
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -221,11 +247,9 @@ class NetworkCaller {
       }
 
       _logRequest(url, body, headers);
-      Response response = await patch(
-        uri,
-        headers: headers,
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 30));
+      http.Response response = await http
+          .patch(uri, headers: headers, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 30));
 
       logResponse(url, response);
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -270,10 +294,9 @@ class NetworkCaller {
       }
 
       _logRequest(url, null, headers);
-      Response response = await delete(
-        uri,
-        headers: headers,
-      ).timeout(const Duration(seconds: 30));
+      http.Response response = await http
+          .delete(uri, headers: headers)
+          .timeout(const Duration(seconds: 30));
 
       logResponse(url, response);
       if (response.statusCode == 200 || response.statusCode == 204) {
@@ -320,7 +343,7 @@ class NetworkCaller {
   }) async {
     try {
       Uri uri = Uri.parse(url);
-      final request = MultipartRequest('POST', uri);
+      final request = http.MultipartRequest('POST', uri);
 
       // Add Authorization header
       if (token != null && token.isNotEmpty) {
@@ -337,7 +360,7 @@ class NetworkCaller {
       final fileSizeMB = (await file.length()) / (1024 * 1024);
 
       request.files.add(
-        await MultipartFile.fromPath(
+        await http.MultipartFile.fromPath(
           fileKey,
           file.path,
           contentType: MediaType.parse(mimeType),
@@ -355,7 +378,7 @@ class NetworkCaller {
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 300),
       );
-      final response = await Response.fromStream(streamedResponse);
+      final response = await http.Response.fromStream(streamedResponse);
 
       logResponse(url, response);
 
@@ -391,6 +414,94 @@ class NetworkCaller {
     }
   }
 
+  static Future<NetworkResponse> patchMultipartRequest({
+    required String url,
+    required Map<String, dynamic> body,
+    String? fileKey,
+    File? file,
+    String? token,
+  }) async {
+    try {
+      Uri uri = Uri.parse(url);
+      final request = http.MultipartRequest('PATCH', uri);
+
+      // Add Authorization header
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Add fields
+      // For PATCH, we might want to send fields individually rather than wrapped in 'data'
+      // But adhering to the pattern seen in postMultipartRequest, let's verify if 'data' wrapper is needed.
+      // Usually PATCH updates specific fields. If the backend follows the same pattern, we might need 'data'.
+      // However, typical PATCH requests send fields at the root.
+      // Let's iterate and add all body fields to request.fields
+      body.forEach((key, value) {
+        request.fields[key] = value.toString();
+      });
+
+      // Add the file if provided
+      if (file != null && fileKey != null) {
+        final fileName = p.basename(file.path);
+        final mimeType = fileName.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg';
+        // final fileSizeMB = (await file.length()) / (1024 * 1024);
+
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            fileKey,
+            file.path,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      }
+
+      debugPrint(
+        '🚀🚀🚀 [PATCH MULTIPART REQUEST] 🚀🚀🚀\n'
+        'URL: $url \n'
+        'FIELDS: ${request.fields} \n'
+        'FILE: ${file?.path} \n'
+        '==================================================',
+      );
+
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 300),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      logResponse(url, response);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decodedJson = jsonDecode(response.body);
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: true,
+          responseBody: decodedJson,
+        );
+      } else {
+        final decodedJson = jsonDecode(response.body);
+        debugPrint("⛔ [NetworkCaller] Patch Multipart failed: $decodedJson");
+        String? errorMsg;
+        if (decodedJson['message'] != null &&
+            decodedJson['message'] is String) {
+          errorMsg = decodedJson['message'];
+        }
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseBody: decodedJson,
+          errorMessage: errorMsg ?? _defaultErrorMessage,
+        );
+      }
+    } catch (e) {
+      debugPrint("⛔ [NetworkCaller] Patch Multipart error: $e");
+      return NetworkResponse(
+        statusCode: -1,
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
   static void _logRequest(
     String url,
     Map<String, dynamic>? body,
@@ -405,7 +516,7 @@ class NetworkCaller {
     );
   }
 
-  static void logResponse(String url, Response response) {
+  static void logResponse(String url, http.Response response) {
     debugPrint(
       '=====================Response========================\n'
       'URL: $url \n'

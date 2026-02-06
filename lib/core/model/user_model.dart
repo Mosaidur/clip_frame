@@ -13,9 +13,9 @@ class UserResponse {
 
   factory UserResponse.fromJson(Map<String, dynamic> json) {
     return UserResponse(
-      statusCode: json['statusCode'],
-      success: json['success'],
-      message: json['message'],
+      statusCode: json['statusCode'] ?? 500,
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
       data: json['data'] != null ? UserModel.fromJson(json['data']) : null,
     );
   }

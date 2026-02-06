@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'dart:typed_data';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../data/model.dart';
 
 class HistoryContentWidget extends StatelessWidget {
@@ -20,16 +22,7 @@ class HistoryContentWidget extends StatelessWidget {
           // Image Section
           ClipRRect(
             borderRadius: BorderRadius.circular(20.r),
-            child: post.imageUrl.isNotEmpty
-                ? Image.network(
-                    post.imageUrl,
-                    width: 100.w,
-                    height: 140.h,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        _buildPlaceholder(),
-                  )
-                : _buildPlaceholder(),
+            child: _buildMediaContent(),
           ),
           SizedBox(width: 15.w),
 
@@ -107,6 +100,65 @@ class HistoryContentWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  bool _isVideo(HistoryPost post) {
+    if (post.imageUrl.isEmpty) return false;
+    final type = post.contentType.toLowerCase();
+    if (type == 'reel' || type == 'story') return true;
+    final lowercase = post.imageUrl.toLowerCase();
+    return lowercase.endsWith('.mp4') ||
+        lowercase.endsWith('.mov') ||
+        lowercase.endsWith('.avi') ||
+        lowercase.endsWith('.mkv') ||
+        lowercase.contains('video');
+  }
+
+  Widget _buildMediaContent() {
+    if (_isVideo(post)) {
+      return FutureBuilder<Uint8List?>(
+        future: VideoThumbnail.thumbnailData(
+          video: post.imageUrl,
+          imageFormat: ImageFormat.JPEG,
+          maxWidth: 200,
+          quality: 25,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.memory(
+                  snapshot.data!,
+                  width: 100.w,
+                  height: 140.h,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                ),
+                Icon(
+                  Icons.play_circle_outline,
+                  color: Colors.white,
+                  size: 24.r,
+                ),
+              ],
+            );
+          }
+          return _buildPlaceholder();
+        },
+      );
+    }
+
+    if (post.imageUrl.isNotEmpty) {
+      return Image.network(
+        post.imageUrl,
+        width: 100.w,
+        height: 140.h,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+
+    return _buildPlaceholder();
   }
 
   Widget _buildPlaceholder() {

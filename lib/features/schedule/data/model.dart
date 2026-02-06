@@ -36,10 +36,21 @@ class SchedulePost {
         rawScheduleTime: '',
       );
     }
-    String rawTime =
-        json['scheduleTime']?.toString() ??
-        json['scheduledAt']?.toString() ??
-        '';
+    // Safe extraction of date/time from 'scheduledAt' if it's an object (like in ContentItem)
+    String rawTime = '';
+    if (json['scheduledAt'] is Map) {
+      final scheduledAt = json['scheduledAt'];
+      if (scheduledAt['date'] != null && scheduledAt['time'] != null) {
+        rawTime = "date: ${scheduledAt['date']}, time: ${scheduledAt['time']}";
+      } else {
+        rawTime = scheduledAt.toString();
+      }
+    } else {
+      rawTime =
+          json['scheduleTime']?.toString() ??
+          json['scheduledAt']?.toString() ??
+          '';
+    }
 
     DateTime? createdAt;
     if (json['createdAt'] != null) {
@@ -65,8 +76,8 @@ class SchedulePost {
           json['coverImage']?.toString() ??
           json['image']?.toString(), // Try to find a specific thumbnail field
       title:
-          json['title']?.toString() ??
           json['caption']?.toString() ??
+          json['title']?.toString() ??
           json['contentDescription']?.toString() ??
           '',
       tags: (json['tags'] is List)
@@ -163,10 +174,83 @@ class HistoryPost {
         tiktokReach: 0,
       );
     }
-    String rawTime =
-        json['scheduleTime']?.toString() ??
-        json['scheduledAt']?.toString() ??
-        '';
+    // Safe extraction of date/time from 'scheduledAt' if it's an object
+    String rawTime = '';
+    if (json['scheduledAt'] is Map) {
+      final scheduledAt = json['scheduledAt'];
+      if (scheduledAt['date'] != null && scheduledAt['time'] != null) {
+        rawTime = "date: ${scheduledAt['date']}, time: ${scheduledAt['time']}";
+      } else {
+        rawTime = scheduledAt.toString();
+      }
+    } else {
+      rawTime =
+          json['scheduleTime']?.toString() ??
+          json['scheduledAt']?.toString() ??
+          '';
+    }
+
+    // Default reach/growth values
+    int totalAudience = 0;
+    double percentageGrowth = 0.0;
+    int fbReach = 0;
+    int igReach = 0;
+    int ttReach = 0;
+
+    // Aggregate stats from list/map (defensive parsing)
+    if (json['stats'] is List) {
+      for (var stat in json['stats']) {
+        if (stat is Map) {
+          final platform = stat['platform']?.toString().toLowerCase() ?? '';
+          final reach = _toInt(
+            stat['reach'] ?? stat['views'] ?? stat['audience'] ?? 0,
+          );
+          final growth = _toDouble(
+            stat['growth'] ?? stat['percentageGrowth'] ?? 0.0,
+          );
+
+          totalAudience += reach;
+          percentageGrowth +=
+              growth; // Usually we'd average this, but following dashboard pattern
+
+          if (platform.contains('facebook') || platform == 'fb')
+            fbReach += reach;
+          else if (platform.contains('instagram') || platform == 'ig')
+            igReach += reach;
+          else if (platform.contains('tiktok') || platform == 'tt')
+            ttReach += reach;
+        }
+      }
+    } else if (json['stats'] is Map) {
+      final stats = json['stats'];
+      totalAudience = _toInt(
+        stats['totalAudience'] ?? stats['reach'] ?? stats['views'] ?? 0,
+      );
+      percentageGrowth = _toDouble(
+        stats['percentageGrowth'] ?? stats['growth'] ?? 0.0,
+      );
+      fbReach = _toInt(stats['facebookReach'] ?? stats['fbReach'] ?? 0);
+      igReach = _toInt(stats['instagramReach'] ?? stats['igReach'] ?? 0);
+      ttReach = _toInt(stats['tiktokReach'] ?? stats['ttReach'] ?? 0);
+    }
+
+    // Also check platformStatus for reach numbers
+    if (json['platformStatus'] is Map) {
+      final ps = json['platformStatus'];
+      ps.forEach((key, value) {
+        if (value is Map) {
+          final reach = _toInt(value['reach'] ?? value['views'] ?? 0);
+          if (key.toLowerCase().contains('facebook'))
+            fbReach = reach;
+          else if (key.toLowerCase().contains('instagram'))
+            igReach = reach;
+          else if (key.toLowerCase().contains('tiktok'))
+            ttReach = reach;
+        }
+      });
+      // Re-calculate total audience if it's still 0
+      if (totalAudience == 0) totalAudience = fbReach + igReach + ttReach;
+    }
 
     return HistoryPost(
       imageUrl:
@@ -174,8 +258,8 @@ class HistoryPost {
           ? json['mediaUrls'][0].toString()
           : json['imageUrl']?.toString() ?? json['media']?.toString() ?? '',
       title:
-          json['title']?.toString() ??
           json['caption']?.toString() ??
+          json['title']?.toString() ??
           json['contentDescription']?.toString() ??
           '',
       tags: (json['tags'] is List)
@@ -184,11 +268,11 @@ class HistoryPost {
           ? List<String>.from(json['hashtags'].map((e) => e.toString()))
           : [],
       scheduleTime: SchedulePost._formatScheduleTime(rawTime),
-      totalAudience: _toInt(json['totalAudience']),
-      percentageGrowth: _toDouble(json['percentageGrowth']),
-      facebookReach: _toInt(json['facebookReach']),
-      instagramReach: _toInt(json['instagramReach']),
-      tiktokReach: _toInt(json['tiktokReach']),
+      totalAudience: totalAudience,
+      percentageGrowth: percentageGrowth,
+      facebookReach: fbReach,
+      instagramReach: igReach,
+      tiktokReach: ttReach,
       contentType: json['contentType']?.toString() ?? 'post',
     );
   }

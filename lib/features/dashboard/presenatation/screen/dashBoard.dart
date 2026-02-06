@@ -1,6 +1,6 @@
 import 'package:clip_frame/core/model/content_template_model.dart';
 import 'package:clip_frame/features/dashboard/presenatation/controller/dashboard_controller.dart';
-import 'package:clip_frame/features/homeController.dart';
+import 'package:clip_frame/features/home/presentation/controller/homeController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

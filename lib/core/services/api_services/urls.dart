@@ -18,6 +18,7 @@ class Urls {
 
   //user api
   static const String getUserProfileUrl = "$baseUrl/api/v1/user/profile";
+  static const String updateUserProfileUrl = "$baseUrl/api/v1/user/profile";
 
   //scheduleing api
   static const String schedulingUrl = "$baseUrl/api/v1/content/my-contents";
@@ -33,6 +34,4 @@ class Urls {
 
   //plane api
   static const String getPlaneUrl = "$baseUrl/api/v1/plan";
-
-
 }

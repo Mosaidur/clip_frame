@@ -1,7 +1,8 @@
 import 'dart:math';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:clip_frame/features/homeController.dart';
+import 'package:clip_frame/features/home/presentation/controller/homeController.dart';
 import 'package:get/get.dart';
 import '../widgets/PostListPage.dart';
 import '../widgets/allReelsInPostPage.dart';
@@ -18,6 +19,9 @@ class PostCreationPage extends StatefulWidget {
 
 class _PostCreationPageState extends State<PostCreationPage> {
   final HomeController homeController = Get.find<HomeController>();
+  final ContentCreationController contentController = Get.put(
+    ContentCreationController(),
+  );
   String? imageUrl;
   String? pageTitle = "Let’s Create your Next Post";
   String? pageSubTitle =
@@ -42,45 +46,6 @@ class _PostCreationPageState extends State<PostCreationPage> {
     "assets/images/9.png",
   ];
 
-  final List<Map<String, dynamic>> reelsData = [
-    {
-      "imagePath": "assets/images/1.jpg",
-      "time": "5 s",
-      "title": "A good video always gives good lesson and morals",
-      "isFavorite": false,
-    },
-    {
-      "imagePath": "assets/images/2.jpg",
-      "time": "10 s",
-      "title": "Flutter development is fun and easy to learn",
-      "isFavorite": false,
-    },
-    {
-      "imagePath": "assets/images/3.jpg",
-      "time": "8 s",
-      "title": "Always stay positive and keep learning",
-      "isFavorite": false,
-    },
-    {
-      "imagePath": "assets/images/7.jpg",
-      "time": "12 s",
-      "title": "Build amazing apps with Flutter",
-      "isFavorite": false,
-    },
-    {
-      "imagePath": "assets/images/5.jpg",
-      "time": "6 s",
-      "title": "Design beautiful UI/UX with Flutter",
-      "isFavorite": false,
-    },
-    {
-      "imagePath": "assets/images/6.jpg",
-      "time": "15 s",
-      "title": "Learning Dart is essential for Flutter",
-      "isFavorite": false,
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -88,7 +53,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: CustomDrawerPage (),
+      drawer: CustomDrawerPage(),
       body: SafeArea(
         child: Container(
           height: double.infinity,
@@ -98,8 +63,10 @@ class _PostCreationPageState extends State<PostCreationPage> {
               children: [
                 const SizedBox(height: 30),
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -112,8 +79,11 @@ class _PostCreationPageState extends State<PostCreationPage> {
                             shape: BoxShape.circle,
                             color: Colors.black12,
                           ),
-                          child:
-                          const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.black,
+                            size: 20,
+                          ),
                         ),
                       ),
                       Container(
@@ -125,18 +95,18 @@ class _PostCreationPageState extends State<PostCreationPage> {
                         ),
                         child: imageUrl == null || imageUrl!.isEmpty
                             ? const Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.white,
-                        )
+                                Icons.person,
+                                size: 40,
+                                color: Colors.white,
+                              )
                             : ClipOval(
-                          child: Image.network(
-                            imageUrl!,
-                            fit: BoxFit.cover,
-                            width: 70,
-                            height: 70,
-                          ),
-                        ),
+                                child: Image.network(
+                                  imageUrl!,
+                                  fit: BoxFit.cover,
+                                  width: 70,
+                                  height: 70,
+                                ),
+                              ),
                       ),
                     ],
                   ),
@@ -156,7 +126,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 15, vertical: 8),
+                      horizontal: 15,
+                      vertical: 8,
+                    ),
                     child: Text(
                       pageSubTitle!,
                       textAlign: TextAlign.center,
@@ -169,9 +141,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
                     ),
                   ),
                 ),
-            
+
                 //Carousel options
-            
+
                 // Carousel Slider Section
                 const SizedBox(height: 20),
                 CarouselSlider.builder(
@@ -191,7 +163,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                   itemBuilder: (context, index, realIndex) {
                     final scale = index == currentIndex ? 1.0 : 0.85;
                     final zIndex = index == currentIndex ? 2.0 : 1.0;
-            
+
                     return Transform.scale(
                       scale: scale,
                       child: Stack(
@@ -238,7 +210,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                     );
                   }),
                 ),
-            
+
                 // Search Bar
                 Padding(
                   padding: const EdgeInsets.all(15.0),
@@ -265,64 +237,92 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 ),
 
                 // Tab bar
-                Obx(() => SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: List.generate(tabs.length, (index) {
-                      bool isSelected = index == homeController.postTabIndex.value;
-                      return GestureDetector(
-                        onTap: () {
-                          homeController.postTabIndex.value = index;
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            color: isSelected ? const Color(0xFFFF277F) : Colors.white.withOpacity(0.0),
-                            border: Border.all(
-                              color: const Color(0xFFFF277F).withOpacity(0.0),
+                Obx(
+                  () => SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: List.generate(tabs.length, (index) {
+                        bool isSelected =
+                            index == homeController.postTabIndex.value;
+                        return GestureDetector(
+                          onTap: () {
+                            homeController.postTabIndex.value = index;
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 10,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(30),
+                              color: isSelected
+                                  ? const Color(0xFFFF277F)
+                                  : Colors.white.withOpacity(0.0),
+                              border: Border.all(
+                                color: const Color(0xFFFF277F).withOpacity(0.0),
+                              ),
+                            ),
+                            child: Text(
+                              tabs[index],
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF6D6D73),
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                          child: Text(
-                            tabs[index],
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF6D6D73),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
+                        );
+                      }),
+                    ),
                   ),
-                )),
+                ),
 
                 // Content depending on selected tab
                 Obx(() {
                   if (homeController.postTabIndex.value == 0) {
                     // Reels Container
+                    if (contentController.isLoading.value &&
+                        contentController.reelTemplates.isEmpty) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
                     return Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: ReelsListPage(reelsData: reelsData),
+                      child: ReelsListPage(
+                        reelsData: contentController.reelTemplates,
+                      ),
                     );
                   } else if (homeController.postTabIndex.value == 1) {
                     // Posts Container
-                    return PostListPage();
+                    if (contentController.isLoading.value &&
+                        contentController.postTemplates.isEmpty) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return PostListPage(
+                      templates: contentController.postTemplates,
+                    );
                   } else if (homeController.postTabIndex.value == 2) {
-                    // Videos Container
-                    return StoryListPage();
+                    // Videos Container (Stories)
+                    if (contentController.isLoading.value &&
+                        contentController.storyTemplates.isEmpty) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return StoryListPage(
+                      templates: contentController.storyTemplates,
+                    );
                   } else {
                     return const SizedBox.shrink();
                   }
                 }),
 
-                SizedBox(height: 30,)
-
-
-
+                SizedBox(height: 30),
               ],
             ),
           ),
