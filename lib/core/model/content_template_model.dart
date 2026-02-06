@@ -13,6 +13,10 @@ class ContentTemplateModel {
   final String? createdAt;
   final String? updatedAt;
 
+  String? get videoUrl =>
+      (steps != null && steps!.isNotEmpty) ? steps![0].url : null;
+  String? get url => videoUrl;
+
   ContentTemplateModel({
     this.id,
     this.title,

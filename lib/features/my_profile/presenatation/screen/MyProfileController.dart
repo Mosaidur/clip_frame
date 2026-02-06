@@ -1,5 +1,6 @@
 import 'package:clip_frame/core/model/user_model.dart';
-import 'package:clip_frame/core/services/api_services/authentication/logout_controller.dart' as api;
+import 'package:clip_frame/core/services/api_services/authentication/logout_controller.dart'
+    as api;
 import 'package:clip_frame/core/services/api_services/network_caller.dart';
 import 'package:clip_frame/core/services/api_services/urls.dart';
 import 'package:clip_frame/core/services/auth_service.dart';
@@ -10,6 +11,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/AboutMeWidget.dart';
 import '../widgets/MyCreationsWidget.dart';
+import 'package:clip_frame/core/model/my_content_model.dart';
+import 'package:clip_frame/core/services/api_services/my_content_service.dart';
 
 class MyProfileController extends GetxController {
   var selectedTab = 0.obs; // 0 = About Me, 1 = My Creations
@@ -17,68 +20,129 @@ class MyProfileController extends GetxController {
   var errorMessage = ''.obs;
 
   // Logout API Controller
-  final api.LogoutController _logoutController = Get.put(api.LogoutController());
+  final api.LogoutController _logoutController = Get.put(
+    api.LogoutController(),
+  );
   Rx<UserModel?> userModel = Rx<UserModel?>(null);
+
+  // My Creations
+  var myCreations = <ContentItem>[].obs;
+  var isCreationsLoading = false.obs;
+  var creationsErrorMessage = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
     getUserProfile();
+    fetchMyCreations();
   }
 
   Future<void> getUserProfile() async {
     print('🟣 getUserProfile called');
     isLoading.value = true;
     errorMessage.value = '';
-    
+
     final String? token = await AuthService.getToken();
     print('🟣 Token: $token');
-    
+
     if (token == null) {
-        print('🟣 Token is null!');
+      print('🟣 Token is null!');
     }
 
     print('🟣 Calling NetworkCaller...');
-    final response = await NetworkCaller.getRequest(url: Urls.getUserProfileUrl, token: token);
-    print('🟣 NetworkCaller returned: ${response.statusCode}, success: ${response.isSuccess}');
+    final response = await NetworkCaller.getRequest(
+      url: Urls.getUserProfileUrl,
+      token: token,
+    );
+    print(
+      '🟣 NetworkCaller returned: ${response.statusCode}, success: ${response.isSuccess}',
+    );
 
     if (response.isSuccess) {
       if (response.responseBody != null) {
         try {
           print('🟣 Parsing UserResponse...');
-          UserResponse userResponse = UserResponse.fromJson(response.responseBody!);
+          UserResponse userResponse = UserResponse.fromJson(
+            response.responseBody!,
+          );
           print('🟣 Parsed success: ${userResponse.success}');
           if (userResponse.success && userResponse.data != null) {
             userModel.value = userResponse.data;
             print('🟣 User model updated: ${userModel.value?.name}');
           } else {
-             errorMessage.value = userResponse.message;
-             print('🟣 Error from API: ${userResponse.message}');
+            errorMessage.value = userResponse.message;
+            print('🟣 Error from API: ${userResponse.message}');
           }
         } catch (e) {
-           errorMessage.value = "Failed to parse profile data";
-           print('🟣 Parse exception: $e');
+          errorMessage.value = "Failed to parse profile data";
+          print('🟣 Parse exception: $e');
         }
       }
     } else {
       errorMessage.value = response.errorMessage ?? 'Failed to fetch profile';
       print('🟣 Network error: ${errorMessage.value}');
     }
-    
+
     isLoading.value = false;
     print('🟣 isLoading set to false');
   }
+
+  Future<void> fetchMyCreations() async {
+    print('🔵 fetchMyCreations called');
+    isCreationsLoading.value = true;
+    creationsErrorMessage.value = '';
+
+    try {
+      final response = await MyContentService.getMyContents();
+      print(
+        '🔵 NetworkCaller returned for creations: ${response.statusCode}, success: ${response.isSuccess}',
+      );
+      print('🔵 Response body: ${response.responseBody}');
+
+      if (response.isSuccess && response.responseBody != null) {
+        final MyContentsResponse contentResponse = MyContentsResponse.fromJson(
+          response.responseBody!,
+        );
+        if (contentResponse.success) {
+          myCreations.assignAll(contentResponse.data.data);
+          print('🔵 My creations updated: ${myCreations.length} items');
+          if (myCreations.isEmpty) {
+            print('🔵 Warning: API returned success but empty list');
+          }
+        } else {
+          creationsErrorMessage.value = contentResponse.message;
+          print('🔵 API error message: ${contentResponse.message}');
+        }
+      } else {
+        creationsErrorMessage.value =
+            response.errorMessage ?? 'Failed to fetch creations';
+        print('🔵 Network error: ${creationsErrorMessage.value}');
+      }
+    } catch (e) {
+      creationsErrorMessage.value =
+          "An error occurred while fetching creations";
+      print('🔵 fetchMyCreations exception: $e');
+    } finally {
+      isCreationsLoading.value = false;
+      print(
+        '🔵 fetchMyCreations finished. isCreationsLoading: ${isCreationsLoading.value}',
+      );
+    }
+  }
+
   Future<void> logout() async {
     try {
       isLoading.value = true;
-      
+
       // Verify token presence before hitting API
       String? token = await AuthService.getToken();
-      print("🔑 MyProfileController: Token before logout: ${token != null ? 'Present' : 'NULL'}");
-      
+      print(
+        "🔑 MyProfileController: Token before logout: ${token != null ? 'Present' : 'NULL'}",
+      );
+
       // Hit logout API
       bool apiSuccess = await _logoutController.logout();
-      
+
       if (apiSuccess) {
         await AuthService.clearData();
         Get.offAllNamed(AppRoutes.WELCOME);
@@ -131,7 +195,10 @@ class MyProfilePage extends StatelessWidget {
               children: [
                 // Top Row
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -145,7 +212,7 @@ class MyProfilePage extends StatelessWidget {
                         ),
                       ),
                       _roundIcon(Icons.edit, () {
-                         // TODO: Navigate to Edit Profile
+                        // TODO: Navigate to Edit Profile
                       }),
                     ],
                   ),
@@ -159,18 +226,25 @@ class MyProfilePage extends StatelessWidget {
                       child: Center(child: CircularProgressIndicator()),
                     );
                   }
-                  
+
                   if (controller.errorMessage.value.isNotEmpty) {
                     return Container(
                       height: 200,
-                       padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(controller.errorMessage.value, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                            Text(
+                              controller.errorMessage.value,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
+                            ),
                             const SizedBox(height: 8),
-                            ElevatedButton(onPressed: controller.getUserProfile, child: const Text("Retry"))
+                            ElevatedButton(
+                              onPressed: controller.getUserProfile,
+                              child: const Text("Retry"),
+                            ),
                           ],
                         ),
                       ),
@@ -209,16 +283,18 @@ class MyProfilePage extends StatelessWidget {
                       Text(
                         user?.name ?? "User",
                         style: GoogleFonts.poppins(
-                            color: Colors.black,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600),
+                          color: Colors.black,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       Text(
                         user?.email ?? "",
                         style: GoogleFonts.poppins(
-                            color: Colors.black54,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400),
+                          color: Colors.black54,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ],
                   );
@@ -246,9 +322,7 @@ class MyProfilePage extends StatelessWidget {
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(60),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF277F), Color(0xFF007CFE)],
-                            ),
+                            color: Colors.black.withOpacity(0.05),
                           ),
                           child: Row(
                             children: [
@@ -256,20 +330,29 @@ class MyProfilePage extends StatelessWidget {
                                 child: GestureDetector(
                                   onTap: () => controller.selectedTab.value = 0,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: controller.selectedTab.value == 0
-                                          ? Colors.white
-                                          : Colors.transparent,
+                                      gradient:
+                                          controller.selectedTab.value == 0
+                                          ? const LinearGradient(
+                                              colors: [
+                                                Color(0xFFFF277F),
+                                                Color(0xFF007CFE),
+                                              ],
+                                            )
+                                          : null,
                                       borderRadius: BorderRadius.circular(60),
                                     ),
                                     child: Center(
                                       child: Text(
                                         "About me",
                                         style: GoogleFonts.poppins(
-                                          color: controller.selectedTab.value == 0
-                                              ? Colors.black87
-                                              : Colors.white,
+                                          color:
+                                              controller.selectedTab.value == 0
+                                              ? Colors.white
+                                              : Colors.black54,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14,
                                         ),
@@ -280,22 +363,34 @@ class MyProfilePage extends StatelessWidget {
                               ),
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () => controller.selectedTab.value = 1,
+                                  onTap: () {
+                                    controller.selectedTab.value = 1;
+                                    controller.fetchMyCreations();
+                                  },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: controller.selectedTab.value == 1
-                                          ? Colors.white
-                                          : Colors.transparent,
+                                      gradient:
+                                          controller.selectedTab.value == 1
+                                          ? const LinearGradient(
+                                              colors: [
+                                                Color(0xFFFF277F),
+                                                Color(0xFF007CFE),
+                                              ],
+                                            )
+                                          : null,
                                       borderRadius: BorderRadius.circular(60),
                                     ),
                                     child: Center(
                                       child: Text(
                                         "My Creations",
                                         style: GoogleFonts.poppins(
-                                          color: controller.selectedTab.value == 1
-                                              ? Colors.black87
-                                              : Colors.white,
+                                          color:
+                                              controller.selectedTab.value == 1
+                                              ? Colors.white
+                                              : Colors.black54,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14,
                                         ),

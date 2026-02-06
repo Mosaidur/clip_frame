@@ -4,6 +4,7 @@ import 'package:clip_frame/features/post/presenatation/controller/content_creati
 import 'package:clip_frame/features/post/presenatation/Screen_2/schedule_post_screen.dart';
 import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
 import 'package:clip_frame/features/schedule/presenatation/widgets/schedulePostContent.dart';
+import 'package:clip_frame/features/schedule/presenatation/widgets/ScheduledPostPreviewScreen.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -14,22 +15,27 @@ class SchedulePostWidget extends StatelessWidget {
   final SchedulePost post;
   const SchedulePostWidget({super.key, required this.post});
 
-  bool _isVideo(String url) {
-    if (url.isEmpty) return false;
+  bool _isVideo(SchedulePost post) {
+    if (post.imageUrl.isEmpty) return false;
+
+    // Check content type first
+    final type = post.contentType.toLowerCase();
+    if (type == 'reel' || type == 'story') return true;
+
+    // Fallback to URL check
     try {
-      final uri = Uri.parse(url);
+      final uri = Uri.parse(post.imageUrl);
       final path = uri.path.toLowerCase();
-      // Also check standard method just in case
-      final lowercase = url.toLowerCase();
+      final lowercase = post.imageUrl.toLowerCase();
 
       return path.endsWith('.mp4') ||
           path.endsWith('.mov') ||
           path.endsWith('.avi') ||
           path.endsWith('.mkv') ||
-          lowercase.contains('video') || // existing robust check
+          lowercase.contains('video') ||
           path.contains('video');
     } catch (e) {
-      final lowercase = url.toLowerCase();
+      final lowercase = post.imageUrl.toLowerCase();
       return lowercase.endsWith('.mp4') ||
           lowercase.endsWith('.mov') ||
           lowercase.endsWith('.avi') ||
@@ -63,13 +69,24 @@ class SchedulePostWidget extends StatelessWidget {
           Stack(
             alignment: Alignment.center,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-                child: _buildMediaContent(),
+              GestureDetector(
+                onTap: () {
+                  Get.to(
+                    () => ScheduledPostPreviewScreen(post: post),
+                    transition: Transition.fadeIn,
+                    duration: const Duration(milliseconds: 300),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(28.r),
+                  ),
+                  child: _buildMediaContent(),
+                ),
               ),
 
               // Play Button Icon (Center) - Larger and more transparent
-              if (_isVideo(post.imageUrl))
+              if (_isVideo(post))
                 Container(
                   width: 65.r,
                   height: 65.r,
@@ -141,8 +158,8 @@ class SchedulePostWidget extends StatelessWidget {
                             () => SchedulePostScreen(
                               postToEdit: post,
                               isImage: !_isVideo(
-                                post.imageUrl,
-                              ), // Determine based on URL
+                                post,
+                              ), // Determine based on post
                             ),
                           );
 
@@ -206,7 +223,7 @@ class SchedulePostWidget extends StatelessWidget {
     }
 
     // 2. If no thumbnail, check if main URL is video and generate locally
-    if (_isVideo(post.imageUrl)) {
+    if (_isVideo(post)) {
       return FutureBuilder<Uint8List?>(
         future: VideoThumbnail.thumbnailData(
           video: post.imageUrl,
@@ -253,7 +270,7 @@ class SchedulePostWidget extends StatelessWidget {
 
   // Wrapper for fallback logic to avoid infinite loop or deep nesting
   Widget _buildFallbackMedia() {
-    if (_isVideo(post.imageUrl)) {
+    if (_isVideo(post)) {
       // Retry generation if the provided thumbnail failed
       return FutureBuilder<Uint8List?>(
         future: VideoThumbnail.thumbnailData(

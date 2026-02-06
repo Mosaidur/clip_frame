@@ -29,4 +29,10 @@ class Urls {
       "$baseUrl/api/v1/content/create/${contentId}";
   static String updateContentUrl(String id) => "$baseUrl/api/v1/content/$id";
   static String deleteContentUrl(String id) => "$baseUrl/api/v1/content/$id";
+  static const String getMyContentsUrl = "$baseUrl/api/v1/content/my-contents";
+
+  //plane api
+  static const String getPlaneUrl = "$baseUrl/api/v1/plan";
+
+
 }

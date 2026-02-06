@@ -3,6 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/services/api_services/schedule_service.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
+import 'package:clip_frame/features/schedule/presenatation/widgets/ScheduledPostPreviewScreen.dart';
+import 'package:get/get.dart';
+import 'dart:typed_data';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 class SchedulePage extends StatefulWidget {
   const SchedulePage({Key? key}) : super(key: key);
@@ -422,102 +426,170 @@ class _SchedulePageState extends State<SchedulePage> {
   }
 
   Widget _buildPostCard(SchedulePost post) {
-    return Container(
-      width: 220.w,
-      margin: EdgeInsets.all(10.r),
-      padding: EdgeInsets.all(12.r),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEDF6FF),
-        borderRadius: BorderRadius.circular(18.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Title row
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.stretch, // ✅ stretch to same height
-              children: [
-                // Blue rectangle line
-                Container(
-                  width: 3.w,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF007CFE),
-                    borderRadius: BorderRadius.circular(2).r,
-                  ),
-                ),
-                SizedBox(width: 8.w), // spacing between line & text
-                // Title
-                Expanded(
-                  child: Text(
-                    post.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13.sp,
-                      color: const Color(0xFF1E293B),
+    return GestureDetector(
+      onTap: () {
+        Get.to(
+          () => ScheduledPostPreviewScreen(post: post),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 300),
+        );
+      },
+      child: Container(
+        width: 220.w,
+        margin: EdgeInsets.all(10.r),
+        padding: EdgeInsets.all(12.r),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEDF6FF),
+          borderRadius: BorderRadius.circular(18.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Title row
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.stretch, // ✅ stretch to same height
+                children: [
+                  // Blue rectangle line
+                  Container(
+                    width: 3.w,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF007CFE),
+                      borderRadius: BorderRadius.circular(2).r,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Tags
-          if (post.tags.isNotEmpty)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Text(
-                    post.tags.take(2).join(', '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 10, color: Colors.black54),
-                  ),
-                ),
-              ],
-            ),
-          const SizedBox(height: 8),
-          // Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15.r),
-            child: post.imageUrl.isNotEmpty
-                ? Image.network(
-                    post.thumbnailUrl ?? post.imageUrl,
-                    height: 80.h,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 80.h,
-                      color: Colors.grey[100],
-                      child: Icon(
-                        Icons.image,
-                        color: Colors.grey[400],
-                        size: 30.r,
+                  SizedBox(width: 8.w), // spacing between line & text
+                  // Title
+                  Expanded(
+                    child: Text(
+                      post.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.sp,
+                        color: const Color(0xFF1E293B),
                       ),
                     ),
-                  )
-                : Container(
-                    height: 80.h,
-                    color: Colors.grey[100],
-                    child: Icon(
-                      Icons.image,
-                      color: Colors.grey[400],
-                      size: 30.r,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Tags
+            if (post.tags.isNotEmpty)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Text(
+                      post.tags.take(2).join(', '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.black54,
+                      ),
                     ),
                   ),
-          ),
-        ],
+                ],
+              ),
+            const SizedBox(height: 8),
+            // Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15.r),
+              child: _buildMediaContent(post),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  bool _isVideo(SchedulePost post) {
+    if (post.imageUrl.isEmpty) return false;
+    final type = post.contentType.toLowerCase();
+    if (type == 'reel' || type == 'story') return true;
+    final lowercase = post.imageUrl.toLowerCase();
+    return lowercase.endsWith('.mp4') ||
+        lowercase.endsWith('.mov') ||
+        lowercase.endsWith('.avi') ||
+        lowercase.endsWith('.mkv') ||
+        lowercase.contains('video');
+  }
+
+  Widget _buildMediaContent(SchedulePost post) {
+    // 1. Try server thumbnail
+    if (post.thumbnailUrl != null && post.thumbnailUrl!.isNotEmpty) {
+      return Image.network(
+        post.thumbnailUrl!,
+        height: 80.h,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+
+    // 2. Local video thumbnail
+    if (_isVideo(post)) {
+      return FutureBuilder<Uint8List?>(
+        future: VideoThumbnail.thumbnailData(
+          video: post.imageUrl,
+          imageFormat: ImageFormat.JPEG,
+          maxWidth: 200,
+          quality: 25,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.memory(
+                  snapshot.data!,
+                  height: 80.h,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+                Icon(
+                  Icons.play_circle_outline,
+                  color: Colors.white,
+                  size: 24.r,
+                ),
+              ],
+            );
+          }
+          return _buildPlaceholder();
+        },
+      );
+    }
+
+    // 3. Fallback to image
+    if (post.imageUrl.isNotEmpty) {
+      return Image.network(
+        post.imageUrl,
+        height: 80.h,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      height: 80.h,
+      width: double.infinity,
+      color: Colors.grey[100],
+      child: Icon(Icons.image, color: Colors.grey[400], size: 30.r),
     );
   }
 

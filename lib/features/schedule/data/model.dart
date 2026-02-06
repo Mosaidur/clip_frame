@@ -51,12 +51,14 @@ class SchedulePost {
     return SchedulePost(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       imageUrl:
-          json['imageUrl']?.toString() ??
-          json['media']?.toString() ??
-          json['content']?.toString() ??
-          json['url']?.toString() ??
-          json['videoUrl']?.toString() ??
-          '',
+          (json['mediaUrls'] is List && (json['mediaUrls'] as List).isNotEmpty)
+          ? json['mediaUrls'][0].toString()
+          : json['imageUrl']?.toString() ??
+                json['media']?.toString() ??
+                json['content']?.toString() ??
+                json['url']?.toString() ??
+                json['videoUrl']?.toString() ??
+                '',
       thumbnailUrl:
           json['thumbnail']?.toString() ??
           json['cover']?.toString() ??
@@ -167,7 +169,10 @@ class HistoryPost {
         '';
 
     return HistoryPost(
-      imageUrl: json['imageUrl']?.toString() ?? json['media']?.toString() ?? '',
+      imageUrl:
+          (json['mediaUrls'] is List && (json['mediaUrls'] as List).isNotEmpty)
+          ? json['mediaUrls'][0].toString()
+          : json['imageUrl']?.toString() ?? json['media']?.toString() ?? '',
       title:
           json['title']?.toString() ??
           json['caption']?.toString() ??

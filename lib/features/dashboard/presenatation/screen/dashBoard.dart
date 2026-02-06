@@ -10,6 +10,9 @@ import 'package:intl/intl.dart';
 
 import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
 import '../widgets/schedule_list.dart';
+import '../../../premium/presentation/widgets/premium_welcome_modal.dart';
+import 'dart:typed_data';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 class DashBoardPage extends StatefulWidget {
   const DashBoardPage({super.key});
@@ -72,6 +75,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
+              _buildPromotionBanner(),
               SizedBox(height: 15.h),
               Obx(() {
                 if (!Get.isRegistered<ScheduleController>()) {
@@ -102,7 +106,6 @@ class _DashBoardPageState extends State<DashBoardPage> {
                 return _buildHorizontalPostList(controller.recentTemplates);
               }),
               SizedBox(height: 20.h),
-              _buildPromotionBanner(),
               _buildSection(
                 title: "For you",
                 onSeeAll: () => Get.find<HomeController>().navigateToPosts(),
@@ -552,27 +555,193 @@ class _DashBoardPageState extends State<DashBoardPage> {
   Widget _buildPromotionBanner() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: const Offset(0, 5),
+      child: GestureDetector(
+        onTap: () {
+          Get.bottomSheet(
+            const PremiumWelcomeModal(),
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          height: 120.h,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20.r),
+            gradient: const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Color(0xFFFF3CFF), // Vibrant Magenta
+                Color(0xFFA53DFF), // Purple
+              ],
             ),
-          ],
-        ),
-        clipBehavior: Clip.hardEdge,
-        child: Image.asset(
-          "assets/images/edit_photo.png",
-          fit: BoxFit.cover,
-          height: 140.h,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFA53DFF).withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.hardEdge,
+          child: Stack(
+            children: [
+              // Decorative background patterns (right side)
+              Positioned(
+                right: -20.w,
+                top: -10.h,
+                bottom: -10.h,
+                width: 150.w,
+                child: Opacity(
+                  opacity: 0.1,
+                  child: CustomPaint(painter: _WavyPatternPainter()),
+                ),
+              ),
+
+              // Right side icons
+              Positioned(
+                right: 20.w,
+                top: 20.h,
+                child: Opacity(
+                  opacity: 0.6,
+                  child: Container(
+                    padding: EdgeInsets.all(8.r),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Icon(
+                      Icons.mode_edit_outline_outlined,
+                      color: Colors.white,
+                      size: 20.r,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 60.w,
+                bottom: 30.h,
+                child: Opacity(
+                  opacity: 0.6,
+                  child: Container(
+                    padding: EdgeInsets.all(8.r),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Icon(
+                      Icons.image_outlined,
+                      color: Colors.white,
+                      size: 20.r,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Content
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                child: Row(
+                  children: [
+                    // Crown Section
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Radiating Dots (simplified with a container for now)
+                        Container(
+                          width: 70.r,
+                          height: 70.r,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.15),
+                          ),
+                        ),
+                        Container(
+                          width: 50.r,
+                          height: 50.r,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: Icon(
+                            Icons.workspace_premium, // Crown-like icon
+                            color: Colors.orange,
+                            size: 30.r,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(width: 15.w),
+                    // Text Section
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Upgrade to PRO",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            "Enjoy all features & benefits\nwithout any restrictions",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 12.sp,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _WavyPatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final path1 = Path();
+    path1.moveTo(0, size.height * 0.2);
+    path1.quadraticBezierTo(
+      size.width * 0.5,
+      size.height * 0.1,
+      size.width,
+      size.height * 0.4,
+    );
+
+    final path2 = Path();
+    path2.moveTo(0, size.height * 0.5);
+    path2.quadraticBezierTo(
+      size.width * 0.5,
+      size.height * 0.8,
+      size.width,
+      size.height * 0.6,
+    );
+
+    canvas.drawPath(path1, paint);
+    canvas.drawPath(path2, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _SummaryCard extends StatelessWidget {
@@ -728,12 +897,6 @@ class _PostCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20.r),
         color: Colors.grey[200],
-        image: template.thumbnail != null && template.thumbnail!.isNotEmpty
-            ? DecorationImage(
-                image: NetworkImage(template.thumbnail!),
-                fit: BoxFit.cover,
-              )
-            : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -742,17 +905,91 @@ class _PostCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          _buildGradientOverlay(),
-          Positioned(top: 10.h, left: 10.w, child: _buildProfileTag()),
-          Positioned(
-            bottom: 10.h,
-            left: 10.w,
-            right: 10.w,
-            child: _buildStatsTag(),
-          ),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20.r),
+        child: Stack(
+          children: [
+            Positioned.fill(child: _buildThumbnail(template)),
+            _buildGradientOverlay(),
+            Positioned(top: 10.h, left: 10.w, child: _buildProfileTag()),
+            Positioned(
+              bottom: 10.h,
+              left: 10.w,
+              right: 10.w,
+              child: _buildStatsTag(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _isVideo(ContentTemplateModel template) {
+    final type = (template.type ?? '').toLowerCase();
+    if (type == 'reel' || type == 'story') return true;
+    final url = (template.videoUrl ?? template.url ?? '').toLowerCase();
+    return url.endsWith('.mp4') ||
+        url.endsWith('.mov') ||
+        url.endsWith('.avi') ||
+        url.endsWith('.mkv') ||
+        url.contains('video');
+  }
+
+  Widget _buildThumbnail(ContentTemplateModel template) {
+    final String? thumb = template.thumbnail;
+    final String? video = template.videoUrl ?? template.url;
+
+    // 1. Try server thumbnail
+    if (thumb != null && thumb.isNotEmpty) {
+      return Image.network(
+        thumb,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+
+    // 2. Local video thumbnail
+    if (_isVideo(template) && video != null && video.isNotEmpty) {
+      return FutureBuilder<Uint8List?>(
+        future: VideoThumbnail.thumbnailData(
+          video: video,
+          imageFormat: ImageFormat.JPEG,
+          maxWidth: 200,
+          quality: 25,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.memory(
+                  snapshot.data!,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+                Icon(
+                  Icons.play_circle_outline,
+                  color: Colors.white,
+                  size: 24.r,
+                ),
+              ],
+            );
+          }
+          return _buildPlaceholder();
+        },
+      );
+    }
+
+    // 3. Fallback to placeholder
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: Colors.grey[200],
+      child: Center(
+        child: Icon(Icons.image, color: Colors.grey[400], size: 30.r),
       ),
     );
   }
