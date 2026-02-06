@@ -9,7 +9,8 @@ import '../Screen_2/post_highlight.dart';
 import '../widgets/postContent.dart';
 
 class StoryScrollPage extends StatefulWidget {
-  const StoryScrollPage({super.key});
+  final String? initialId;
+  const StoryScrollPage({super.key, this.initialId});
 
   @override
   State<StoryScrollPage> createState() => _StoryScrollPageState();
@@ -18,6 +19,8 @@ class StoryScrollPage extends StatefulWidget {
 class _StoryScrollPageState extends State<StoryScrollPage> {
   List<ContentTemplateModel> templates = [];
   bool isLoading = true;
+  final ScrollController _scrollController = ScrollController();
+  final Map<String, GlobalKey> _itemKeys = {};
 
   @override
   void initState() {
@@ -25,13 +28,38 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
     _loadTemplates();
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadTemplates() async {
     setState(() => isLoading = true);
     final results = await ContentTemplateService.fetchTemplatesByType('story');
     setState(() {
       templates = results;
+      _itemKeys.clear();
+      for (var t in templates) {
+        if (t.id != null) {
+          _itemKeys[t.id!] = GlobalKey();
+        }
+      }
       isLoading = false;
     });
+
+    if (widget.initialId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final key = _itemKeys[widget.initialId];
+        if (key != null && key.currentContext != null) {
+          Scrollable.ensureVisible(
+            key.currentContext!,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
   }
 
   final List<Map<String, dynamic>> posts = const [
@@ -129,6 +157,7 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
                   icon: Icons.auto_awesome_motion_outlined,
                 )
               : SingleChildScrollView(
+                  controller: _scrollController,
                   padding: const EdgeInsets.only(bottom: 20, left: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,6 +246,9 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
                                 : (template.thumbnail ?? "");
 
                             return GestureDetector(
+                              key: template.id != null
+                                  ? _itemKeys[template.id]
+                                  : null,
                               onTap: () {
                                 Navigator.push(
                                   context,

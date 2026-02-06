@@ -6,7 +6,8 @@ import 'package:clip_frame/features/post/presenatation/widget2/beautifulEmptySta
 import '../widget2/postScrollContent.dart';
 
 class PostScrollPage extends StatefulWidget {
-  const PostScrollPage({super.key});
+  final String? initialId;
+  const PostScrollPage({super.key, this.initialId});
 
   @override
   State<PostScrollPage> createState() => _PostScrollPageState();
@@ -15,11 +16,19 @@ class PostScrollPage extends StatefulWidget {
 class _PostScrollPageState extends State<PostScrollPage> {
   List<ContentTemplateModel> templates = [];
   bool isLoading = true;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     _loadTemplates();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTemplates() async {
@@ -29,6 +38,15 @@ class _PostScrollPageState extends State<PostScrollPage> {
       templates = results;
       isLoading = false;
     });
+
+    if (widget.initialId != null) {
+      final index = templates.indexWhere((t) => t.id == widget.initialId);
+      if (index != -1) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _pageController.jumpToPage(index);
+        });
+      }
+    }
   }
 
   @override
@@ -58,6 +76,7 @@ class _PostScrollPageState extends State<PostScrollPage> {
       body: Stack(
         children: [
           PageView.builder(
+            controller: _pageController,
             scrollDirection: Axis.vertical,
             itemCount: templates.length,
             itemBuilder: (context, index) {

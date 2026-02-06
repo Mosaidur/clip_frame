@@ -527,7 +527,24 @@ class _DashBoardPageState extends State<DashBoardPage> {
         physics: const BouncingScrollPhysics(),
         itemCount: templates.length,
         separatorBuilder: (_, __) => SizedBox(width: 12.w),
-        itemBuilder: (context, index) => _PostCard(template: templates[index]),
+        itemBuilder: (context, index) {
+          final template = templates[index];
+          return GestureDetector(
+            onTap: () {
+              final homeController = Get.find<HomeController>();
+              final type = (template.type ?? '').toLowerCase();
+
+              if (type == 'reel') {
+                homeController.navigateToReels(initialId: template.id);
+              } else if (type == 'story') {
+                homeController.navigateToStories(initialId: template.id);
+              } else {
+                homeController.navigateToPosts(initialId: template.id);
+              }
+            },
+            child: _PostCard(template: template),
+          );
+        },
       ),
     );
   }

@@ -7,7 +7,8 @@ import 'package:clip_frame/features/post/presenatation/controller/content_creati
 import '../widget2/reelsScrollContent.dart';
 
 class Reelsscrollpage extends StatefulWidget {
-  const Reelsscrollpage({super.key});
+  final String? initialId;
+  const Reelsscrollpage({super.key, this.initialId});
 
   @override
   State<Reelsscrollpage> createState() => _ReelsscrollpageState();
@@ -16,12 +17,20 @@ class Reelsscrollpage extends StatefulWidget {
 class _ReelsscrollpageState extends State<Reelsscrollpage> {
   List<ContentTemplateModel> templates = [];
   bool isLoading = true;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     Get.put(ContentCreationController());
     _loadTemplates();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTemplates() async {
@@ -31,6 +40,15 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
       templates = results;
       isLoading = false;
     });
+
+    if (widget.initialId != null) {
+      final index = templates.indexWhere((t) => t.id == widget.initialId);
+      if (index != -1) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _pageController.jumpToPage(index);
+        });
+      }
+    }
   }
 
   @override
@@ -60,6 +78,7 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
       body: Stack(
         children: [
           PageView.builder(
+            controller: _pageController,
             scrollDirection: Axis.vertical,
             itemCount: templates.length,
             itemBuilder: (context, index) {

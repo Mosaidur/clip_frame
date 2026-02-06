@@ -89,22 +89,22 @@ class HomeController extends GetxController
   }
 
   // Direct Navigation to Scroll Pages
-  void navigateToReels() {
+  void navigateToReels({String? initialId}) {
     if (isExpanded.value) toggleExpand();
     tab_bar.selectedTab = "Reels"; // Sync TabBar state
-    Get.to(() => const Reelsscrollpage());
+    Get.to(() => Reelsscrollpage(initialId: initialId));
   }
 
-  void navigateToStories() {
+  void navigateToStories({String? initialId}) {
     if (isExpanded.value) toggleExpand();
     tab_bar.selectedTab = "Stories"; // Sync TabBar state
-    Get.to(() => StoryScrollPage());
+    Get.to(() => StoryScrollPage(initialId: initialId));
   }
 
-  void navigateToPosts() {
+  void navigateToPosts({String? initialId}) {
     if (isExpanded.value) toggleExpand();
     tab_bar.selectedTab = "Posts"; // Sync TabBar state
-    Get.to(() => const PostScrollPage());
+    Get.to(() => PostScrollPage(initialId: initialId));
   }
 
   // --- Creator Flow / Filter Navigation ---
