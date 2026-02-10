@@ -34,4 +34,15 @@ class Urls {
 
   //plane api
   static const String getPlaneUrl = "$baseUrl/api/v1/plan";
+
+  //social integration
+
+  //post
+  static const String facebookIntegration =
+      "$baseUrl/api/v1/auth/facebook/token";
+  static const String instagraIntegration =
+      "$baseUrl/api/v1/auth/instagram/token";
+  //get
+  static const String connectFacebook = "$baseUrl/api/v1/auth/facebook";
+  static const String connectInstagram = "$baseUrl/api/v1/auth/instagram";
 }

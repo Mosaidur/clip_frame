@@ -25,13 +25,10 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
             const SizedBox(height: 10),
             Text(
               "Choose one or more social media platforms",
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 30),
-            
+
             Text(
               "Choose Platforms:",
               style: GoogleFonts.poppins(
@@ -41,46 +38,55 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Platform Selection Icons
-            Obx(() => Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: controller.socialPlatformOptions.map((platform) {
-                final isSelected = controller.selectedPlatform.value == platform['key'];
-                return GestureDetector(
-                  onTap: () => controller.selectPlatform(platform['key']),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 80,
-                    height: 60,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSelected ? _getPlatformColor(platform['key']) : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? _getPlatformColor(platform['key']) : Colors.grey.shade200,
-                        width: 1,
+            Obx(
+              () => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: controller.socialPlatformOptions.map((platform) {
+                  final isSelected =
+                      controller.selectedPlatform.value == platform['key'];
+                  return GestureDetector(
+                    onTap: () => controller.selectPlatform(platform['key']),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 80,
+                      height: 60,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? _getPlatformColor(platform['key'])
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? _getPlatformColor(platform['key'])
+                              : Colors.grey.shade200,
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          if (isSelected)
+                            BoxShadow(
+                              color: _getPlatformColor(
+                                platform['key'],
+                              ).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                        ],
                       ),
-                      boxShadow: [
-                        if (isSelected)
-                          BoxShadow(
-                            color: _getPlatformColor(platform['key']).withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          )
-                      ],
-                    ),
-                    child: Center(
-                      child: Image.asset(
-                        'assets/images/${platform['key']}.png',
-                        fit: BoxFit.contain,
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/${platform['key']}.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
-            )),
-            
+                  );
+                }).toList(),
+              ),
+            ),
+
             const SizedBox(height: 30),
 
             // Connect Form Section
@@ -88,9 +94,10 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
               if (controller.selectedPlatform.value.isEmpty) {
                 return const SizedBox();
               }
-              
+
               final platformName = controller.socialPlatformOptions.firstWhere(
-                (element) => element['key'] == controller.selectedPlatform.value
+                (element) =>
+                    element['key'] == controller.selectedPlatform.value,
               )['name'];
 
               return Container(
@@ -110,7 +117,7 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    
+
                     // Username/Email Field
                     TextField(
                       controller: controller.handleController,
@@ -133,7 +140,7 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Password Field
                     TextField(
                       controller: controller.passwordController,
@@ -190,7 +197,7 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
             }),
 
             const SizedBox(height: 30),
-            
+
             // Bottom Continue Button (Blue)
             SizedBox(
               width: double.infinity,

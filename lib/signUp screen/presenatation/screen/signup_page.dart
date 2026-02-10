@@ -7,16 +7,25 @@ import '../../../Shared/widgets/language_toggle_button.dart';
 import '../../../splashScreen/controllers/language_controller.dart';
 import '../../controllers/SignUpControllerPage.dart';
 
-class signUpScreen extends StatelessWidget {
-  final SignUpController signUpcontroller = Get.put(SignUpController());
-  Shader linearGradient = const LinearGradient(
-    colors: <Color>[Color(0xFF4983F6), Color(0xFFC175F5), Color(0xFFFBACB7)],
-  ).createShader(const Rect.fromLTWH(0.0, 0.0, 50.0, 20.0));
+class signUpScreen extends GetView<SignUpController> {
+  // Use 'controller' (from GetView) instead of 'signUpcontroller' if possible,
+  // or just assign it using Get.find() if you want to keep variable name.
+  // Actually, let's keep the name 'signUpcontroller' for minimal refactor,
+  // but initialize it with Get.find() or just use 'controller' alias.
+  // Ideally, valid GetX syntax:
+  SignUpController get signUpcontroller => controller;
 
-  final LanguageController langController = Get.put(LanguageController(), permanent: true);
+  final LanguageController langController = Get.put(
+    LanguageController(),
+    permanent: true,
+  );
 
   @override
   Widget build(BuildContext context) {
+    Shader linearGradient = const LinearGradient(
+      colors: <Color>[Color(0xFF4983F6), Color(0xFFC175F5), Color(0xFFFBACB7)],
+    ).createShader(const Rect.fromLTWH(0.0, 0.0, 50.0, 20.0));
+
     return Scaffold(
       body: Center(
         child: Container(
@@ -48,16 +57,24 @@ class signUpScreen extends StatelessWidget {
                             shape: BoxShape.circle,
                             color: Colors.black12,
                           ),
-                          child: const Icon(Icons.arrow_back, color: Colors.white),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       // Language Toggle
                       Obx(() {
                         return LanguageToggleButton(
-                          currentLanguage: langController.locale.value.languageCode == 'es' ? 'Es' : 'En',
+                          currentLanguage:
+                              langController.locale.value.languageCode == 'es'
+                              ? 'Es'
+                              : 'En',
                           onLanguageChanged: (lang) {
                             langController.changeLanguage(
-                              lang == 'Es' ? const Locale('es', 'ES') : const Locale('en', 'US'),
+                              lang == 'Es'
+                                  ? const Locale('es', 'ES')
+                                  : const Locale('en', 'US'),
                             );
                           },
                         );
@@ -78,7 +95,7 @@ class signUpScreen extends StatelessWidget {
                           color: Colors.black12,
                           blurRadius: 8,
                           spreadRadius: 2,
-                        )
+                        ),
                       ],
                     ),
                     child: Column(
@@ -87,7 +104,7 @@ class signUpScreen extends StatelessWidget {
                         Center(
                           child: Text(
                             'Sign Up',
-                                                // textAlign: TextAlign.center,
+                            // textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -110,14 +127,18 @@ class signUpScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.only(left: 10, bottom: 4),
+                                    padding: const EdgeInsets.only(
+                                      left: 10,
+                                      bottom: 4,
+                                    ),
                                     child: Text(
                                       'First Name',
                                       style: TextStyle(color: Colors.grey),
                                     ),
                                   ),
                                   CustomTextField(
-                                    controller: signUpcontroller.firstNameController,
+                                    controller:
+                                        signUpcontroller.firstNameController,
                                   ),
                                 ],
                               ),
@@ -128,14 +149,18 @@ class signUpScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.only(left: 10, bottom: 4),
+                                    padding: const EdgeInsets.only(
+                                      left: 10,
+                                      bottom: 4,
+                                    ),
                                     child: Text(
                                       'Last Name',
                                       style: TextStyle(color: Colors.grey),
                                     ),
                                   ),
                                   CustomTextField(
-                                    controller: signUpcontroller.lastNameController,
+                                    controller:
+                                        signUpcontroller.lastNameController,
                                   ),
                                 ],
                               ),
@@ -145,28 +170,32 @@ class signUpScreen extends StatelessWidget {
                         const SizedBox(height: 15),
                         // Email Field
                         Padding(
-                          padding: const EdgeInsets.only(left: 10,right: 20),
+                          padding: const EdgeInsets.only(left: 10, right: 20),
                           child: Text(
                             'Email',
                             textAlign: TextAlign.start,
                             style: TextStyle(color: Colors.grey),
                           ),
                         ),
-                        CustomTextField(controller: signUpcontroller.emailController ),
+                        CustomTextField(
+                          controller: signUpcontroller.emailController,
+                        ),
                         const SizedBox(height: 15),
                         Padding(
-                          padding: const EdgeInsets.only(left: 10,right: 20),
+                          padding: const EdgeInsets.only(left: 10, right: 20),
                           child: Text(
                             'Phone',
                             textAlign: TextAlign.start,
                             style: TextStyle(color: Colors.grey),
                           ),
                         ),
-                        CustomTextField(controller: signUpcontroller.phoneController ),
+                        CustomTextField(
+                          controller: signUpcontroller.phoneController,
+                        ),
                         const SizedBox(height: 15),
                         // Password Field with toggle
                         Padding(
-                          padding: const EdgeInsets.only(left: 10,right: 20),
+                          padding: const EdgeInsets.only(left: 10, right: 20),
                           child: Text(
                             'Password',
                             textAlign: TextAlign.start,
@@ -174,7 +203,7 @@ class signUpScreen extends StatelessWidget {
                           ),
                         ),
                         Obx(
-                              () => TextField(
+                          () => TextField(
                             controller: signUpcontroller.passwordController,
                             obscureText: signUpcontroller.obscurePassword.value,
                             decoration: InputDecoration(
@@ -188,7 +217,8 @@ class signUpScreen extends StatelessWidget {
                                       ? Icons.visibility_off
                                       : Icons.visibility,
                                 ),
-                                onPressed: signUpcontroller.togglePasswordVisibility,
+                                onPressed:
+                                    signUpcontroller.togglePasswordVisibility,
                               ),
                             ),
                           ),
@@ -196,7 +226,7 @@ class signUpScreen extends StatelessWidget {
                         const SizedBox(height: 10),
 
                         Padding(
-                          padding: const EdgeInsets.only(left: 10,right: 20),
+                          padding: const EdgeInsets.only(left: 10, right: 20),
                           child: Text(
                             'Confirm Password',
                             textAlign: TextAlign.start,
@@ -205,8 +235,9 @@ class signUpScreen extends StatelessWidget {
                         ),
 
                         Obx(
-                              () => TextField(
-                            controller: signUpcontroller.confirmPasswordController ,
+                          () => TextField(
+                            controller:
+                                signUpcontroller.confirmPasswordController,
                             obscureText: signUpcontroller.obscurePassword.value,
                             decoration: InputDecoration(
                               border: OutlineInputBorder(
@@ -218,7 +249,8 @@ class signUpScreen extends StatelessWidget {
                                       ? Icons.visibility_off
                                       : Icons.visibility,
                                 ),
-                                onPressed: signUpcontroller.toggleConfirmPasswordVisibility,
+                                onPressed: signUpcontroller
+                                    .toggleConfirmPasswordVisibility,
                               ),
                             ),
                           ),
@@ -228,7 +260,9 @@ class signUpScreen extends StatelessWidget {
                         // SignUp Button
                         Obx(
                           () => ElevatedButton(
-                            onPressed: signUpcontroller.isLoading.value ? null : signUpcontroller.signUp,
+                            onPressed: signUpcontroller.isLoading.value
+                                ? null
+                                : signUpcontroller.signUp,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
@@ -259,8 +293,7 @@ class signUpScreen extends StatelessWidget {
                               onTap: () {
                                 Get.snackbar('signUp'.tr, 'goToSignupPage'.tr);
                                 Get.toNamed(AppRoutes.login);
-
-                              } ,
+                              },
                               child: Text(
                                 'Log In',
                                 style: TextStyle(

@@ -1,4 +1,6 @@
-import 'package:clip_frame/core/services/api_services/authentication/verify_email_controller.dart' as api;
+import 'package:clip_frame/core/services/api_services/authentication/verify_email_controller.dart'
+    as api;
+import 'package:clip_frame/core/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:async';
@@ -13,10 +15,7 @@ class EmailVerificationController extends GetxController {
   );
 
   // Focus nodes for OTP fields
-  final List<FocusNode> focusNodes = List.generate(
-    6,
-    (index) => FocusNode(),
-  );
+  final List<FocusNode> focusNodes = List.generate(6, (index) => FocusNode());
 
   var isLoading = false.obs;
   var canResend = false.obs;
@@ -25,7 +24,7 @@ class EmailVerificationController extends GetxController {
 
   // Email passed from signup or forgot password
   String email = '';
-  
+
   // Flag to indicate if this is for password reset flow
   bool isForPasswordReset = false;
 
@@ -50,7 +49,7 @@ class EmailVerificationController extends GetxController {
   void startResendTimer() {
     canResend.value = false;
     resendCountdown.value = 60;
-    
+
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (resendCountdown.value > 0) {
@@ -80,21 +79,44 @@ class EmailVerificationController extends GetxController {
       bool success = await _apiController.verifyEmail(email, otp);
 
       if (success) {
-        Get.snackbar('success'.tr, isForPasswordReset ? 'OTP verified successfully!' : 'Email verified successfully!');
-        
+        Get.snackbar(
+          'success'.tr,
+          isForPasswordReset
+              ? 'OTP verified successfully!'
+              : 'Email verified successfully!',
+        );
+
         // Navigate based on the flow
         if (isForPasswordReset) {
           // Navigate to reset password screen with email and token
-          Get.offNamed(AppRoutes.resetPassword, arguments: {
-            'email': email,
-            'token': _apiController.resetToken,
-          });
+          Get.offNamed(
+            AppRoutes.resetPassword,
+            arguments: {'email': email, 'token': _apiController.resetToken},
+          );
         } else {
-          // Navigate to login screen after successful verification
-          Get.offAllNamed(AppRoutes.login, arguments: {
-            'verifiedEmail': email,
-            'showVerificationSuccess': true,
-          });
+          // Try to get token from verification response and save it
+          String? verificationToken = _apiController.resetToken;
+          if (verificationToken != null && verificationToken.isNotEmpty) {
+            await AuthService.saveToken(verificationToken);
+            print("🔑 Token saved from verification response");
+          }
+
+          // Check if we have a valid token (from signup or verification)
+          String? token = await AuthService.getToken();
+
+          if (token != null && token.isNotEmpty) {
+            // User is authenticated, go to onboarding to complete profile
+            Get.offAllNamed(AppRoutes.userOnboarding);
+          } else {
+            // No token, navigate to login screen
+            Get.offAllNamed(
+              AppRoutes.login,
+              arguments: {
+                'verifiedEmail': email,
+                'showVerificationSuccess': true,
+              },
+            );
+          }
         }
       } else {
         Get.snackbar(

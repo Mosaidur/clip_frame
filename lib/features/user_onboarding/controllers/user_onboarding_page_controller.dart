@@ -18,80 +18,77 @@ class UserOnboardingPageController extends GetxController {
   var selectedBusinessType = ''.obs;
   final businessTypeSearchController = TextEditingController();
   final customBusinessTypeController = TextEditingController();
-  
+
   final List<String> predefinedBusinessTypes = [
     "Restaurants & Cafes",
     "Retail Stores & Boutiques",
     "Beauty Salons & Barbershops",
     "Gyms & Fitness Studios",
-    "Local Academies (e.g., language, music, cooking)"
+    "Local Academies (e.g., language, music, cooking)",
   ];
-  
+
   var filteredBusinessTypes = <String>[].obs;
   var customBusinessTypes = <String>[].obs;
 
   // Step 2: Description
   final businessDescriptionController = TextEditingController();
   var descriptionCharCount = 0.obs;
-  
+
   final List<String> descriptionSuggestions = [
     "Lorem Ipsum is simply dummy text",
     "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-    "Lorem Ipsum has been the industry's standard dummy text."
+    "Lorem Ipsum has been the industry's standard dummy text.",
   ];
-  
+
   void updateDescriptionCount() {
     descriptionCharCount.value = businessDescriptionController.text.length;
   }
 
   // Step 3: Audience & Language
   var selectedAudiences = <String>[].obs;
-  final List<String> audienceOptions = [
-    "local",
-    "tourist",
-    "online",
-    "all"
-  ];
+  final List<String> audienceOptions = ["local", "tourist", "online", "all"];
 
   var selectedLanguage = 'en'.obs; // Language code for backend
   var languageOptions = [
-    "en",      // English
-    "es",      // Spanish
-    "bn",      // Bengali
-    "hi",      // Hindi
-    "fr"       // French
+    "en", // English
+    "es", // Spanish
+    "bn", // Bengali
+    "hi", // Hindi
+    "fr", // French
   ].obs;
-  
+
   // Language code to display name mapping
   final Map<String, String> languageDisplayNames = {
     "en": "English",
     "es": "Spanish",
     "bn": "Bengali",
     "hi": "Hindi",
-    "fr": "French"
+    "fr": "French",
   };
-  
+
   // Helper method to get display name from code
   String getLanguageDisplayName(String code) {
     return languageDisplayNames[code] ?? code;
   }
-  
-  final languageController = TextEditingController(); // For custom? Keeping it if needed
-  
+
+  final languageController =
+      TextEditingController(); // For custom? Keeping it if needed
+
   void addCustomLanguage(String language) {
     if (!languageOptions.contains(language)) {
       languageOptions.add(language);
       selectedLanguage.value = language;
     }
   }
+
   var autoTranslateCaptions = false.obs;
 
   // Step 4: Social Platforms (Single Select)
   var selectedPlatform = ''.obs;
   final List<Map<String, dynamic>> socialPlatformOptions = [
     {'name': 'Facebook', 'key': 'facebook', 'icon': Icons.facebook},
-    {'name': 'Instagram', 'key': 'instagram', 'icon': Icons.camera_alt}, 
-    {'name': 'TikTok', 'key': 'tiktok', 'icon': Icons.music_note}, 
+    {'name': 'Instagram', 'key': 'instagram', 'icon': Icons.camera_alt},
+    {'name': 'TikTok', 'key': 'tiktok', 'icon': Icons.music_note},
   ];
 
   // Step 5: Handles
@@ -108,7 +105,7 @@ class UserOnboardingPageController extends GetxController {
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      
+
       if (image != null) {
         logoPath.value = image.path;
         logoFile = File(image.path);
@@ -162,7 +159,8 @@ class UserOnboardingPageController extends GetxController {
   }
 
   void addCustomBusinessType(String type) {
-    if (!customBusinessTypes.contains(type) && !predefinedBusinessTypes.contains(type)) {
+    if (!customBusinessTypes.contains(type) &&
+        !predefinedBusinessTypes.contains(type)) {
       customBusinessTypes.add(type);
       selectedBusinessType.value = type;
     }
@@ -171,35 +169,56 @@ class UserOnboardingPageController extends GetxController {
   bool validateCurrentStep() {
     switch (currentPage.value) {
       case 0: // Business Type
-        if (selectedBusinessType.value.isEmpty && customBusinessTypeController.text.isEmpty) {
-          Get.snackbar("Required", "Please select or enter a business type.", 
-            backgroundColor: Colors.red.withOpacity(0.5), colorText: Colors.white);
+        if (selectedBusinessType.value.isEmpty &&
+            customBusinessTypeController.text.isEmpty) {
+          Get.snackbar(
+            "Required",
+            "Please select or enter a business type.",
+            backgroundColor: Colors.red.withOpacity(0.5),
+            colorText: Colors.white,
+          );
           return false;
         }
         return true;
       case 1: // Description
         if (businessDescriptionController.text.trim().isEmpty) {
-           Get.snackbar("Required", "Please enter a business description.",
-            backgroundColor: Colors.red.withOpacity(0.5), colorText: Colors.white);
+          Get.snackbar(
+            "Required",
+            "Please enter a business description.",
+            backgroundColor: Colors.red.withOpacity(0.5),
+            colorText: Colors.white,
+          );
           return false;
         }
         return true;
       case 2: // Audience & Language
         if (selectedAudiences.isEmpty) {
-           Get.snackbar("Required", "Please select at least one target audience.",
-            backgroundColor: Colors.red.withOpacity(0.5), colorText: Colors.white);
+          Get.snackbar(
+            "Required",
+            "Please select at least one target audience.",
+            backgroundColor: Colors.red.withOpacity(0.5),
+            colorText: Colors.white,
+          );
           return false;
         }
         return true;
       case 3: // Platform Selection & Connect Form
         if (selectedPlatform.value.isEmpty) {
-           Get.snackbar("Required", "Please select a social media platform.",
-            backgroundColor: Colors.red.withOpacity(0.5), colorText: Colors.white);
+          Get.snackbar(
+            "Required",
+            "Please select a social media platform.",
+            backgroundColor: Colors.red.withOpacity(0.5),
+            colorText: Colors.white,
+          );
           return false;
         }
         if (handleController.text.trim().isEmpty) {
-           Get.snackbar("Required", "Please enter your ${selectedPlatform.value} username.",
-            backgroundColor: Colors.red.withOpacity(0.5), colorText: Colors.white);
+          Get.snackbar(
+            "Required",
+            "Please enter your ${selectedPlatform.value} username.",
+            backgroundColor: Colors.red.withOpacity(0.5),
+            colorText: Colors.white,
+          );
           return false;
         }
         return true;
@@ -214,32 +233,37 @@ class UserOnboardingPageController extends GetxController {
   Future<void> submitOnboarding() async {
     isLoading.value = true;
 
-    String finalBusinessType = selectedBusinessType.value.isNotEmpty 
-        ? selectedBusinessType.value 
+    String finalBusinessType = selectedBusinessType.value.isNotEmpty
+        ? selectedBusinessType.value
         : customBusinessTypeController.text;
 
     Map<String, dynamic> data = {
       "businessType": finalBusinessType,
       "businessDescription": businessDescriptionController.text,
       "targetAudience": selectedAudiences,
-      "preferredLanguages": [selectedLanguage.value], // Must be a list for the API
+      "preferredLanguages": [
+        selectedLanguage.value,
+      ], // Must be a list for the API
       "autoTranslateCaptions": autoTranslateCaptions.value,
       "socialHandles": [
         {
           "platform": selectedPlatform.value.toLowerCase(),
           "username": handleController.text,
           "password": passwordController.text, // Added password
-        }
+        },
       ],
       "branding": {
-        "primaryColor": "#${primaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
-        "secondaryColor": "#${secondaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
-        "logo": logoPath.value, // This might need to be uploaded separately or as base64
-      }
+        "primaryColor":
+            "#${primaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
+        "secondaryColor":
+            "#${secondaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
+        "logo": logoPath
+            .value, // This might need to be uploaded separately or as base64
+      },
     };
-    
+
     print("📦 Onboarding Payload: $data");
-    
+
     String? token = await AuthService.getToken();
     print("🔑 Token available: ${token != null && token.isNotEmpty}");
 
@@ -255,12 +279,16 @@ class UserOnboardingPageController extends GetxController {
       if (email != null) {
         await OnboardingStatusService.markOnboardingComplete(email);
       }
-      
-      // Navigate to home
-      Get.offAllNamed(AppRoutes.HOME);
+
+      // Navigate to Login to force user to log in again/verify credentials
+      Get.offAllNamed(AppRoutes.login);
     } else {
-      Get.snackbar("Error", "Failed to submit onboarding data. Please try again.",
-          backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar(
+        "Error",
+        "Failed to submit onboarding data. Please try again.",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
@@ -275,7 +303,7 @@ class UserOnboardingPageController extends GetxController {
     passwordController.dispose();
     super.onClose();
   }
-  
+
   // Logic for toggles
   void toggleAudience(String audience) {
     if (selectedAudiences.contains(audience)) {
@@ -288,14 +316,13 @@ class UserOnboardingPageController extends GetxController {
   void selectLanguage(String language) {
     selectedLanguage.value = language;
   }
-  
+
   void selectPlatform(String platform) {
     selectedPlatform.value = platform;
   }
-  
+
   String get handleLabel {
     if (selectedPlatform.value.isEmpty) return "Enter username";
-    return "Enter your ${selectedPlatform.value} username"; 
+    return "Enter your ${selectedPlatform.value} username";
   }
-
 }

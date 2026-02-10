@@ -6,16 +6,29 @@ import '../../../Shared/widgets/language_toggle_button.dart';
 import '../../../splashScreen/controllers/language_controller.dart';
 import '../../controllers/loginControllerPage.dart';
 
-class LoginScreen extends StatelessWidget {
-  final LoginController controller = Get.put(LoginController());
-  Shader linearGradient = const LinearGradient(
-    colors: <Color>[Color(0xFF4983F6), Color(0xFFC175F5), Color(0xFFFBACB7)],
-  ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0));
+class LoginScreen extends GetView<LoginController> {
+  // Use 'controller' provided by GetView
 
-  final LanguageController langController = Get.put(LanguageController(), permanent: true);
+  final LanguageController langController = Get.put(
+    LanguageController(),
+    permanent: true,
+  );
 
   @override
   Widget build(BuildContext context) {
+    // Ensure controller is found (binding should provide it)
+    // If binding didn't run (unlikely with named routes), this might fail, so we can keep a fallback Get.put if needed,
+    // but better to trust the binding.
+    // Actually, to be safe against direct widget instantiation without binding:
+    // val c = Get.put(LoginController()); // But this causes the disposal issue if not careful.
+    // Let's stick to GetView which uses Get.find().
+    // If the binding is not set up correctly in GetPage, this will error.
+    // AppRoutes defines binding: logInBindings(), so we are safe.
+
+    Shader linearGradient = const LinearGradient(
+      colors: <Color>[Color(0xFF4983F6), Color(0xFFC175F5), Color(0xFFFBACB7)],
+    ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0));
+
     return Scaffold(
       body: Center(
         child: Container(
@@ -47,16 +60,24 @@ class LoginScreen extends StatelessWidget {
                             shape: BoxShape.circle,
                             color: Colors.black12,
                           ),
-                          child: const Icon(Icons.arrow_back, color: Colors.white),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       // Language Toggle
                       Obx(() {
                         return LanguageToggleButton(
-                          currentLanguage: langController.locale.value.languageCode == 'es' ? 'Es' : 'En',
+                          currentLanguage:
+                              langController.locale.value.languageCode == 'es'
+                              ? 'Es'
+                              : 'En',
                           onLanguageChanged: (lang) {
                             langController.changeLanguage(
-                              lang == 'Es' ? const Locale('es', 'ES') : const Locale('en', 'US'),
+                              lang == 'Es'
+                                  ? const Locale('es', 'ES')
+                                  : const Locale('en', 'US'),
                             );
                           },
                         );
@@ -77,7 +98,7 @@ class LoginScreen extends StatelessWidget {
                           color: Colors.black12,
                           blurRadius: 8,
                           spreadRadius: 2,
-                        )
+                        ),
                       ],
                     ),
                     child: Column(
@@ -101,7 +122,10 @@ class LoginScreen extends StatelessWidget {
                         // Google Button
                         ElevatedButton.icon(
                           onPressed: controller.googleLogin,
-                          icon: Image.asset("assets/images/google.png", height: 20),
+                          icon: Image.asset(
+                            "assets/images/google.png",
+                            height: 20,
+                          ),
                           label: Text('signInGoogle'.tr),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -117,7 +141,10 @@ class LoginScreen extends StatelessWidget {
                         // Facebook Button
                         ElevatedButton.icon(
                           onPressed: controller.facebookLogin,
-                          icon: Image.asset("assets/images/facebook.png", height: 20),
+                          icon: Image.asset(
+                            "assets/images/facebook.png",
+                            height: 20,
+                          ),
                           label: Text('signInFacebook'.tr),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -145,7 +172,7 @@ class LoginScreen extends StatelessWidget {
                         const SizedBox(height: 15),
                         // Password Field with toggle
                         Obx(
-                              () => TextField(
+                          () => TextField(
                             controller: controller.passwordController,
                             obscureText: controller.obscurePassword.value,
                             decoration: InputDecoration(
@@ -170,7 +197,7 @@ class LoginScreen extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Obx(
-                                  () => Row(
+                              () => Row(
                                 children: [
                                   Checkbox(
                                     value: controller.rememberMe.value,
@@ -197,7 +224,9 @@ class LoginScreen extends StatelessWidget {
                         // Login Button
                         Obx(
                           () => ElevatedButton(
-                            onPressed: controller.isLoading.value ? null : controller.login,
+                            onPressed: controller.isLoading.value
+                                ? null
+                                : controller.login,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,

@@ -75,39 +75,53 @@ class LoginController extends GetxController {
       if (success) {
         Get.snackbar('success'.tr, 'loggedInAs'.tr + email);
 
-        // 1. Initial local check
-        bool hasCompletedOnboarding =
-            await OnboardingStatusService.isOnboardingComplete(email);
+        // Check backend for onboarding status to ensure accuracy (e.g. if account was reset)
+        bool backendSaysOnboarded = false;
+        bool checkFailed = false;
 
-        if (!hasCompletedOnboarding) {
-          // 2. Try to verify with backend if local status is false
-          try {
-            String? token = await AuthService.getToken();
-            final response = await NetworkCaller.getRequest(
-              url: Urls.getUserProfileUrl,
-              token: token,
+        try {
+          String? token = await AuthService.getToken();
+          final response = await NetworkCaller.getRequest(
+            url: Urls.getUserProfileUrl,
+            token: token,
+          );
+
+          if (response.isSuccess && response.responseBody != null) {
+            UserResponse userResponse = UserResponse.fromJson(
+              response.responseBody!,
             );
 
-            if (response.isSuccess && response.responseBody != null) {
-              UserResponse userResponse = UserResponse.fromJson(
-                response.responseBody!,
+            if (userResponse.success && userResponse.data != null) {
+              backendSaysOnboarded = OnboardingStatusService.isProfileOnboarded(
+                userResponse.data,
               );
-              if (userResponse.success && userResponse.data != null) {
-                // Sync status if profile says it's onboarded
-                await OnboardingStatusService.syncWithProfile(
-                  email,
-                  userResponse.data,
-                );
-                hasCompletedOnboarding =
-                    await OnboardingStatusService.isOnboardingComplete(email);
+
+              // Sync local status to match backend
+              if (backendSaysOnboarded) {
+                await OnboardingStatusService.markOnboardingComplete(email);
               }
+              // If backend says NOT onboarded, we treat it as such, effectively ignoring local "true" status if it exists.
             }
-          } catch (e) {
-            print("Error syncing onboarding status during login: $e");
+          } else {
+            checkFailed = true;
           }
+        } catch (e) {
+          print("Error syncing onboarding status during login: $e");
+          checkFailed = true;
         }
 
-        if (hasCompletedOnboarding) {
+        // Final decision:
+        // If we successfully checked backend, use that result.
+        // If check failed, fall back to local storage.
+        bool finalOnboardingStatus;
+        if (!checkFailed) {
+          finalOnboardingStatus = backendSaysOnboarded;
+        } else {
+          finalOnboardingStatus =
+              await OnboardingStatusService.isOnboardingComplete(email);
+        }
+
+        if (finalOnboardingStatus) {
           // User already completed onboarding, go to home
           Get.offAllNamed(AppRoutes.HOME);
         } else {
