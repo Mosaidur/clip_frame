@@ -118,79 +118,86 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Username/Email Field
-                    TextField(
-                      controller: controller.handleController,
-                      decoration: InputDecoration(
-                        hintText: "Enter your username or email",
-                        hintStyle: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey.shade400,
-                        ),
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
+                    // Dynamic Content based on platform
+                    if (controller.selectedPlatform.value == 'facebook' ||
+                        controller.selectedPlatform.value == 'instagram') ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: controller.isLoading.value
+                              ? null
+                              : (controller.selectedPlatform.value == 'facebook'
+                                    ? controller.connectFacebook
+                                    : controller.connectInstagram),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                controller.selectedPlatform.value == 'facebook'
+                                ? const Color(0xFF1877F2)
+                                : const Color(0xFFE4405F),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: controller.isLoading.value
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  controller.isConnected.value
+                                      ? "Connected"
+                                      : "Connect ${controller.selectedPlatform.value.capitalizeFirst}",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
 
-                    // Password Field
-                    TextField(
-                      controller: controller.passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: "Password",
-                        hintStyle: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey.shade400,
+                      if (controller.isConnected.value)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Center(
+                            child: Text(
+                              "✅ Account Connected",
+                              style: GoogleFonts.poppins(
+                                color: Colors.green,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ),
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Continue Button (Pink)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          FocusScope.of(context).unfocus();
-                          // Validate credentials here if needed
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF277F),
-                          shape: RoundedRectangleBorder(
+                    ] else ...[
+                      // Manual Input for generic platforms
+                      TextField(
+                        controller: controller.handleController,
+                        decoration: InputDecoration(
+                          hintText: "Enter your username",
+                          hintStyle: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey.shade400,
+                          ),
+                          fillColor: Colors.white,
+                          filled: true,
+                          border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
                           ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          "Continue",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               );

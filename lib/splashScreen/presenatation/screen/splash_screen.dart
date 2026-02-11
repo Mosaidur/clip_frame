@@ -49,14 +49,24 @@ class _SplashScreenState extends State<SplashScreen> {
               UserResponse userResponse = UserResponse.fromJson(
                 response.responseBody!,
               );
+              // CRITICAL FIX: Only sync if explicitly successful AND data is present
               if (userResponse.success && userResponse.data != null) {
-                // Sync status if profile says it's onboarded
-                await OnboardingStatusService.syncWithProfile(
-                  email,
-                  userResponse.data,
+                final userData = userResponse.data;
+                print(
+                  "👤 User Profile from backend: ${userData is Map ? userData : 'Object'}",
                 );
-                hasCompletedOnboarding =
-                    await OnboardingStatusService.isOnboardingComplete(email);
+
+                // Check strictly if businessType is valid content (not just present)
+                bool backendSaysOnboarded =
+                    OnboardingStatusService.isProfileOnboarded(userData);
+                print(
+                  "🧐 Backend analysis - Is Onboarded: $backendSaysOnboarded",
+                );
+
+                if (backendSaysOnboarded) {
+                  await OnboardingStatusService.markOnboardingComplete(email);
+                  hasCompletedOnboarding = true;
+                }
               }
             }
           } catch (e) {

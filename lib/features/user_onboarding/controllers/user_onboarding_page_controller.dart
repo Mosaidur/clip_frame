@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/services/api_services/user_onboarding/user_onboarding_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/onboarding_status_service.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import '../../../../core/services/api_services/social_auth_service.dart';
 import '../../../Shared/routes/routes.dart';
 
 class UserOnboardingPageController extends GetxController {
@@ -212,6 +214,23 @@ class UserOnboardingPageController extends GetxController {
           );
           return false;
         }
+
+        // If Facebook or Instagram, check for connection status
+        if (selectedPlatform.value == 'facebook' ||
+            selectedPlatform.value == 'instagram') {
+          if (!isConnected.value) {
+            Get.snackbar(
+              "Required",
+              "Please connect your ${selectedPlatform.value} account.",
+              backgroundColor: Colors.red.withOpacity(0.5),
+              colorText: Colors.white,
+            );
+            return false;
+          }
+          return true;
+        }
+
+        // Fallback for other platforms (e.g. TikTok) - require handle
         if (handleController.text.trim().isEmpty) {
           Get.snackbar(
             "Required",
@@ -292,6 +311,124 @@ class UserOnboardingPageController extends GetxController {
     }
   }
 
+  // Social Auth Service
+  final SocialAuthService _socialAuthService = SocialAuthService();
+
+  // Connected status
+  var isConnected = false.obs;
+
+  Future<void> connectFacebook() async {
+    try {
+      isLoading.value = true;
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: [
+          'email',
+          'public_profile',
+          'pages_show_list',
+          'pages_read_engagement',
+          'pages_manage_posts',
+        ],
+      );
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        print("Facebook Access Token: ${accessToken.tokenString}");
+
+        bool success = await _socialAuthService.connectFacebook(
+          accessToken.tokenString,
+        );
+        if (success) {
+          isConnected.value = true;
+          Get.snackbar("Success", "Connected to Facebook successfully!");
+          nextPage(); // Auto advance or let user click continue
+        } else {
+          Get.snackbar(
+            "Error",
+            "Failed to connect to backend",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
+      } else {
+        print("❌ Facebook Login Failed: ${result.status}");
+        print("❌ Facebook Login Message: ${result.message}");
+        Get.snackbar(
+          "Login Failed",
+          result.message ?? "Unknown error",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      print("Error connecting Facebook: $e");
+      Get.snackbar(
+        "Error",
+        "An unexpected error occurred: $e",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> connectInstagram() async {
+    try {
+      isLoading.value = true;
+      // Instagram Graph API via Facebook Login requires specific scopes
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: [
+          'email',
+          'public_profile',
+          'pages_show_list',
+          'instagram_basic',
+          'instagram_content_publish',
+          'instagram_manage_insights',
+          'business_management',
+        ],
+      );
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        print("Instagram (via FB) Access Token: ${accessToken.tokenString}");
+
+        bool success = await _socialAuthService.connectInstagram(
+          accessToken.tokenString,
+        );
+        if (success) {
+          isConnected.value = true;
+          Get.snackbar("Success", "Connected to Instagram successfully!");
+          nextPage();
+        } else {
+          Get.snackbar(
+            "Error",
+            "Failed to connect to backend",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
+      } else {
+        print("Instagram Login Status: ${result.status}");
+        Get.snackbar(
+          "Error",
+          "Instagram login failed: ${result.message}",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      print("Error connecting Instagram: $e");
+      Get.snackbar(
+        "Error",
+        "An unexpected error occurred: $e",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   @override
   void onClose() {
     pageController.dispose();
@@ -319,6 +456,7 @@ class UserOnboardingPageController extends GetxController {
 
   void selectPlatform(String platform) {
     selectedPlatform.value = platform;
+    isConnected.value = false; // Reset connection status when platform changes
   }
 
   String get handleLabel {

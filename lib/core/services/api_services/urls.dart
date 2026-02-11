@@ -43,6 +43,6 @@ class Urls {
   static const String instagraIntegration =
       "$baseUrl/api/v1/auth/instagram/token";
   //get
-  static const String connectFacebook = "$baseUrl/api/v1/auth/facebook";
-  static const String connectInstagram = "$baseUrl/api/v1/auth/instagram";
+  static const String connectFacebook = "$baseUrl/api/v1/auth/facebook/token";
+  static const String connectInstagram = "$baseUrl/api/v1/auth/instagram/token";
 }

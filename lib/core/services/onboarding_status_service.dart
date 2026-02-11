@@ -32,8 +32,12 @@ class OnboardingStatusService {
     final String? businessType = user is Map
         ? user['businessType']
         : (user.businessType as String?);
+
+    // Debug print
+    // print("Checking Business Type: '$businessType'");
+
     return businessType != null &&
-        businessType.isNotEmpty &&
+        businessType.trim().isNotEmpty &&
         businessType.toLowerCase() != 'none';
   }
 

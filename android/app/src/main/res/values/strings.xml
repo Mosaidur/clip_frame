@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClipFrame</string>
+    <!-- Replace with your actual Facebook App ID and Client Token -->
+    <string name="facebook_app_id">1346588630142143</string>
+    <!-- Note: Typically 'Client Token' is different from 'App Secret'. Found in FB Console > Settings > Advanced > Client Token. Using provided secret for now. -->
+    <string name="facebook_client_token">8878231cfec60cfa73fe38eac963b454</string>
+    <string name="fb_login_protocol_scheme">fb1346588630142143</string> 
+</resources>
