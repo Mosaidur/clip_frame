@@ -20,9 +20,9 @@ class ScheduleScreenPage extends StatelessWidget {
       MyProfileController(),
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9F3E8), // Match mockup background
-      body: SafeArea(
+    return Container(
+      color: Colors.transparent,
+      child: SafeArea(
         bottom: false,
         child: Column(
           children: [

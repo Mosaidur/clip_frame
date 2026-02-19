@@ -101,7 +101,7 @@ class EmailVerificationController extends GetxController {
             print("🔑 Token saved from verification response");
           }
 
-          // Check if we have a valid token (from signup or verification)
+          // Check if we have a valid token (from signup or verification)amni
           String? token = await AuthService.getToken();
 
           if (token != null && token.isNotEmpty) {

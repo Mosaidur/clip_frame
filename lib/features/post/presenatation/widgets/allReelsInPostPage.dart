@@ -27,45 +27,46 @@ class _ReelsListPageState extends State<ReelsListPage> {
     }
 
     return SingleChildScrollView(
-        padding: const EdgeInsets.all(10),
-        child: Wrap(
-          spacing: 10, // horizontal spacing
-          runSpacing: 10, // vertical spacing
-          children: widget.reelsData.asMap().entries.map((entry) {
-            int index = entry.key;
-            ContentTemplateModel reel = entry.value;
+      padding: const EdgeInsets.all(10),
+      child: Wrap(
+        spacing: 10, // horizontal spacing
+        runSpacing: 10, // vertical spacing
+        children: widget.reelsData.asMap().entries.map((entry) {
+          int index = entry.key;
+          ContentTemplateModel reel = entry.value;
 
-            // Calculate duration
-            int duration = 0;
-            if (reel.steps != null) {
-              for (var step in reel.steps!) {
-                duration += step.duration ?? 0;
-              }
+          // Calculate duration
+          int duration = 0;
+          if (reel.steps != null) {
+            for (var step in reel.steps!) {
+              duration += step.duration ?? 0;
             }
+          }
 
-            return ReelsContainerPage(
-              imagePath: reel.thumbnail ?? "assets/images/1.jpg", // Fallback
-              time: "${duration}s",
-              title: reel.title ?? "Untitled",
-              width: itemWidth,
-              isFavorite: false, // TODO: Add isFavorite to model
-              onCreate: () async {
-                debugPrint("Create clicked for: ${reel.title}");
-                
-                // 1. Open Video Highlight (Start of flow)
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VideoHighlight(url: reel.thumbnail ?? ""),
-                  ),
-                );
-              },
-              onFavoriteToggle: () {
-                // TODO: Implement toggle
-              },
-            );
-          }).toList(),
-        ),
-      );
+          return ReelsContainerPage(
+            imagePath: reel.thumbnail ?? "assets/images/1.jpg", // Fallback
+            time: "${duration}s",
+            title: "${reel.title} [${reel.type}]",
+            width: itemWidth,
+            isFavorite: false, // TODO: Add isFavorite to model
+            onCreate: () async {
+              debugPrint("Create clicked for: ${reel.title}");
+
+              // 1. Open Video Highlight (Start of flow)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      VideoHighlight(url: reel.thumbnail ?? ""),
+                ),
+              );
+            },
+            onFavoriteToggle: () {
+              // TODO: Implement toggle
+            },
+          );
+        }).toList(),
+      ),
+    );
   }
 }

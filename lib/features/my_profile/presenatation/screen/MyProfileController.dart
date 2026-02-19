@@ -277,6 +277,7 @@ class MyProfilePage extends StatelessWidget {
       height: double.infinity,
       color: Colors.transparent,
       child: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           onRefresh: () async {
             await controller.getUserProfile();
@@ -507,6 +508,7 @@ class MyProfilePage extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: 100),
               ],
             ),
           ),

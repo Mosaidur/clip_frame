@@ -137,25 +137,7 @@ class LoginScreen extends GetView<LoginController> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        // Facebook Button
-                        ElevatedButton.icon(
-                          onPressed: controller.facebookLogin,
-                          icon: Image.asset(
-                            "assets/images/facebook.png",
-                            height: 20,
-                          ),
-                          label: Text('signInFacebook'.tr),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                            side: const BorderSide(color: Colors.grey),
-                            minimumSize: const Size(double.infinity, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
+
                         const SizedBox(height: 15),
                         Text('or'.tr),
                         const SizedBox(height: 15),

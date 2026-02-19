@@ -20,23 +20,44 @@ class ContentCreationController extends GetxController {
   Future<void> fetchAllTemplates() async {
     isLoading.value = true;
     try {
-      // Fetch all types in parallel
-      final results = await Future.wait([
-        ContentTemplateService.fetchTemplates(type: 'reels'),
-        ContentTemplateService.fetchTemplates(type: 'posts'),
-        ContentTemplateService.fetchTemplates(type: 'stories'),
-      ]);
+      // Fetch all templates and filter locally to ensure robustness
+      final allTemplates = await ContentTemplateService.fetchTemplates();
 
-      reelTemplates.assignAll(results[0]);
-      postTemplates.assignAll(results[1]);
-      storyTemplates.assignAll(results[2]);
+      if (allTemplates.isNotEmpty) {
+        // Filter for Reels (reels, reel, video, short)
+        // Filter for Reels (reels, reel, video, short) - TEMPORARY DEBUG: SHOW ALL
+        reelTemplates.assignAll(allTemplates);
+        /*
+        reelTemplates.assignAll(
+          allTemplates.where((t) {
+            final type = (t.type ?? '').toLowerCase();
+            return type.contains('reel') ||
+                type.contains('video') ||
+                type.contains('short');
+          }).toList(),
+        );
+        */
 
-      // If empty, try generic fetch as fallback for reels (legacy behavior)
-      if (reelTemplates.isEmpty &&
-          postTemplates.isEmpty &&
-          storyTemplates.isEmpty) {
-        var generic = await ContentTemplateService.fetchTemplates();
-        reelTemplates.assignAll(generic);
+        // Filter for Posts (posts, post, image)
+        postTemplates.assignAll(
+          allTemplates.where((t) {
+            final type = (t.type ?? '').toLowerCase();
+            return type == 'post' || type == 'posts' || type == 'image';
+          }).toList(),
+        );
+
+        // Filter for Stories (stories, story)
+        storyTemplates.assignAll(
+          allTemplates.where((t) {
+            final type = (t.type ?? '').toLowerCase();
+            return type.contains('story');
+          }).toList(),
+        );
+      } else {
+        // Clear all if empty
+        reelTemplates.clear();
+        postTemplates.clear();
+        storyTemplates.clear();
       }
     } catch (e) {
       print("Error fetching templates: $e");

@@ -9,7 +9,7 @@ import '../controller/homeController.dart';
 
 class HomePage extends StatelessWidget {
   final HomeController controller = Get.put(HomeController());
-  
+
   // Floating button widget for the menu items
   Widget floatingButton(String label, IconData icon) {
     return Column(
@@ -61,7 +61,7 @@ class HomePage extends StatelessWidget {
       bool selected = controller.selectedIndex.value == index;
       Color activeColor = const Color(0xFF007CFE);
       Color inactiveColor = const Color(0xFFC4C4C4);
-      
+
       return GestureDetector(
         onTap: () {
           debugPrint('Nav item $label tapped, index: $index');
@@ -126,7 +126,11 @@ class HomePage extends StatelessWidget {
                     clipper: CustomNotchClipper(),
                     child: Container(
                       height: 70.h,
-                      padding: EdgeInsets.only(left: 20.w, right: 20.w, bottom: 10.h),
+                      padding: EdgeInsets.only(
+                        left: 20.w,
+                        right: 20.w,
+                        bottom: 10.h,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -134,8 +138,16 @@ class HomePage extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                navItem(Icons.grid_view_rounded, 0, "Dashboard"),
-                                navItem(Icons.video_library_rounded, 1, "Posts"),
+                                navItem(
+                                  Icons.grid_view_rounded,
+                                  0,
+                                  "Dashboard",
+                                ),
+                                navItem(
+                                  Icons.video_library_rounded,
+                                  1,
+                                  "Posts",
+                                ),
                               ],
                             ),
                           ),
@@ -144,7 +156,11 @@ class HomePage extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                navItem(Icons.access_time_filled_rounded, 2, "Schedules"),
+                                navItem(
+                                  Icons.access_time_filled_rounded,
+                                  2,
+                                  "Schedules",
+                                ),
                                 navItem(Icons.person_rounded, 3, "Profile"),
                               ],
                             ),
@@ -156,12 +172,15 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-            floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerDocked,
             floatingActionButton: Padding(
               padding: EdgeInsets.only(top: 5.h),
               child: GestureDetector(
                 onTap: () {
-                  debugPrint('FAB tapped, isExpanded: ${controller.isExpanded.value}');
+                  debugPrint(
+                    'FAB tapped, isExpanded: ${controller.isExpanded.value}',
+                  );
                   controller.toggleExpand();
                 },
                 child: Obx(() {
@@ -188,92 +207,115 @@ class HomePage extends StatelessWidget {
                     ),
                     child: controller.isExpanded.value
                         ? ShaderMask(
-                            shaderCallback: (bounds) => const LinearGradient(
-                              colors: [Color(0xFFE4405F), Color(0xFF6A5AEF)],
-                            ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                            shaderCallback: (bounds) =>
+                                const LinearGradient(
+                                  colors: [
+                                    Color(0xFFE4405F),
+                                    Color(0xFF6A5AEF),
+                                  ],
+                                ).createShader(
+                                  Rect.fromLTWH(
+                                    0,
+                                    0,
+                                    bounds.width,
+                                    bounds.height,
+                                  ),
+                                ),
                             child: Icon(
                               Icons.add,
                               size: 35.r,
                               color: Colors.white,
                             ),
                           )
-                        : Icon(
-                            Icons.add,
-                            size: 35.r,
-                            color: Colors.white,
-                          ),
+                        : Icon(Icons.add, size: 35.r, color: Colors.white),
                   );
                 }),
               ),
             ),
           ),
-          
+
           // Floating Menu Items (Positioned based on image layout)
-          Obx(() => IgnorePointer(
-            ignoring: !controller.isExpanded.value,
-            child: AnimatedBuilder(
-              animation: controller.controller,
-              builder: (context, child) {
-                // Arrangement: POST (West), REEL (North), STORY (East)
-                // Reduced radius to bring items closer
-                double radius = 85.h;
-                
-                return Stack(
-                  children: [
-                    // REEL (Top/North)
-                    Positioned(
-                      bottom: 85.h + (controller.animation.value * radius),
-                      left: 0.5.sw - 32.5.r,
-                      child: Opacity(
-                        opacity: controller.animation.value,
-                        child: GestureDetector(
-                          onTap: () {
-                            debugPrint("REEL tapped");
-                            controller.navigateToReels();
-                          },
-                          child: floatingButton("REEL", Icons.movie_outlined),
+          Obx(
+            () => IgnorePointer(
+              ignoring: !controller.isExpanded.value,
+              child: AnimatedBuilder(
+                animation: controller.controller,
+                builder: (context, child) {
+                  // Arrangement: POST (West), REEL (North), STORY (East)
+                  // Reduced radius to bring items closer
+                  double radius = 85.h;
+
+                  return Stack(
+                    children: [
+                      // REEL (Top/North)
+                      Positioned(
+                        bottom: 85.h + (controller.animation.value * radius),
+                        left: 0.5.sw - 32.5.r,
+                        child: Opacity(
+                          opacity: controller.animation.value,
+                          child: GestureDetector(
+                            onTap: () {
+                              debugPrint("REEL tapped");
+                              controller.navigateToReels();
+                            },
+                            child: floatingButton("REEL", Icons.movie_outlined),
+                          ),
                         ),
                       ),
-                    ),
-                    // POST (Left/West)
-                    Positioned(
-                      bottom: 45.h + (controller.animation.value * radius * 0.4),
-                      left: 0.5.sw - 32.5.r - (controller.animation.value * radius * 0.7),
-                      child: Opacity(
-                        opacity: controller.animation.value,
-                        child: GestureDetector(
-                          onTap: () {
-                            debugPrint("POST tapped");
-                            controller.navigateToPosts();
-                          },
-                          child: floatingButton("POST", Icons.dashboard_customize_outlined),
+                      // POST (Left/West)
+                      Positioned(
+                        bottom:
+                            45.h + (controller.animation.value * radius * 0.4),
+                        left:
+                            0.5.sw -
+                            32.5.r -
+                            (controller.animation.value * radius * 0.7),
+                        child: Opacity(
+                          opacity: controller.animation.value,
+                          child: GestureDetector(
+                            onTap: () {
+                              debugPrint("POST tapped");
+                              controller.navigateToPosts();
+                            },
+                            child: floatingButton(
+                              "POST",
+                              Icons.dashboard_customize_outlined,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    // STORY (Right/East)
-                    Positioned(
-                      bottom: 45.h + (controller.animation.value * radius * 0.4),
-                      left: 0.5.sw - 32.5.r + (controller.animation.value * radius * 0.7),
-                      child: Opacity(
-                        opacity: controller.animation.value,
-                        child: GestureDetector(
-                          onTap: () {
-                            debugPrint("STORY tapped");
-                            controller.navigateToStories();
-                          },
-                          child: floatingButton("STORY", Icons.amp_stories_outlined),
+                      // STORY (Right/East)
+                      Positioned(
+                        bottom:
+                            45.h + (controller.animation.value * radius * 0.4),
+                        left:
+                            0.5.sw -
+                            32.5.r +
+                            (controller.animation.value * radius * 0.7),
+                        child: Opacity(
+                          opacity: controller.animation.value,
+                          child: GestureDetector(
+                            onTap: () {
+                              debugPrint("STORY tapped");
+                              controller.navigateToStories();
+                            },
+                            child: floatingButton(
+                              "STORY",
+                              Icons.amp_stories_outlined,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
-}
+  }
 }
 
 class CustomNotchClipper extends CustomClipper<Path> {
@@ -293,16 +335,22 @@ class CustomNotchClipper extends CustomClipper<Path> {
 
     // Smooth curve into the notch
     path.cubicTo(
-      centerX - notchWidth / 2, 0,
-      centerX - notchWidth / 4, notchHeight,
-      centerX, notchHeight,
+      centerX - notchWidth / 2,
+      0,
+      centerX - notchWidth / 4,
+      notchHeight,
+      centerX,
+      notchHeight,
     );
 
     // Smooth curve out of the notch
     path.cubicTo(
-      centerX + notchWidth / 4, notchHeight,
-      centerX + notchWidth / 2, 0,
-      centerX + notchWidth / 2 + 20.w, 0,
+      centerX + notchWidth / 4,
+      notchHeight,
+      centerX + notchWidth / 2,
+      0,
+      centerX + notchWidth / 2 + 20.w,
+      0,
     );
 
     path.lineTo(size.width - cornerRadius, 0);

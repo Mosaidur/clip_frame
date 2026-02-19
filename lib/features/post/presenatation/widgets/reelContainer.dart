@@ -16,7 +16,8 @@ class ReelsContainerPage extends StatelessWidget {
     required this.title,
     this.isFavorite = false,
     required this.onCreate,
-    required this.onFavoriteToggle, required this.width,
+    required this.onFavoriteToggle,
+    required this.width,
   });
 
   @override
@@ -40,8 +41,7 @@ class ReelsContainerPage extends StatelessWidget {
                 children: [
                   // Background image
                   ClipRRect(
-                    borderRadius:
-                     BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(15),
                     child: Image.asset(
                       imagePath,
                       width: double.infinity,
@@ -55,8 +55,10 @@ class ReelsContainerPage extends StatelessWidget {
                     top: 10,
                     left: 10,
                     child: Container(
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF277F),
                         borderRadius: BorderRadius.circular(25),
@@ -79,15 +81,20 @@ class ReelsContainerPage extends StatelessWidget {
                     left: 10,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.timer,
-                              color: Colors.white, size: 14),
+                          const Icon(
+                            Icons.timer,
+                            color: Colors.white,
+                            size: 14,
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             time,
@@ -116,8 +123,7 @@ class ReelsContainerPage extends StatelessWidget {
                           color: Colors.black.withOpacity(0.3),
                         ),
                         child: Icon(
-                          isFavorite
-                              ? Icons.favorite: Icons.favorite_border,
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
                           color: isFavorite
                               ? const Color(0xFFFF277F)
                               : Colors.white,
@@ -133,8 +139,7 @@ class ReelsContainerPage extends StatelessWidget {
 
           // Title
           Padding(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Text(
               title,
               textAlign: TextAlign.center,
@@ -151,7 +156,12 @@ class ReelsContainerPage extends StatelessWidget {
 
           // Create Button
           Padding(
-            padding: const EdgeInsets.only(bottom: 10,left: 15,right: 15,top: 10),
+            padding: const EdgeInsets.only(
+              bottom: 10,
+              left: 15,
+              right: 15,
+              top: 10,
+            ),
             child: SizedBox(
               height: 35,
               width: double.infinity,

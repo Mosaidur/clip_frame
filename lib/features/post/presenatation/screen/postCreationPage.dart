@@ -52,9 +52,11 @@ class _PostCreationPageState extends State<PostCreationPage> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       key: _scaffoldKey,
       drawer: CustomDrawerPage(),
       body: SafeArea(
+        bottom: false,
         child: Container(
           height: double.infinity,
           color: Colors.transparent,
@@ -322,7 +324,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                   }
                 }),
 
-                SizedBox(height: 30),
+                SizedBox(height: 100),
               ],
             ),
           ),
