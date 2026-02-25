@@ -60,12 +60,31 @@ class ContentTemplateModel {
       updatedAt: json['updatedAt'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'title': title,
+      'description': description,
+      'type': type,
+      'category': category,
+      'thumbnail': thumbnail,
+      'steps': steps?.map((s) => s.toJson()).toList(),
+      'hashtags': hashtags,
+      'isActive': isActive,
+      'stats': stats?.toJson(),
+      'createdBy': createdBy?.toJson(),
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
 }
 
 class TemplateStep {
   final String? id;
   final String? title;
   final String? description;
+  final String? mainTip;
   final String? mediaType;
   final String? url;
   final String? shotType;
@@ -75,6 +94,7 @@ class TemplateStep {
     this.id,
     this.title,
     this.description,
+    this.mainTip,
     this.mediaType,
     this.url,
     this.shotType,
@@ -86,11 +106,25 @@ class TemplateStep {
       id: json['_id'],
       title: json['title'],
       description: json['description'],
+      mainTip: json['mainTip'],
       mediaType: json['mediaType'],
       url: json['url'],
       shotType: json['shotType'],
       duration: _toInt(json['duration']),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'title': title,
+      'description': description,
+      'mainTip': mainTip,
+      'mediaType': mediaType,
+      'url': url,
+      'shotType': shotType,
+      'duration': duration,
+    };
   }
 }
 
@@ -110,6 +144,14 @@ class TemplateStats {
           : null,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'loveCount': loveCount,
+      'reuseCount': reuseCount,
+      'lovedBy': lovedBy,
+    };
+  }
 }
 
 class CreatedBy {
@@ -121,6 +163,10 @@ class CreatedBy {
 
   factory CreatedBy.fromJson(Map<String, dynamic> json) {
     return CreatedBy(id: json['_id'], name: json['name'], email: json['email']);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'_id': id, 'name': name, 'email': email};
   }
 }
 

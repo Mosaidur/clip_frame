@@ -16,6 +16,8 @@ import 'package:clip_frame/core/services/api_services/my_content_service.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/EditProfileScreen.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:clip_frame/core/services/api_services/social_auth_service.dart';
 
 class MyProfileController extends GetxController {
   var selectedTab = 0.obs; // 0 = About Me, 1 = My Creations
@@ -32,7 +34,20 @@ class MyProfileController extends GetxController {
     api.LogoutController(),
   );
 
+  // Social Auth Service
+  final SocialAuthService _socialAuthService = SocialAuthService();
+
   Rx<UserModel?> userModel = Rx<UserModel?>(null);
+
+  // Platform Selection
+  final List<Map<String, dynamic>> socialPlatformOptions = [
+    {'name': 'Facebook', 'key': 'facebook'},
+    {'name': 'Instagram', 'key': 'instagram'},
+    {'name': 'TikTok', 'key': 'tiktok'},
+  ];
+  var tempSelectedPlatforms = <String>[].obs;
+  var selectedPlatformIndex =
+      0.obs; // To track focused platform in selection UI
 
   // My Creations
   var myCreations = <ContentItem>[].obs;
@@ -42,8 +57,10 @@ class MyProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    getUserProfile();
-    fetchMyCreations();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      getUserProfile();
+      fetchMyCreations();
+    });
   }
 
   Future<void> getUserProfile() async {
@@ -78,6 +95,7 @@ class MyProfileController extends GetxController {
           if (userResponse.success && userResponse.data != null) {
             userModel.value = userResponse.data;
             print('🟣 User model updated: ${userModel.value?.name}');
+            print('🟣 User Image URL: ${userModel.value?.image}');
           } else {
             errorMessage.value = userResponse.message;
             print('🟣 Error from API: ${userResponse.message}');
@@ -153,11 +171,27 @@ class MyProfileController extends GetxController {
   Future<void> updateProfile({
     required String name,
     required String phone,
+    String? businessCategory,
+    String? businessName,
   }) async {
     isUpdating.value = true;
+    Get.snackbar(
+      'Profile Update',
+      'Starting update process...',
+      backgroundColor: Colors.blue.withOpacity(0.7),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+      isDismissible: true,
+      showProgressIndicator: true,
+    );
     try {
       String? token = await AuthService.getToken();
-      Map<String, dynamic> body = {'name': name, 'phone': phone};
+      Map<String, dynamic> body = {
+        'name': name,
+        'phone': phone,
+        if (businessCategory != null) 'businessCategory': businessCategory,
+        if (businessName != null) 'businessName': businessName,
+      };
 
       NetworkResponse response;
       if (selectedImage.value != null) {
@@ -166,8 +200,7 @@ class MyProfileController extends GetxController {
               url: Urls.updateUserProfileUrl,
               body: body,
               file: selectedImage.value!,
-              fileKey:
-                  'profilePicture', // Common key, can be 'image' or 'avatar'
+              fileKey: 'image', // As per API documentation
               token: token,
             ).timeout(
               const Duration(seconds: 30),
@@ -197,20 +230,67 @@ class MyProfileController extends GetxController {
             );
       }
 
+      debugPrint("📡 [UpdateProfile] Full Response: ${response.responseBody}");
+
       if (response.isSuccess) {
+        Get.closeAllSnackbars();
         Get.snackbar(
-          'Success',
-          'Profile updated successfully',
+          'Success ✅',
+          'Profile and Image updated successfully!',
           backgroundColor: Colors.green,
           colorText: Colors.white,
-          duration: const Duration(seconds: 2),
+          duration: const Duration(seconds: 3),
+          icon: const Icon(Icons.check_circle, color: Colors.white),
         );
         Get.back(); // Close edit screen immediately
         await getUserProfile(); // Refresh data
       } else {
+        Get.closeAllSnackbars();
+        String msg = response.errorMessage ?? 'Update failed';
+        if (msg.contains("delete file to S3")) {
+          msg =
+              "Critical Server Error: Failed to remove old S3 file. Please apply the try-catch fix on your Node.js backend (user.service.ts) to allow profile updates.";
+        }
         Get.snackbar(
-          'Error',
-          response.errorMessage ?? 'Update failed',
+          'Update Failed ❌',
+          msg,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 10),
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Update failed: $e');
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
+  Future<void> updatePlatforms(List<String> platforms) async {
+    isUpdating.value = true;
+    try {
+      String? token = await AuthService.getToken();
+      Map<String, dynamic> body = {'platforms': platforms};
+
+      final response = await NetworkCaller.patchRequest(
+        url: Urls.updateUserProfileUrl,
+        body: body,
+        token: token,
+      );
+
+      if (response.isSuccess) {
+        Get.snackbar(
+          'Success ✅',
+          'Platforms updated successfully!',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        await getUserProfile();
+      } else {
+        Get.snackbar(
+          'Update Failed ❌',
+          response.errorMessage ?? 'Failed to update platforms',
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -261,6 +341,131 @@ class MyProfileController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  // --- Dynamic Social Connection Methods ---
+
+  Future<void> connectFacebook({bool switchAccount = false}) async {
+    try {
+      isUpdating.value = true;
+
+      if (switchAccount) {
+        print("🔄 Switching Facebook Account: Logging out current session...");
+        await FacebookAuth.instance.logOut();
+      }
+
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: [
+          'email',
+          'public_profile',
+          'pages_show_list',
+          'pages_read_engagement',
+          'pages_manage_posts',
+        ],
+        loginBehavior: switchAccount
+            ? LoginBehavior.webOnly
+            : LoginBehavior.dialogOnly,
+      );
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        print("Facebook Access Token: ${accessToken.tokenString}");
+
+        bool success = await _socialAuthService.connectFacebook(
+          accessToken.tokenString,
+        );
+        if (success) {
+          Get.snackbar(
+            "Success ✅",
+            "Connected to Facebook successfully!",
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+          );
+          await getUserProfile(); // Refresh UI
+        } else {
+          Get.snackbar(
+            "Account Link Error ❌",
+            "Failed to link Facebook to your account.",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
+      } else if (result.status != LoginStatus.cancelled) {
+        Get.snackbar(
+          "Login Failed",
+          result.message ?? "Facebook login failed.",
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar("Error", "An unexpected error occurred: $e");
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
+  Future<void> connectInstagram({bool switchAccount = false}) async {
+    try {
+      isUpdating.value = true;
+
+      if (switchAccount) {
+        print("🔄 Switching Instagram Account: Logging out current session...");
+        await FacebookAuth.instance.logOut();
+      }
+
+      // Instagram Graph API via Facebook Login
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: [
+          'email',
+          'public_profile',
+          'pages_show_list',
+          'instagram_basic',
+          'instagram_content_publish',
+          'instagram_manage_insights',
+          'business_management',
+        ],
+        loginBehavior: switchAccount
+            ? LoginBehavior.webOnly
+            : LoginBehavior.dialogOnly,
+      );
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        print("Instagram (via FB) Access Token: ${accessToken.tokenString}");
+
+        bool success = await _socialAuthService.connectInstagram(
+          accessToken.tokenString,
+        );
+        if (success) {
+          Get.snackbar(
+            "Success ✅",
+            "Connected to Instagram successfully!",
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+          );
+          await getUserProfile(); // Refresh UI
+        } else {
+          Get.snackbar(
+            "Account Link Error ❌",
+            "Failed to link Instagram to your account.",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
+      } else if (result.status != LoginStatus.cancelled) {
+        Get.snackbar(
+          "Login Failed",
+          result.message ?? "Instagram login failed.",
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar("Error", "An unexpected error occurred: $e");
+    } finally {
+      isUpdating.value = false;
+    }
+  }
 }
 
 class MyProfilePage extends StatelessWidget {
@@ -268,7 +473,7 @@ class MyProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(MyProfileController());
+    final controller = Get.find<MyProfileController>();
     final width = MediaQuery.of(context).size.width;
     // final height = MediaQuery.of(context).size.height; // Unused
 
@@ -348,28 +553,92 @@ class MyProfilePage extends StatelessWidget {
 
                   return Column(
                     children: [
-                      Container(
-                        height: 130,
-                        width: 130,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        child: ClipOval(
-                          child: Image.network(
-                            "https://example.com/profile.jpg", // Placeholder or from user.image if available
-                            height: 125,
-                            width: 125,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                "assets/images/profile_image.png",
-                                height: 100,
-                                width: 100,
-                                fit: BoxFit.cover,
-                              );
-                            },
-                          ),
+                      GestureDetector(
+                        onTap: () async {
+                          await controller.pickImage();
+                          if (controller.selectedImage.value != null) {
+                            // Show loading or confirm update
+                            await controller.updateProfile(
+                              name: user?.name ?? "",
+                              phone: user?.phone ?? "",
+                            );
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: 140,
+                              width: 140,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFFF277F),
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFFFF277F,
+                                    ).withOpacity(0.2),
+                                    blurRadius: 15,
+                                    spreadRadius: 5,
+                                  ),
+                                ],
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(3.0),
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                  ),
+                                  child: ClipOval(
+                                    child:
+                                        controller.selectedImage.value != null
+                                        ? Image.file(
+                                            controller.selectedImage.value!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : (user?.image != null &&
+                                              user!.image!.isNotEmpty)
+                                        ? Image.network(
+                                            user.image!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (
+                                                  context,
+                                                  error,
+                                                  stackTrace,
+                                                ) => Image.asset(
+                                                  "assets/images/profile_image.png",
+                                                  fit: BoxFit.cover,
+                                                ),
+                                          )
+                                        : Image.asset(
+                                            "assets/images/profile_image.png",
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 5,
+                              right: 5,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Color(0xFF007CFE),
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 8),

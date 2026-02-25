@@ -14,6 +14,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final MyProfileController controller = Get.find<MyProfileController>();
   final TextEditingController _nameTEController = TextEditingController();
   final TextEditingController _phoneTEController = TextEditingController();
+  final TextEditingController _businessNameTEController =
+      TextEditingController();
+  final TextEditingController _businessCategoryTEController =
+      TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -22,15 +27,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (user != null) {
       _nameTEController.text = user.name;
       _phoneTEController.text = user.phone;
+      _businessNameTEController.text = user.businessName ?? "";
+      _businessCategoryTEController.text = user.businessCategory ?? "";
     }
-    // Reset selected image on init
-    controller.selectedImage.value = null;
+    // Reset selected image after build to avoid setState during build error
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.selectedImage.value = null;
+    });
   }
 
   @override
   void dispose() {
     _nameTEController.dispose();
     _phoneTEController.dispose();
+    _businessNameTEController.dispose();
+    _businessCategoryTEController.dispose();
     super.dispose();
   }
 
@@ -96,8 +107,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     controller.selectedImage.value!,
                                     fit: BoxFit.cover,
                                   )
-                                : Image.network(
-                                    "https://example.com/profile.jpg", // Placeholder
+                                : (controller.userModel.value?.image != null &&
+                                      controller
+                                          .userModel
+                                          .value!
+                                          .image!
+                                          .isNotEmpty)
+                                ? Image.network(
+                                    controller.userModel.value!.image!,
                                     fit: BoxFit.cover,
                                     errorBuilder:
                                         (context, error, stackTrace) =>
@@ -106,6 +123,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                               size: 60,
                                               color: Colors.grey,
                                             ),
+                                  )
+                                : const Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: Colors.grey,
                                   ),
                           ),
                         );
@@ -148,55 +170,106 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ],
                   ),
-                  child: Column(
-                    children: [
-                      _buildTextField("Full Name", _nameTEController),
-                      const SizedBox(height: 16),
-                      _buildTextField("Phone Number", _phoneTEController),
-                      const SizedBox(height: 30),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildTextField(
+                          "Full Name",
+                          _nameTEController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          "Phone Number",
+                          _phoneTEController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter phone number';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          "Business Name",
+                          _businessNameTEController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter business name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          "Business Category",
+                          _businessCategoryTEController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter business category';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 30),
 
-                      // Save Button
-                      Obx(
-                        () => SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: controller.isUpdating.value
-                                ? null
-                                : () {
-                                    controller.updateProfile(
-                                      name: _nameTEController.text.trim(),
-                                      phone: _phoneTEController.text.trim(),
-                                    );
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFB38FFC),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                        // Save Button
+                        Obx(
+                          () => SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: controller.isUpdating.value
+                                  ? null
+                                  : () {
+                                      if (_formKey.currentState!.validate()) {
+                                        controller.updateProfile(
+                                          name: _nameTEController.text.trim(),
+                                          phone: _phoneTEController.text.trim(),
+                                          businessName:
+                                              _businessNameTEController.text
+                                                  .trim(),
+                                          businessCategory:
+                                              _businessCategoryTEController.text
+                                                  .trim(),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFB38FFC),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                elevation: 0,
                               ),
-                              elevation: 0,
+                              child: controller.isUpdating.value
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      "Save Changes",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                             ),
-                            child: controller.isUpdating.value
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    "Save Changes",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -207,7 +280,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    String? Function(String?)? validator,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -220,8 +297,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField(
           controller: controller,
+          validator: validator,
           decoration: InputDecoration(
             hintText: "Enter $label",
             border: OutlineInputBorder(
@@ -235,6 +313,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Colors.purple),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red),
             ),
             filled: true,
             fillColor: Colors.grey[50],

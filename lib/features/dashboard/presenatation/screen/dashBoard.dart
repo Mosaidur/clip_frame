@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
 import '../widgets/schedule_list.dart';
 import '../../../premium/presentation/widgets/premium_welcome_modal.dart';
+import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 import 'dart:typed_data';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -169,7 +170,11 @@ class _DashBoardPageState extends State<DashBoardPage> {
                     ),
                   ],
                 ),
-                _buildProfileAvatar(),
+                Obx(() {
+                  final profileController = Get.find<MyProfileController>();
+                  final user = profileController.userModel.value;
+                  return _buildProfileAvatar(user?.image);
+                }),
               ],
             ),
           ),
@@ -180,31 +185,35 @@ class _DashBoardPageState extends State<DashBoardPage> {
     );
   }
 
-  Widget _buildProfileAvatar() {
-    return Container(
-      width: 50.r,
-      height: 50.r,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.grey[300],
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: imageUrl == null || imageUrl!.isEmpty
-          ? Icon(Icons.person, size: 30.r, color: Colors.white)
-          : ClipOval(
-              child: Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Icon(Icons.person, size: 30.r, color: Colors.white),
-              ),
+  Widget _buildProfileAvatar(String? avatarUrl) {
+    return GestureDetector(
+      onTap: () => Get.find<HomeController>().changePage(3),
+      child: Container(
+        width: 50.r,
+        height: 50.r,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.grey[300],
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              spreadRadius: 2,
             ),
+          ],
+        ),
+        child: avatarUrl == null || avatarUrl.isEmpty
+            ? Icon(Icons.person, size: 30.r, color: Colors.white)
+            : ClipOval(
+                child: Image.network(
+                  avatarUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.person, size: 30.r, color: Colors.white),
+                ),
+              ),
+      ),
     );
   }
 

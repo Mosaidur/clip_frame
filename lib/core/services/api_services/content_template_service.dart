@@ -24,8 +24,6 @@ class ContentTemplateService {
       if (response.isSuccess && response.responseBody != null) {
         final dynamic body = response.responseBody;
         dynamic rawData;
-
-        // Try different structures: data -> data OR just data OR content_templates
         if (body['data'] != null) {
           if (body['data'] is Map && body['data']['data'] != null) {
             rawData = body['data']['data'];

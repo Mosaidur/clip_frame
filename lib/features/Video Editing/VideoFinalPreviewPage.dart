@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:video_player/video_player.dart';
 import '../post/presenatation/Screen_2/schedule_post_screen.dart';
+import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:get/get.dart';
 
 class VideoFinalPreviewPage extends StatefulWidget {
@@ -23,13 +24,10 @@ class VideoFinalPreviewPage extends StatefulWidget {
 }
 
 class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
-
-
   late VideoPlayerController _controller;
   bool _initialized = false;
   bool _showControls = true;
   String? _errorMessage;
-
 
   @override
   void initState() {
@@ -41,9 +39,9 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
     try {
       // Small delay to allow previous screen's player to fully release hardware resources
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       debugPrint("Initializing Video Player with: ${widget.videoFile.path}");
-      
+
       if (!await widget.videoFile.exists()) {
         setState(() {
           _errorMessage = "File not found at: ${widget.videoFile.path}";
@@ -52,9 +50,9 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
       }
 
       _controller = VideoPlayerController.file(widget.videoFile);
-      
+
       await _controller.initialize();
-      
+
       if (mounted) {
         setState(() {
           _initialized = true;
@@ -91,7 +89,9 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Stack(
@@ -116,22 +116,29 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
                         ),
                       )
                     : _errorMessage != null
-                        ? Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 20.w),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.error_outline, color: Colors.red, size: 50.r),
-                                SizedBox(height: 10.h),
-                                Text(
-                                  _errorMessage!,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.white, fontSize: 14.sp),
-                                ),
-                              ],
+                    ? Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 50.r,
                             ),
-                          )
-                        : const CircularProgressIndicator(color: Colors.white),
+                            SizedBox(height: 10.h),
+                            Text(
+                              _errorMessage!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14.sp,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const CircularProgressIndicator(color: Colors.white),
               ),
             ),
 
@@ -147,7 +154,11 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
                     color: Colors.black.withOpacity(0.3),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.arrow_back_ios_new_rounded, size: 20.r, color: Colors.white),
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20.r,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -170,7 +181,11 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
                     ),
                     child: Text(
                       widget.caption,
-                      style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   SizedBox(height: 12.h),
@@ -181,15 +196,24 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
                       children: widget.hashtags.map((tag) {
                         return Container(
                           margin: EdgeInsets.only(right: 8.w),
-                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 6.h,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20.r),
-                            border: Border.all(color: Colors.white.withOpacity(0.2)),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
                           ),
                           child: Text(
                             tag,
-                            style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         );
                       }).toList(),
@@ -206,21 +230,31 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _buildControlButton(Icons.replay_10_rounded, () {
-                      _controller.seekTo(_controller.value.position - const Duration(seconds: 10));
+                      _controller.seekTo(
+                        _controller.value.position -
+                            const Duration(seconds: 10),
+                      );
                     }),
                     SizedBox(width: 30.w),
                     _buildControlButton(
-                      _controller.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      _controller.value.isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
                       () {
                         setState(() {
-                          _controller.value.isPlaying ? _controller.pause() : _controller.play();
+                          _controller.value.isPlaying
+                              ? _controller.pause()
+                              : _controller.play();
                         });
                       },
                       isLarge: true,
                     ),
                     SizedBox(width: 30.w),
                     _buildControlButton(Icons.forward_10_rounded, () {
-                      _controller.seekTo(_controller.value.position + const Duration(seconds: 10));
+                      _controller.seekTo(
+                        _controller.value.position +
+                            const Duration(seconds: 10),
+                      );
                     }),
                   ],
                 ),
@@ -237,8 +271,20 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(_formatDuration(_controller.value.position), style: TextStyle(color: Colors.white, fontSize: 12.sp)),
-                            Text(_formatDuration(_controller.value.duration), style: TextStyle(color: Colors.white, fontSize: 12.sp)),
+                            Text(
+                              _formatDuration(_controller.value.position),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.sp,
+                              ),
+                            ),
+                            Text(
+                              _formatDuration(_controller.value.duration),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.sp,
+                              ),
+                            ),
                           ],
                         ),
                         VideoProgressIndicator(
@@ -279,12 +325,18 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0080FF),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.r),
+                    ),
                     elevation: 0,
                   ),
                   child: Text(
                     "Done",
-                    style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -295,7 +347,11 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
     );
   }
 
-  Widget _buildControlButton(IconData icon, VoidCallback onTap, {bool isLarge = false}) {
+  Widget _buildControlButton(
+    IconData icon,
+    VoidCallback onTap, {
+    bool isLarge = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(

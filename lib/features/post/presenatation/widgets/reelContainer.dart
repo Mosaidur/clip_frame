@@ -42,12 +42,7 @@ class ReelsContainerPage extends StatelessWidget {
                   // Background image
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15),
-                    child: Image.asset(
-                      imagePath,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                    child: _buildImage(imagePath),
                   ),
 
                   // Top left "Reels"
@@ -187,6 +182,83 @@ class ReelsContainerPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImage(String path) {
+    if (path.isEmpty) {
+      return _buildPlaceholder();
+    }
+
+    final isNetwork = path.startsWith('http') || path.startsWith('https');
+
+    if (isNetwork) {
+      return Image.network(
+        path,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildPlaceholder(isLoading: true);
+        },
+      );
+    } else {
+      return Image.asset(
+        path,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+  }
+
+  Widget _buildPlaceholder({bool isLoading = false}) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFFF277F).withOpacity(0.1),
+            const Color(0xFF007CFE).withOpacity(0.1),
+          ],
+        ),
+      ),
+      child: Center(
+        child: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF277F)),
+                ),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.movie_creation_outlined,
+                    color: const Color(0xFFFF277F).withOpacity(0.5),
+                    size: 40,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Reel",
+                    style: TextStyle(
+                      color: const Color(0xFFFF277F).withOpacity(0.5),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

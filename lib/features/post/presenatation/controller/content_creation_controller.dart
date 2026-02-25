@@ -1,6 +1,9 @@
 import 'package:clip_frame/core/model/content_template_model.dart';
 import 'package:clip_frame/core/services/api_services/content_template_service.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:clip_frame/core/model/my_content_model.dart';
+import 'package:clip_frame/core/services/api_services/my_content_service.dart';
 
 class ContentCreationController extends GetxController {
   static ContentCreationController get to => Get.find();
@@ -14,53 +17,142 @@ class ContentCreationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchAllTemplates();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchAllTemplates();
+    });
   }
 
   Future<void> fetchAllTemplates() async {
     isLoading.value = true;
     try {
-      // Fetch all templates and filter locally to ensure robustness
-      final allTemplates = await ContentTemplateService.fetchTemplates();
+      // 1. Fetch Reels separately to ensure we get all available items
+      debugPrint("📡 [ContentCreationController] Fetching Reels...");
+      final allReelTemplates =
+          await ContentTemplateService.fetchTemplatesByType('reel');
+      debugPrint(
+        "📥 [ContentCreationController] Received ${allReelTemplates.length} raw Reel templates.",
+      );
 
-      if (allTemplates.isNotEmpty) {
-        // Filter for Reels (reels, reel, video, short)
-        // Filter for Reels (reels, reel, video, short) - TEMPORARY DEBUG: SHOW ALL
-        reelTemplates.assignAll(allTemplates);
-        /*
-        reelTemplates.assignAll(
-          allTemplates.where((t) {
-            final type = (t.type ?? '').toLowerCase();
-            return type.contains('reel') ||
-                type.contains('video') ||
-                type.contains('short');
-          }).toList(),
-        );
-        */
+      // Re-apply strict filter to ensure no posts leaked into the reel fetch (if server is loose)
+      reelTemplates.assignAll(
+        allReelTemplates.where((t) {
+          final type = (t.type ?? '').toLowerCase();
+          final category = (t.category ?? '').toLowerCase();
+          final title = (t.title ?? '').toLowerCase();
 
-        // Filter for Posts (posts, post, image)
-        postTemplates.assignAll(
-          allTemplates.where((t) {
-            final type = (t.type ?? '').toLowerCase();
-            return type == 'post' || type == 'posts' || type == 'image';
-          }).toList(),
-        );
+          // STRICT EXCLUSION: No posts/images in Reels tab
+          if (type == 'post' || type == 'posts' || type == 'image') {
+            return false;
+          }
 
-        // Filter for Stories (stories, story)
-        storyTemplates.assignAll(
-          allTemplates.where((t) {
-            final type = (t.type ?? '').toLowerCase();
-            return type.contains('story');
-          }).toList(),
+          bool hasVideoSign = false;
+          if (t.steps != null && t.steps!.isNotEmpty) {
+            final url = (t.steps![0].url ?? '').toLowerCase();
+            if (url.endsWith('.mp4') ||
+                url.contains('video') ||
+                url.contains('mov')) {
+              hasVideoSign = true;
+            }
+          }
+
+          final isReel =
+              type.contains('reel') ||
+              type.contains('video') ||
+              type.contains('short') ||
+              type.contains('movie') ||
+              category.contains('reel') ||
+              category.contains('video') ||
+              title.contains('reel') ||
+              hasVideoSign;
+
+          if (isReel) {
+            debugPrint(
+              "   🎬 Identified Reel: '${t.title}' (ID: ${t.id}, Type: $type)",
+            );
+          }
+          return isReel;
+        }).toList(),
+      );
+
+      // 2. Fetch Posts separately
+      debugPrint("📡 [ContentCreationController] Fetching Posts...");
+      final allPostTemplates =
+          await ContentTemplateService.fetchTemplatesByType('post');
+      debugPrint(
+        "📥 [ContentCreationController] Received ${allPostTemplates.length} raw Post templates.",
+      );
+
+      postTemplates.assignAll(
+        allPostTemplates.where((t) {
+          final type = (t.type ?? '').toLowerCase();
+          return type == 'post' || type == 'posts' || type == 'image';
+        }).toList(),
+      );
+
+      // 3. Fetch Stories separately
+      debugPrint("📡 [ContentCreationController] Fetching Stories...");
+      final allStoryTemplates =
+          await ContentTemplateService.fetchTemplatesByType('story');
+      debugPrint(
+        "📥 [ContentCreationController] Received ${allStoryTemplates.length} raw Story templates.",
+      );
+
+      storyTemplates.assignAll(
+        allStoryTemplates.where((t) {
+          final type = (t.type ?? '').toLowerCase();
+          return type.contains('story');
+        }).toList(),
+      );
+
+      // 4. Fetch User-Created Content and Merge into Reels
+      debugPrint(
+        "📡 [ContentCreationController] Fetching User-Created Reels...",
+      );
+      try {
+        final userContentResponse = await MyContentService.getMyContents();
+        if (userContentResponse.isSuccess &&
+            userContentResponse.responseBody != null) {
+          final myContents = MyContentsResponse.fromJson(
+            userContentResponse.responseBody!,
+          );
+
+          final userReels = myContents.data.data
+              .where((item) => item.contentType == 'reel')
+              .map((item) {
+                // Convert ContentItem to ContentTemplateModel
+                return ContentTemplateModel(
+                  id: item.id,
+                  title: item.caption.isNotEmpty ? item.caption : "My Reel",
+                  type: 'reel',
+                  category: 'User Created',
+                  steps: [
+                    TemplateStep(
+                      url: item.mediaUrls.isNotEmpty ? item.mediaUrls[0] : "",
+                    ),
+                  ],
+                  thumbnail: item.mediaUrls.isNotEmpty ? item.mediaUrls[0] : "",
+                );
+              })
+              .toList();
+
+          debugPrint(
+            "📥 [ContentCreationController] Merging ${userReels.length} User Reels into the list.",
+          );
+          // Insert at the beginning so they show up first
+          reelTemplates.insertAll(0, userReels);
+        }
+      } catch (e) {
+        debugPrint(
+          "⚠️ [ContentCreationController] Note: Could not fetch user reels: $e",
         );
-      } else {
-        // Clear all if empty
-        reelTemplates.clear();
-        postTemplates.clear();
-        storyTemplates.clear();
+        // Non-critical, so we don't crash the whole fetch
       }
+
+      debugPrint(
+        "✅ [ContentCreationController] Fetch Complete. Total Reels (Templates + User): ${reelTemplates.length}",
+      );
     } catch (e) {
-      print("Error fetching templates: $e");
+      debugPrint("⛔ ContentCreationController Error: $e");
     } finally {
       isLoading.value = false;
     }
@@ -87,6 +179,9 @@ class ContentCreationController extends GetxController {
   final Rx<DateTime?> scheduledDate = Rx<DateTime?>(null);
   final RxString scheduledTime = ''.obs; // e.g., "05:00 PM"
 
+  // Video Filters
+  final Rx<List<double>?> selectedFilterMatrix = Rx<List<double>?>(null);
+
   void reset() {
     templateId.value = '';
     mediaPath.value = '';
@@ -97,6 +192,7 @@ class ContentCreationController extends GetxController {
     remindMe.value = true;
     scheduledDate.value = null;
     scheduledTime.value = '';
+    selectedFilterMatrix.value = null;
   }
 
   void updateMetadata({String? newCaption, List<String>? newHashtags}) {

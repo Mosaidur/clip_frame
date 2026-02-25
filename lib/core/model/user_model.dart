@@ -47,6 +47,9 @@ class UserModel {
   final String membership;
   final List<String> preferredLanguages;
   final String businessType;
+  final String? image;
+  final String? businessName;
+  final String? businessCategory;
 
   UserModel({
     required this.sId,
@@ -65,6 +68,9 @@ class UserModel {
     required this.membership,
     required this.preferredLanguages,
     required this.businessType,
+    this.image,
+    this.businessName,
+    this.businessCategory,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -89,6 +95,9 @@ class UserModel {
           ? List<String>.from(json['preferredLanguages'])
           : [],
       businessType: json['businessType'] ?? '',
+      image: json['image'],
+      businessName: json['businessName'],
+      businessCategory: json['businessCategory'],
     );
   }
 
@@ -110,6 +119,9 @@ class UserModel {
       'membership': membership,
       'preferredLanguages': preferredLanguages,
       'businessType': businessType,
+      'image': image,
+      'businessName': businessName,
+      'businessCategory': businessCategory,
     };
   }
 }

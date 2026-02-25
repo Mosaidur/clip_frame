@@ -9,6 +9,7 @@ import '../widgets/allReelsInPostPage.dart';
 import '../widgets/reelContainer.dart';
 import '../widgets/storyListPage.dart';
 import 'CustomDrawer.dart';
+import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 
 class PostCreationPage extends StatefulWidget {
   const PostCreationPage({Key? key}) : super(key: key);
@@ -88,28 +89,49 @@ class _PostCreationPageState extends State<PostCreationPage> {
                           ),
                         ),
                       ),
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey,
-                        ),
-                        child: imageUrl == null || imageUrl!.isEmpty
-                            ? const Icon(
-                                Icons.person,
-                                size: 40,
-                                color: Colors.white,
-                              )
-                            : ClipOval(
-                                child: Image.network(
-                                  imageUrl!,
-                                  fit: BoxFit.cover,
-                                  width: 70,
-                                  height: 70,
-                                ),
+                      Obx(() {
+                        final profileController =
+                            Get.find<MyProfileController>();
+                        final user = profileController.userModel.value;
+                        final String? avatarUrl = user?.image;
+
+                        return GestureDetector(
+                          onTap: () => homeController.changePage(3),
+                          child: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.grey[200],
+                              border: Border.all(
+                                color: const Color(0xFFFF277F),
+                                width: 2,
                               ),
-                      ),
+                            ),
+                            child: avatarUrl == null || avatarUrl.isEmpty
+                                ? const Icon(
+                                    Icons.person,
+                                    size: 30,
+                                    color: Colors.white,
+                                  )
+                                : ClipOval(
+                                    child: Image.network(
+                                      avatarUrl,
+                                      fit: BoxFit.cover,
+                                      width: 50,
+                                      height: 50,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(
+                                                Icons.person,
+                                                size: 30,
+                                                color: Colors.grey,
+                                              ),
+                                    ),
+                                  ),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),

@@ -95,34 +95,42 @@ class ScheduleScreenPage extends StatelessWidget {
               color: const Color(0xFF1E293B),
             ),
           ),
-          GestureDetector(
-            onTap: () => Get.find<HomeController>().changePage(3),
-            child: Container(
-              padding: EdgeInsets.all(3.r),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFF277F), Color(0xFF2870F3)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
+          Obx(() {
+            final user = profileController.userModel.value;
+            final String? avatarUrl = user?.image;
+
+            return GestureDetector(
+              onTap: () => Get.find<HomeController>().changePage(3),
               child: Container(
-                width: 42.r,
-                height: 42.r,
-                decoration: BoxDecoration(
+                padding: EdgeInsets.all(3.r),
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  image: const DecorationImage(
-                    image: NetworkImage(
-                      "https://i.pravatar.cc/150?u=clipframe",
-                    ),
-                    fit: BoxFit.cover,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFFF277F), Color(0xFF2870F3)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
+                child: Container(
+                  width: 42.r,
+                  height: 42.r,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    image: avatarUrl != null && avatarUrl.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(avatarUrl),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: avatarUrl == null || avatarUrl.isEmpty
+                      ? Icon(Icons.person, size: 24.r, color: Colors.white)
+                      : null,
+                ),
               ),
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );

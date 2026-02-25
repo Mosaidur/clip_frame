@@ -7,7 +7,10 @@ import 'package:get/get.dart';
 import '../controller/content_creation_controller.dart';
 import 'customTabBar.dart';
 
+import 'package:clip_frame/core/model/content_template_model.dart';
+
 class ReelsScrollContnet extends StatelessWidget {
+  final ContentTemplateModel? template;
   final String templateId;
   final String videoUrl;
   final String category;
@@ -19,6 +22,7 @@ class ReelsScrollContnet extends StatelessWidget {
 
   const ReelsScrollContnet({
     super.key,
+    this.template,
     required this.templateId,
     required this.videoUrl,
     required this.category,
@@ -36,6 +40,24 @@ class ReelsScrollContnet extends StatelessWidget {
         children: [
           /// Fullscreen Video
           Positioned.fill(child: MediaDisplayWidget(videoUrl: videoUrl)),
+
+          /// Background Gradient Overlay (Bottom)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.0),
+                    Colors.black.withOpacity(0.0),
+                    Colors.black.withOpacity(0.5),
+                  ],
+                  stops: const [0.0, 0.7, 1.0],
+                ),
+              ),
+            ),
+          ),
 
           /// Top Bar
           Positioned(
@@ -74,6 +96,12 @@ class ReelsScrollContnet extends StatelessWidget {
                                 fit: BoxFit.cover,
                                 width: 70,
                                 height: 70,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: Colors.white,
+                                    ),
                               ),
                             ),
                     ),
@@ -113,25 +141,40 @@ class ReelsScrollContnet extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 18,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 4.0,
+                            color: Colors.black,
+                            offset: Offset(1, 1),
+                          ),
+                        ],
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
 
                     /// Tags
-                    Text(
-                      tags.join(", "),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                    if (tags.isNotEmpty)
+                      Text(
+                        tags.join(", "),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 2.0,
+                              color: Colors.black54,
+                              offset: Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 8),
 
                     /// Music Row
                     Row(
@@ -139,7 +182,14 @@ class ReelsScrollContnet extends StatelessWidget {
                         const Icon(
                           Icons.music_note,
                           color: Colors.white,
-                          size: 14,
+                          size: 16,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 2.0,
+                              color: Colors.black54,
+                              offset: Offset(1, 1),
+                            ),
+                          ],
                         ),
                         const SizedBox(width: 5),
                         Expanded(
@@ -147,7 +197,14 @@ class ReelsScrollContnet extends StatelessWidget {
                             musicTitle,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: 14,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 2.0,
+                                  color: Colors.black54,
+                                  offset: Offset(1, 1),
+                                ),
+                              ],
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -173,8 +230,10 @@ class ReelsScrollContnet extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  VideoHighlight(url: videoUrl),
+                              builder: (context) => VideoHighlight(
+                                url: videoUrl,
+                                template: template,
+                              ),
                             ),
                           );
                         },
@@ -210,14 +269,31 @@ class ReelsScrollContnet extends StatelessWidget {
       children: [
         Text(
           "$label ",
-          style: const TextStyle(color: Colors.grey, fontSize: 10),
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.8),
+            fontSize: 12,
+            shadows: const [
+              Shadow(
+                blurRadius: 2.0,
+                color: Colors.black54,
+                offset: Offset(1, 1),
+              ),
+            ],
+          ),
         ),
         Text(
           value,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 10,
+            fontSize: 12,
+            shadows: [
+              Shadow(
+                blurRadius: 4.0,
+                color: Colors.black,
+                offset: Offset(1, 1),
+              ),
+            ],
           ),
         ),
       ],

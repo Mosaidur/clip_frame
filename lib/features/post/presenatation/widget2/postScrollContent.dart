@@ -190,6 +190,7 @@ class PostScrollContnet extends StatelessWidget {
                               builder: (context) => PostHighlight(
                                 url: imageUrl,
                                 contentType: 'Post',
+                                template: template,
                               ),
                             ),
                           );

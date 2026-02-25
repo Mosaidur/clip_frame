@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as widget;
 
 import 'Content_Steps.dart';
+import 'package:clip_frame/core/model/content_template_model.dart';
 
 class VideoHighlight extends StatelessWidget {
-  final String url; // ✅ make it final
+  final String url;
+  final ContentTemplateModel? template;
 
-  const VideoHighlight({
-    super.key,
-    required this.url,
-  }); // ✅ initialize via constructor
+  const VideoHighlight({super.key, required this.url, this.template});
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +167,8 @@ class VideoHighlight extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => StepByStepPage(),
+                          builder: (context) =>
+                              StepByStepPage(template: template?.toJson()),
                         ),
                       );
                     },

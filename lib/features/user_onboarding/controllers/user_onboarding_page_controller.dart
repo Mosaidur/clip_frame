@@ -17,20 +17,7 @@ class UserOnboardingPageController extends GetxController {
   var isLoading = false.obs;
 
   // Step 1: Business Type
-  var selectedBusinessType = ''.obs;
-  final businessTypeSearchController = TextEditingController();
-  final customBusinessTypeController = TextEditingController();
-
-  final List<String> predefinedBusinessTypes = [
-    "Restaurants & Cafes",
-    "Retail Stores & Boutiques",
-    "Beauty Salons & Barbershops",
-    "Gyms & Fitness Studios",
-    "Local Academies (e.g., language, music, cooking)",
-  ];
-
-  var filteredBusinessTypes = <String>[].obs;
-  var customBusinessTypes = <String>[].obs;
+  var selectedBusinessType = 'restaurant'.obs;
 
   // Step 2: Description
   final businessDescriptionController = TextEditingController();
@@ -54,18 +41,12 @@ class UserOnboardingPageController extends GetxController {
   var languageOptions = [
     "en", // English
     "es", // Spanish
-    "bn", // Bengali
-    "hi", // Hindi
-    "fr", // French
   ].obs;
 
   // Language code to display name mapping
   final Map<String, String> languageDisplayNames = {
     "en": "English",
     "es": "Spanish",
-    "bn": "Bengali",
-    "hi": "Hindi",
-    "fr": "French",
   };
 
   // Helper method to get display name from code
@@ -118,6 +99,7 @@ class UserOnboardingPageController extends GetxController {
   }
 
   void nextPage() {
+    if (isLoading.value) return;
     if (!validateCurrentStep()) return;
 
     if (currentPage.value < 4) {
@@ -143,44 +125,10 @@ class UserOnboardingPageController extends GetxController {
     }
   }
 
-  // Business Type Methods
-  void filterBusinessTypes(String query) {
-    if (query.isEmpty) {
-      filteredBusinessTypes.clear();
-    } else {
-      final allTypes = [...predefinedBusinessTypes, ...customBusinessTypes];
-      filteredBusinessTypes.value = allTypes
-          .where((type) => type.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    }
-  }
-
-  void selectBusinessType(String type) {
-    selectedBusinessType.value = type;
-    customBusinessTypeController.clear();
-  }
-
-  void addCustomBusinessType(String type) {
-    if (!customBusinessTypes.contains(type) &&
-        !predefinedBusinessTypes.contains(type)) {
-      customBusinessTypes.add(type);
-      selectedBusinessType.value = type;
-    }
-  }
-
   bool validateCurrentStep() {
     switch (currentPage.value) {
       case 0: // Business Type
-        if (selectedBusinessType.value.isEmpty &&
-            customBusinessTypeController.text.isEmpty) {
-          Get.snackbar(
-            "Required",
-            "Please select or enter a business type.",
-            backgroundColor: Colors.red.withOpacity(0.5),
-            colorText: Colors.white,
-          );
-          return false;
-        }
+        selectedBusinessType.value = 'restaurant';
         return true;
       case 1: // Description
         if (businessDescriptionController.text.trim().isEmpty) {
@@ -252,12 +200,8 @@ class UserOnboardingPageController extends GetxController {
   Future<void> submitOnboarding() async {
     isLoading.value = true;
 
-    String finalBusinessType = selectedBusinessType.value.isNotEmpty
-        ? selectedBusinessType.value
-        : customBusinessTypeController.text;
-
     Map<String, dynamic> data = {
-      "businessType": finalBusinessType,
+      "businessType": selectedBusinessType.value,
       "businessDescription": businessDescriptionController.text,
       "targetAudience": selectedAudiences,
       "preferredLanguages": [
@@ -299,8 +243,8 @@ class UserOnboardingPageController extends GetxController {
         await OnboardingStatusService.markOnboardingComplete(email);
       }
 
-      // Navigate to Login to force user to log in again/verify credentials
-      Get.offAllNamed(AppRoutes.login);
+      // Navigate to Home directly instead of Login
+      Get.offAllNamed(AppRoutes.HOME);
     } else {
       Get.snackbar(
         "Error",
@@ -432,8 +376,6 @@ class UserOnboardingPageController extends GetxController {
   @override
   void onClose() {
     pageController.dispose();
-    businessTypeSearchController.dispose();
-    customBusinessTypeController.dispose();
     businessDescriptionController.dispose();
     languageController.dispose();
     handleController.dispose();

@@ -24,14 +24,11 @@ class BusinessDescriptionScreen extends GetView<UserOnboardingPageController> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Describe your business in one sentence",
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
+              "Explain what your business does and what makes it special.",
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 24),
-            
+
             // Text Area with Character Counter
             Container(
               decoration: BoxDecoration(
@@ -46,7 +43,8 @@ class BusinessDescriptionScreen extends GetView<UserOnboardingPageController> {
                     maxLines: 5,
                     maxLength: 500,
                     decoration: InputDecoration(
-                      hintText: "Tell us what makes your business unique.",
+                      hintText:
+                          'e.g., "We serve authentic Italian pasta with a modern twist"',
                       hintStyle: GoogleFonts.poppins(
                         fontSize: 14,
                         color: Colors.grey.shade400,
@@ -58,55 +56,42 @@ class BusinessDescriptionScreen extends GetView<UserOnboardingPageController> {
                     onChanged: (value) => controller.updateDescriptionCount(),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(right: 16, bottom: 12),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Obx(() => Text(
-                        "${controller.descriptionCharCount.value}/500",
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      bottom: 12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '',
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
-                      )),
+                        const SizedBox(width: 8),
+                        Obx(
+                          () => Text(
+                            "${controller.descriptionCharCount.value}/500",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
-            // Suggestions Section
-            Text(
-              "Suggestions:",
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            
-            // Suggestions list - removed Expanded to fit in scrollable view
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: controller.descriptionSuggestions.map((suggestion) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    "• $suggestion",
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: Colors.black54,
-                      height: 1.5,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            
-            const SizedBox(height: 24),
-            
+
             // Continue Button
             SizedBox(
               width: double.infinity,
@@ -130,9 +115,9 @@ class BusinessDescriptionScreen extends GetView<UserOnboardingPageController> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Skip Button
             Center(
               child: TextButton(

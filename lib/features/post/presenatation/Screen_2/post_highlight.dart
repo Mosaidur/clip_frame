@@ -4,12 +4,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'Content_Steps.dart';
 import 'photo_preview_screen.dart';
+import 'package:clip_frame/core/model/content_template_model.dart';
 
 class PostHighlight extends StatelessWidget {
-  final String url ;
-  final String contentType;// ✅ make it final
+  final String url;
+  final String contentType;
+  final ContentTemplateModel? template;
 
-  const PostHighlight({super.key, required this.url, required this.contentType }); // ✅ initialize via constructor
+  const PostHighlight({
+    super.key,
+    required this.url,
+    required this.contentType,
+    this.template,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,11 +38,7 @@ class PostHighlight extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFEBC894),
-                Color(0xFFFFFFFF),
-                Color(0xFFB49EF4),
-              ],
+              colors: [Color(0xFFEBC894), Color(0xFFFFFFFF), Color(0xFFB49EF4)],
             ),
           ),
           child: SafeArea(
@@ -141,7 +144,12 @@ class PostHighlight extends StatelessWidget {
                         if ((contentType ?? '').toLowerCase() == 'story') {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => StepByStepPage(contentType: contentType)),
+                            MaterialPageRoute(
+                              builder: (context) => StepByStepPage(
+                                contentType: contentType,
+                                template: template?.toJson(),
+                              ),
+                            ),
                           );
                         } else {
                           _showImageSourceSheet(context);
@@ -248,9 +256,7 @@ class PostHighlight extends StatelessWidget {
           Navigator.push(
             rootContext,
             MaterialPageRoute(
-              builder: (context) => PhotoPreviewScreen(
-                imagePath: image.path,
-              ),
+              builder: (context) => PhotoPreviewScreen(imagePath: image.path),
             ),
           );
         }

@@ -90,6 +90,7 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
                   : "";
 
               return ReelsScrollContnet(
+                template: template,
                 templateId: template.id ?? "",
                 videoUrl: videoUrl,
                 category: template.category ?? "General",

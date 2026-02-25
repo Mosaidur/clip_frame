@@ -1,80 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 
 class CustomDrawerPage extends StatelessWidget {
   const CustomDrawerPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final profileController = Get.find<MyProfileController>();
+
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          // Drawer Header with user info
-          UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFFEBC894),
-                  Color(0xFFB49EF4),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      child: Obx(() {
+        final user = profileController.userModel.value;
+        return ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            // Drawer Header with user info
+            UserAccountsDrawerHeader(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFEBC894), Color(0xFFB49EF4)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                backgroundImage: user?.image != null && user!.image!.isNotEmpty
+                    ? NetworkImage(user.image!) as ImageProvider
+                    : const AssetImage('assets/images/profile.jpg'),
+                child: user?.image == null || user!.image!.isEmpty
+                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                    : null,
+              ),
+              accountName: Text(
+                user?.name ?? "User",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              accountEmail: Text(user?.email ?? "email@example.com"),
             ),
-            currentAccountPicture: const CircleAvatar(
-              backgroundImage: AssetImage('assets/images/profile.jpg'),
-            ),
-            accountName: const Text(
-              "John Doe",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            accountEmail: const Text("john.doe@example.com"),
-          ),
 
-          // Menu Items
-          ListTile(
-            leading: const Icon(Icons.home_outlined, color: Colors.blue),
-            title: const Text("Home"),
-            onTap: () {
-              Navigator.pop(context);
-              // Example navigation:
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings_outlined, color: Colors.blue),
-            title: const Text("Settings"),
-            onTap: () {
-              Navigator.pop(context);
-              // Example navigation:
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsPage()));
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.info_outline, color: Colors.blue),
-            title: const Text("About"),
-            onTap: () {
-              Navigator.pop(context);
-              // Example navigation:
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => AboutPage()));
-            },
-          ),
-
-          const Divider(),
-
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text(
-              "Logout",
-              style: TextStyle(color: Colors.redAccent),
+            // Menu Items
+            ListTile(
+              leading: const Icon(Icons.home_outlined, color: Colors.blue),
+              title: const Text("Home"),
+              onTap: () {
+                Navigator.pop(context);
+              },
             ),
-            onTap: () {
-              Navigator.pop(context);
-              _showLogoutDialog(context);
-            },
-          ),
-        ],
-      ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined, color: Colors.blue),
+              title: const Text("Settings"),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: Colors.blue),
+              title: const Text("About"),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+
+            const Divider(),
+
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.redAccent),
+              title: const Text(
+                "Logout",
+                style: TextStyle(color: Colors.redAccent),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _showLogoutDialog(context);
+              },
+            ),
+          ],
+        );
+      }),
     );
   }
 

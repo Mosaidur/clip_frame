@@ -25,115 +25,66 @@ class BusinessTypeScreen extends GetView<UserOnboardingPageController> {
             const SizedBox(height: 8),
             Text(
               "Tell us what makes your business unique.",
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 24),
-            
-            // Search Bar
+
+            // Selected Business Type UI
             Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: TextField(
-                controller: controller.businessTypeSearchController,
-                decoration: InputDecoration(
-                  hintText: "Search",
-                  hintStyle: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey.shade400,
-                  ),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+                color: Colors.deepPurple.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.deepPurple.withOpacity(0.3),
+                  width: 1.5,
                 ),
-                onChanged: (value) => controller.filterBusinessTypes(value),
               ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Business Type Chips
-            Obx(() {
-              final types = controller.filteredBusinessTypes.isEmpty
-                  ? controller.predefinedBusinessTypes
-                  : controller.filteredBusinessTypes;
-              
-              return Wrap(
-                spacing: 12,
-                runSpacing: 12,
+              child: Row(
                 children: [
-                  ...types.map((type) {
-                    final isSelected = controller.selectedBusinessType.value == type;
-                    return GestureDetector(
-                      onTap: () => controller.selectBusinessType(type),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.deepPurple.withOpacity(0.1) : Colors.white,
-                          borderRadius: BorderRadius.circular(25),
-                          border: Border.all(
-                            color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Text(
-                          type,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: isSelected ? Colors.deepPurple : Colors.black87,
-                            fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  
-                  // Add Custom Button
-                  GestureDetector(
-                    onTap: () => _showAddCustomDialog(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF277F),
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.add, color: Colors.white, size: 18),
-                          const SizedBox(width: 4),
-                          Text(
-                            "Add",
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.restaurant,
+                      color: Colors.deepPurple,
+                      size: 28,
                     ),
                   ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Restaurant",
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Default Business Type",
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.check_circle, color: Colors.deepPurple),
                 ],
-              );
-            }),
-            
+              ),
+            ),
+
             const SizedBox(height: 24),
-            
+
             // Continue Button
             SizedBox(
               width: double.infinity,
@@ -157,9 +108,9 @@ class BusinessTypeScreen extends GetView<UserOnboardingPageController> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Skip Button
             Center(
               child: TextButton(
@@ -175,83 +126,6 @@ class BusinessTypeScreen extends GetView<UserOnboardingPageController> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _showAddCustomDialog(BuildContext context) {
-    final textController = TextEditingController();
-    
-    Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Add Custom Business Type",
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: textController,
-                decoration: InputDecoration(
-                  hintText: "Enter business type",
-                  hintStyle: GoogleFonts.poppins(fontSize: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Get.back(),
-                      child: Text(
-                        "Cancel",
-                        style: GoogleFonts.poppins(color: Colors.grey),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (textController.text.trim().isNotEmpty) {
-                          controller.addCustomBusinessType(textController.text.trim());
-                          Get.back();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF277F),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        "Add",
-                        style: GoogleFonts.poppins(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
       ),
     );

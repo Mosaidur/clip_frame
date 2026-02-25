@@ -22,7 +22,8 @@ class ClipSegment {
   Duration startOffset;
   Duration endOffset;
   double speed;
-  final String? filter;
+  String? filter;
+  double filterIntensity;
   int rotation; // 0, 90, 180, 270
 
   ClipSegment({
@@ -31,6 +32,7 @@ class ClipSegment {
     required this.endOffset,
     this.speed = 1.0,
     this.filter,
+    this.filterIntensity = 0.5,
     this.rotation = 0,
   });
 
@@ -45,6 +47,7 @@ class ClipSegment {
     endOffset: endOffset,
     speed: speed,
     filter: filter,
+    filterIntensity: filterIntensity,
     rotation: rotation,
   );
 }
@@ -745,8 +748,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
     final name = _getFilterNameOfIndex(filterIndex);
 
     setState(() {
-      // For now we just update the field, in real CapCut this would change the preview
-      // currentSegment!.filter = name; // If we wanted to persist this
+      currentSegment!.filter = name;
+      currentSegment!.filterIntensity = intensity;
     });
 
     _pushHistory(
@@ -2204,6 +2207,23 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         if (seg.speed != 1.0) {
           filter.write(',setpts=PTS/${seg.speed}');
         }
+
+        // Apply Color Matrix Filter
+        if (seg.filter != null && seg.filter != "NONE") {
+          filter.write(
+            _getFilterFFmpegString(seg.filter!, seg.filterIntensity),
+          );
+        }
+
+        // Apply Rotation
+        if (seg.rotation == 90) {
+          filter.write(',transpose=1');
+        } else if (seg.rotation == 180) {
+          filter.write(',hflip,vflip');
+        } else if (seg.rotation == 270) {
+          filter.write(',transpose=2');
+        }
+
         // Normalized scale and pad for mixed aspect ratios (540p for faster upload)
         filter.write(
           ',scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2,setsar=1,fps=30[v$i]; ',
@@ -2284,6 +2304,84 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   String _formatDuration(Duration d) {
     String two(int n) => n.toString().padLeft(2, '0');
     return "${two(d.inMinutes.remainder(60))}:${two(d.inSeconds.remainder(60))}";
+  }
+
+  String _getFilterFFmpegString(String filterName, double intensity) {
+    // 1. Find matrix by name
+    List<double>? target;
+    for (var cat in _filterCategories.values) {
+      for (var f in cat) {
+        if (f["name"] == filterName) {
+          target = _getFilterMatrix(_getIndexOfFilterName(filterName));
+          break;
+        }
+      }
+      if (target != null) break;
+    }
+
+    if (target == null) return "";
+
+    final List<double> identity = [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+    ];
+
+    final result = List<double>.filled(20, 0.0);
+    for (int i = 0; i < 20; i++) {
+      result[i] = identity[i] + (target[i] - identity[i]) * intensity;
+    }
+
+    // FFmpeg colorchannelmixer: rr:rg:rb:ra:gr:gg:gb:ga:br:bg:bb:ba:ar:ag:ab:aa
+    final rr = result[0];
+    final rg = result[1];
+    final rb = result[2];
+    final ra = result[3];
+    final gr = result[5];
+    final gg = result[6];
+    final gb = result[7];
+    final ga = result[8];
+    final br = result[10];
+    final bg = result[11];
+    final bb = result[12];
+    final ba = result[13];
+    final ar = result[15];
+    final ag = result[16];
+    final ab = result[17];
+    final aa = result[18];
+
+    // Offsets
+    final rO = result[4];
+    final gO = result[9];
+    final bO = result[14];
+
+    String s =
+        ",colorchannelmixer=rr=$rr:rg=$rg:rb=$rb:ra=$ra:gr=$gr:gg=$gg:gb=$gb:ga=$ga:br=$br:bg=$bg:bb=$bb:ba=$ba:ar=$ar:ag=$ag:ab=$ab:aa=$aa";
+
+    // Approximate offsets using lutrgb (normalized to 1.0 scale usually but FFmpeg lutrgb uses 0-255 or 0-1)
+    // Here result[4] is usually 0-255 offset.
+    if (rO.abs() > 0.1 || gO.abs() > 0.1 || bO.abs() > 0.1) {
+      s += ",lutrgb=r='val+$rO':g='val+$gO':b='val+$bO'";
+    }
+
+    return s;
   }
 
   // ---- UI Building ----

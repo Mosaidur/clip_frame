@@ -16,7 +16,8 @@ import 'package:clip_frame/features/dashboard/presenatation/controller/dashboard
 import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
 import 'package:clip_frame/features/dashboard/presenatation/widgets/schedule_list.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
-import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart' as tab_bar;
+import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart'
+    as tab_bar;
 
 class HomeController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -47,6 +48,7 @@ class HomeController extends GetxController
     // Initialize ScheduleController early so it's ready for refresh requests
     Get.put(ScheduleController());
     Get.put(DashboardController());
+    Get.put(MyProfileController());
 
     controller = AnimationController(
       vsync: this,
