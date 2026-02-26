@@ -247,13 +247,13 @@ class StepByStepPage extends StatelessWidget {
               ),
             ),
           ),
-          // Shot Type and Duration Badges
           Positioned(
-            bottom: 80,
+            bottom: 75,
             left: 15,
             right: 15,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 5,
               children: [
                 _buildBadge(
                   Icons.videocam_outlined,

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'schedule_post_screen.dart';
 
 class CaptionGeneratorScreen extends StatefulWidget {
@@ -15,8 +17,32 @@ class CaptionGeneratorScreen extends StatefulWidget {
 class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
   String selectedTone = "BOLD";
   bool logoOverlay = true;
+  late TextEditingController _captionController;
 
-  final List<String> tones = ["BOLD", "PROFESSIONAL", "FRIENDLY", "WITTY", "INSPIRATIONAL"];
+  final List<String> tones = [
+    "BOLD",
+    "PROFESSIONAL",
+    "FRIENDLY",
+    "WITTY",
+    "INSPIRATIONAL",
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill with any existing caption from the controller
+    String existingCaption = '';
+    if (Get.isRegistered<ContentCreationController>()) {
+      existingCaption = Get.find<ContentCreationController>().caption.value;
+    }
+    _captionController = TextEditingController(text: existingCaption);
+  }
+
+  @override
+  void dispose() {
+    _captionController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +55,7 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF3E5D8),
-              Color(0xFFFFFFFF),
-              Color(0xFFDCD4F2),
-            ],
+            colors: [Color(0xFFF3E5D8), Color(0xFFFFFFFF), Color(0xFFDCD4F2)],
           ),
         ),
         child: SafeArea(
@@ -53,7 +75,11 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
                         color: Colors.black.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20.sp),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.black,
+                        size: 20.sp,
+                      ),
                     ),
                   ),
                 ),
@@ -69,20 +95,22 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
                 SizedBox(height: 10.h),
                 Text(
                   "Let AI help you create your post description",
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 14.sp, color: Colors.black54),
                 ),
                 SizedBox(height: 30.h),
                 _buildCardSection(),
                 SizedBox(height: 20.h),
                 _buildSuggestionSection("Emoji Suggestions", [
-                  "🍕", "🧀", "🌮", "🥩"
+                  "🍕",
+                  "🧀",
+                  "🌮",
+                  "🥩",
                 ], true),
                 SizedBox(height: 15.h),
                 _buildSuggestionSection("Hashtag Suggestions", [
-                  "#Foodielover", "#Foodielover", "#Foodielover"
+                  "#Foodielover",
+                  "#Foodielover",
+                  "#Foodielover",
                 ], true),
                 SizedBox(height: 20.h),
                 _buildToggleSection(),
@@ -105,7 +133,11 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
         color: Colors.white.withOpacity(0.7),
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10.r, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10.r,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -123,7 +155,11 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildLabel("Your Generated Caption"),
-              Icon(Icons.refresh_rounded, color: const Color(0xFF007AFF), size: 20.sp),
+              Icon(
+                Icons.refresh_rounded,
+                color: const Color(0xFF007AFF),
+                size: 20.sp,
+              ),
             ],
           ),
           SizedBox(height: 10.h),
@@ -163,7 +199,14 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
               child: Row(
                 children: [
                   // Text("👊 ", style: TextStyle(fontSize: 16.sp)),
-                  Text(tone, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: Colors.blueGrey[700])),
+                  Text(
+                    tone,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey[700],
+                    ),
+                  ),
                 ],
               ),
             );
@@ -176,19 +219,21 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
 
   Widget _buildTextField() {
     return Container(
-      height: 60.h,
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: Colors.black12),
       ),
       child: TextField(
+        controller: _captionController,
+        maxLines: 3,
         decoration: InputDecoration(
-          hintText: "What would you like to add to the caption",
+          hintText: "Write your caption here...",
           hintStyle: TextStyle(fontSize: 12.sp, color: Colors.black38),
           border: InputBorder.none,
         ),
+        style: TextStyle(fontSize: 13.sp, color: Colors.black87),
       ),
     );
   }
@@ -204,16 +249,16 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
       ),
       child: Text(
         "“Check out our sizzling lunch specials! 🍕🍕 Come hungry, leave happy. #FoodieLove“",
-        style: TextStyle(
-          fontSize: 14.sp,
-          color: Colors.black87,
-          height: 1.4,
-        ),
+        style: TextStyle(fontSize: 14.sp, color: Colors.black87, height: 1.4),
       ),
     );
   }
 
-  Widget _buildSuggestionSection(String label, List<String> items, bool showRefresh) {
+  Widget _buildSuggestionSection(
+    String label,
+    List<String> items,
+    bool showRefresh,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -221,7 +266,12 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _buildLabel(label),
-            if (showRefresh) Icon(Icons.refresh_rounded, color: const Color(0xFF007AFF), size: 20.sp),
+            if (showRefresh)
+              Icon(
+                Icons.refresh_rounded,
+                color: const Color(0xFF007AFF),
+                size: 20.sp,
+              ),
           ],
         ),
         SizedBox(height: 10.h),
@@ -248,11 +298,17 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8.r),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4.r)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4.r),
+        ],
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+        style: TextStyle(
+          fontSize: 12.sp,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
       ),
     );
   }
@@ -277,19 +333,35 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
       height: 55.h,
       child: ElevatedButton(
         onPressed: () {
+          // Save the user's caption to the controller before navigating
+          if (Get.isRegistered<ContentCreationController>()) {
+            Get.find<ContentCreationController>().caption.value =
+                _captionController.text.trim();
+          }
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => SchedulePostScreen(mediaPath: widget.imagePath, isImage: true)),
+            MaterialPageRoute(
+              builder: (context) => SchedulePostScreen(
+                mediaPath: widget.imagePath,
+                isImage: true,
+              ),
+            ),
           );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF007AFF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
           elevation: 0,
         ),
         child: Text(
           "Continue",
-          style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16.sp,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );

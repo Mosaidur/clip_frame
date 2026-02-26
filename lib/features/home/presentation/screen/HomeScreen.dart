@@ -79,12 +79,16 @@ class HomePage extends StatelessWidget {
                 size: 26.r,
               ),
               SizedBox(height: 4.h),
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected ? activeColor : inactiveColor,
-                  fontSize: 11.sp,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: selected ? activeColor : inactiveColor,
+                    fontSize: 10.sp,
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  ),
                 ),
               ),
             ],
@@ -127,43 +131,36 @@ class HomePage extends StatelessWidget {
                     child: Container(
                       height: 70.h,
                       padding: EdgeInsets.only(
-                        left: 20.w,
-                        right: 20.w,
+                        left: 15.w,
+                        right: 15.w,
                         bottom: 10.h,
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                navItem(
-                                  Icons.grid_view_rounded,
-                                  0,
-                                  "Dashboard",
-                                ),
-                                navItem(
-                                  Icons.video_library_rounded,
-                                  1,
-                                  "Posts",
-                                ),
-                              ],
+                            child: navItem(
+                              Icons.grid_view_rounded,
+                              0,
+                              "Dashboard",
+                            ),
+                          ),
+                          Expanded(
+                            child: navItem(
+                              Icons.video_library_rounded,
+                              1,
+                              "Posts",
                             ),
                           ),
                           SizedBox(width: 80.w), // Space for FAB
                           Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                navItem(
-                                  Icons.access_time_filled_rounded,
-                                  2,
-                                  "Schedules",
-                                ),
-                                navItem(Icons.person_rounded, 3, "Profile"),
-                              ],
+                            child: navItem(
+                              Icons.access_time_filled_rounded,
+                              2,
+                              "Schedules",
                             ),
+                          ),
+                          Expanded(
+                            child: navItem(Icons.person_rounded, 3, "Profile"),
                           ),
                         ],
                       ),
@@ -322,8 +319,8 @@ class CustomNotchClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     Path path = Path();
-    double notchWidth = 100.w; // Slightly wider for a smoother feel
-    double notchHeight = 40.h;
+    double notchWidth = 85.w; // Slightly wider for a smoother feel
+    double notchHeight = 35.h;
     double centerX = size.width / 2;
     double cornerRadius = 20.r;
 

@@ -25,7 +25,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
   double _highlights = 0.0;
   double _shadows = 0.0;
   double _temperature = 0.0;
-  
+
   String _selectedAdjustTool = "Brightness";
 
   // Filter states
@@ -37,7 +37,8 @@ class _StoryEditPageState extends State<StoryEditPage> {
   Rect _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
   int _rotation = 0;
   String _cropMode = "Format"; // "Format" or "Rotate"
-  String _selectedAspectRatio = "Original"; // "Original", "1:1", "4:5", "16:9", "9:16", "3:2"
+  String _selectedAspectRatio =
+      "Original"; // "Original", "1:1", "4:5", "16:9", "9:16", "3:2"
   bool _flipHorizontal = false;
   bool _flipVertical = false;
 
@@ -110,7 +111,8 @@ class _StoryEditPageState extends State<StoryEditPage> {
     if (_snapTemperature != null) _temperature = _snapTemperature!;
     if (_snapFilterIndex != null) _selectedFilterIndex = _snapFilterIndex!;
     if (_snapFilterIntensity != null) _filterIntensity = _snapFilterIntensity!;
-    if (_snapFilterCategory != null) _selectedFilterCategory = _snapFilterCategory!;
+    if (_snapFilterCategory != null)
+      _selectedFilterCategory = _snapFilterCategory!;
     if (_snapCropRect != null) _cropRect = _snapCropRect!;
     if (_snapRotation != null) _rotation = _snapRotation!;
     if (_snapCropMode != null) _cropMode = _snapCropMode!;
@@ -119,8 +121,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
     if (_snapFlipVertical != null) _flipVertical = _snapFlipVertical!;
     if (_snapFrameIndex != null) _selectedFrameIndex = _snapFrameIndex!;
     if (_snapFrameRect != null) _frameRect = _snapFrameRect!;
-    if (_snapLockFrameAspectRatio != null) _lockFrameAspectRatio = _snapLockFrameAspectRatio!;
-    if (_snapFrameEdgeAdjustment != null) _frameEdgeAdjustment = _snapFrameEdgeAdjustment!;
+    if (_snapLockFrameAspectRatio != null)
+      _lockFrameAspectRatio = _snapLockFrameAspectRatio!;
+    if (_snapFrameEdgeAdjustment != null)
+      _frameEdgeAdjustment = _snapFrameEdgeAdjustment!;
   }
 
   final Map<String, List<Map<String, dynamic>>> _filterCategories = {
@@ -221,9 +225,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
               _buildHeader(),
 
               // 2. Main Preview Section
-              Expanded(
-                child: _buildPreviewArea(),
-              ),
+              Expanded(child: _buildPreviewArea()),
 
               // 3. Bottom Tool Section
               _buildBottomSection(),
@@ -250,7 +252,11 @@ class _StoryEditPageState extends State<StoryEditPage> {
                 color: const Color(0xFFC4B69E).withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.arrow_back_ios_new_rounded, size: 16.r, color: Colors.black87),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 16.r,
+                color: Colors.black87,
+              ),
             ),
           ),
           // Title
@@ -312,7 +318,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
                       color: Colors.black.withOpacity(0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
-                    )
+                    ),
                   ],
                 ),
                 child: Stack(
@@ -325,21 +331,28 @@ class _StoryEditPageState extends State<StoryEditPage> {
                           builder: (context, innerConstraints) {
                             final w = innerConstraints.maxWidth;
                             final h = innerConstraints.maxHeight;
-                            
+
                             Widget content = Transform(
                               alignment: Alignment.center,
                               transform: Matrix4.identity()
                                 ..rotateZ(_rotation * 3.14159 / 180)
-                                ..scale(_flipHorizontal ? -1.0 : 1.0, _flipVertical ? -1.0 : 1.0),
+                                ..scale(
+                                  _flipHorizontal ? -1.0 : 1.0,
+                                  _flipVertical ? -1.0 : 1.0,
+                                ),
                               child: PageView.builder(
                                 controller: _pageController,
-                                itemCount: widget.files.isNotEmpty ? widget.files.length : 1,
+                                itemCount: widget.files.isNotEmpty
+                                    ? widget.files.length
+                                    : 1,
                                 onPageChanged: (index) {
                                   setState(() => _currentPage = index);
                                 },
                                 itemBuilder: (context, index) {
                                   return ColorFiltered(
-                                    colorFilter: ColorFilter.matrix(_getCombinedMatrix()),
+                                    colorFilter: ColorFilter.matrix(
+                                      _getCombinedMatrix(),
+                                    ),
                                     child: widget.files.isNotEmpty
                                         ? Image.file(
                                             widget.files[index],
@@ -358,8 +371,14 @@ class _StoryEditPageState extends State<StoryEditPage> {
                               content = Transform(
                                 alignment: Alignment.topLeft,
                                 transform: Matrix4.identity()
-                                  ..scale(1.0 / _cropRect.width, 1.0 / _cropRect.height)
-                                  ..translate(-_cropRect.left * w, -_cropRect.top * h),
+                                  ..scale(
+                                    1.0 / _cropRect.width,
+                                    1.0 / _cropRect.height,
+                                  )
+                                  ..translate(
+                                    -_cropRect.left * w,
+                                    -_cropRect.top * h,
+                                  ),
                                 child: content,
                               );
                             }
@@ -369,137 +388,265 @@ class _StoryEditPageState extends State<StoryEditPage> {
                       ),
                     ),
                     if (_selectedFrameIndex != -1)
-                        Positioned.fill(
-                          child: LayoutBuilder(
-                            builder: (context, frameConstraints) {
-                              final fw = frameConstraints.maxWidth;
-                              final fh = frameConstraints.maxHeight;
+                      Positioned.fill(
+                        child: LayoutBuilder(
+                          builder: (context, frameConstraints) {
+                            final fw = frameConstraints.maxWidth;
+                            final fh = frameConstraints.maxHeight;
 
-                              final adjustedRect = _frameRect.inflate(_frameEdgeAdjustment);
-                              final fRect = Rect.fromLTWH(
-                                adjustedRect.left * fw,
-                                adjustedRect.top * fh,
-                                adjustedRect.width * fw,
-                                adjustedRect.height * fh,
-                              );
+                            final adjustedRect = _frameRect.inflate(
+                              _frameEdgeAdjustment,
+                            );
+                            final fRect = Rect.fromLTWH(
+                              adjustedRect.left * fw,
+                              adjustedRect.top * fh,
+                              adjustedRect.width * fw,
+                              adjustedRect.height * fh,
+                            );
 
-                              return Stack(
-                                clipBehavior: Clip.none,
-                                children: [
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Positioned(
+                                  left: fRect.left,
+                                  top: fRect.top,
+                                  width: fRect.width,
+                                  height: fRect.height,
+                                  child: GestureDetector(
+                                    onPanUpdate: (details) {
+                                      if (_activeTool == StoryEditTool.frame) {
+                                        setState(() {
+                                          double dx = details.delta.dx / fw;
+                                          double dy = details.delta.dy / fh;
+                                          _frameRect = Rect.fromLTWH(
+                                            (_frameRect.left + dx).clamp(
+                                              -0.5,
+                                              1.5,
+                                            ),
+                                            (_frameRect.top + dy).clamp(
+                                              -0.5,
+                                              1.5,
+                                            ),
+                                            _frameRect.width,
+                                            _frameRect.height,
+                                          );
+                                        });
+                                      }
+                                    },
+                                    child: IgnorePointer(
+                                      ignoring:
+                                          _activeTool != StoryEditTool.frame,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.zero,
+                                        child: Image.asset(
+                                          _frameAssets[_selectedFrameIndex],
+                                          fit: BoxFit.fill,
+                                          cacheWidth: (fw * 2)
+                                              .toInt(), // High quality frame
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (_activeTool == StoryEditTool.frame) ...[
+                                  // Guide border
                                   Positioned(
                                     left: fRect.left,
                                     top: fRect.top,
                                     width: fRect.width,
                                     height: fRect.height,
-                                    child: GestureDetector(
-                                      onPanUpdate: (details) {
-                                        if (_activeTool == StoryEditTool.frame) {
-                                          setState(() {
-                                            double dx = details.delta.dx / fw;
-                                            double dy = details.delta.dy / fh;
-                                            _frameRect = Rect.fromLTWH(
-                                              (_frameRect.left + dx).clamp(-0.5, 1.5),
-                                              (_frameRect.top + dy).clamp(-0.5, 1.5),
-                                              _frameRect.width,
-                                              _frameRect.height,
-                                            );
-                                          });
-                                        }
-                                      },
-                                      child: IgnorePointer(
-                                        ignoring: _activeTool != StoryEditTool.frame,
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.zero,
-                                          child: Image.asset(
-                                            _frameAssets[_selectedFrameIndex],
-                                            fit: BoxFit.fill,
-                                            cacheWidth: (fw * 2).toInt(), // High quality frame
-                                          ),
-                                        ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.blue.withOpacity(0.5),
+                                          width: 1.w,
+                                          style: BorderStyle.none,
+                                        ), // Custom dashed design could be added here
                                       ),
                                     ),
                                   ),
-                                  if (_activeTool == StoryEditTool.frame) ...[
-                                    // Guide border
-                                    Positioned(
-                                      left: fRect.left,
-                                      top: fRect.top,
-                                      width: fRect.width,
-                                      height: fRect.height,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: Colors.blue.withOpacity(0.5), width: 1.w, style: BorderStyle.none), // Custom dashed design could be added here
-                                        ),
+                                  // Corner Handles
+                                  _buildCropHandle(
+                                    fRect.topLeft,
+                                    (d) => _updateFrameRect(
+                                      d,
+                                      fw,
+                                      fh,
+                                      isTop: true,
+                                      isLeft: true,
+                                    ),
+                                  ),
+                                  _buildCropHandle(
+                                    fRect.topRight,
+                                    (d) => _updateFrameRect(
+                                      d,
+                                      fw,
+                                      fh,
+                                      isTop: true,
+                                      isLeft: false,
+                                    ),
+                                  ),
+                                  _buildCropHandle(
+                                    fRect.bottomLeft,
+                                    (d) => _updateFrameRect(
+                                      d,
+                                      fw,
+                                      fh,
+                                      isTop: false,
+                                      isLeft: true,
+                                    ),
+                                  ),
+                                  _buildCropHandle(
+                                    fRect.bottomRight,
+                                    (d) => _updateFrameRect(
+                                      d,
+                                      fw,
+                                      fh,
+                                      isTop: false,
+                                      isLeft: false,
+                                    ),
+                                  ),
+
+                                  if (!_lockFrameAspectRatio) ...[
+                                    // Side Handles
+                                    _buildCropHandle(
+                                      Offset(fRect.center.dx, fRect.top),
+                                      (d) => _updateFrameRect(
+                                        d,
+                                        fw,
+                                        fh,
+                                        isTop: true,
+                                        isLeft: null,
                                       ),
                                     ),
-                                    // Corner Handles
-                                    _buildCropHandle(fRect.topLeft, (d) => _updateFrameRect(d, fw, fh, isTop: true, isLeft: true)),
-                                    _buildCropHandle(fRect.topRight, (d) => _updateFrameRect(d, fw, fh, isTop: true, isLeft: false)),
-                                    _buildCropHandle(fRect.bottomLeft, (d) => _updateFrameRect(d, fw, fh, isTop: false, isLeft: true)),
-                                    _buildCropHandle(fRect.bottomRight, (d) => _updateFrameRect(d, fw, fh, isTop: false, isLeft: false)),
-                                    
-                                    if (!_lockFrameAspectRatio) ...[
-                                      // Side Handles
-                                      _buildCropHandle(Offset(fRect.center.dx, fRect.top), (d) => _updateFrameRect(d, fw, fh, isTop: true, isLeft: null)),
-                                      _buildCropHandle(Offset(fRect.center.dx, fRect.bottom), (d) => _updateFrameRect(d, fw, fh, isTop: false, isLeft: null)),
-                                      _buildCropHandle(Offset(fRect.left, fRect.center.dy), (d) => _updateFrameRect(d, fw, fh, isTop: null, isLeft: true)),
-                                      _buildCropHandle(Offset(fRect.right, fRect.center.dy), (d) => _updateFrameRect(d, fw, fh, isTop: null, isLeft: false)),
-                                    ],
+                                    _buildCropHandle(
+                                      Offset(fRect.center.dx, fRect.bottom),
+                                      (d) => _updateFrameRect(
+                                        d,
+                                        fw,
+                                        fh,
+                                        isTop: false,
+                                        isLeft: null,
+                                      ),
+                                    ),
+                                    _buildCropHandle(
+                                      Offset(fRect.left, fRect.center.dy),
+                                      (d) => _updateFrameRect(
+                                        d,
+                                        fw,
+                                        fh,
+                                        isTop: null,
+                                        isLeft: true,
+                                      ),
+                                    ),
+                                    _buildCropHandle(
+                                      Offset(fRect.right, fRect.center.dy),
+                                      (d) => _updateFrameRect(
+                                        d,
+                                        fw,
+                                        fh,
+                                        isTop: null,
+                                        isLeft: false,
+                                      ),
+                                    ),
                                   ],
                                 ],
-                              );
-                            },
-                          ),
+                              ],
+                            );
+                          },
                         ),
-                      if (_activeTool == StoryEditTool.crop)
-                        Positioned.fill(
-                          child: LayoutBuilder(
-                            builder: (context, cropConstraints) {
-                              final w = cropConstraints.maxWidth;
-                              final h = cropConstraints.maxHeight;
-                              
-                              final rect = Rect.fromLTWH(
-                                _cropRect.left * w,
-                                _cropRect.top * h,
-                                _cropRect.width * w,
-                                _cropRect.height * h,
-                              );
+                      ),
+                    if (_activeTool == StoryEditTool.crop)
+                      Positioned.fill(
+                        child: LayoutBuilder(
+                          builder: (context, cropConstraints) {
+                            final w = cropConstraints.maxWidth;
+                            final h = cropConstraints.maxHeight;
 
-                              return Stack(
-                                children: [
-                                  GestureDetector(
-                                    onPanUpdate: (details) {
-                                      setState(() {
-                                        double dx = details.delta.dx / w;
-                                        double dy = details.delta.dy / h;
-                                        
-                                        _cropRect = Rect.fromLTWH(
-                                          (_cropRect.left + dx).clamp(0.0, 1.0 - _cropRect.width),
-                                          (_cropRect.top + dy).clamp(0.0, 1.0 - _cropRect.height),
-                                          _cropRect.width,
-                                          _cropRect.height,
-                                        );
-                                      });
-                                    },
-                                    child: CustomPaint(
-                                      size: Size(w, h),
-                                      painter: CropPainter(rect),
-                                      child: Container(),
-                                    ),
+                            final rect = Rect.fromLTWH(
+                              _cropRect.left * w,
+                              _cropRect.top * h,
+                              _cropRect.width * w,
+                              _cropRect.height * h,
+                            );
+
+                            return Stack(
+                              children: [
+                                GestureDetector(
+                                  onPanUpdate: (details) {
+                                    setState(() {
+                                      double dx = details.delta.dx / w;
+                                      double dy = details.delta.dy / h;
+
+                                      _cropRect = Rect.fromLTWH(
+                                        (_cropRect.left + dx).clamp(
+                                          0.0,
+                                          1.0 - _cropRect.width,
+                                        ),
+                                        (_cropRect.top + dy).clamp(
+                                          0.0,
+                                          1.0 - _cropRect.height,
+                                        ),
+                                        _cropRect.width,
+                                        _cropRect.height,
+                                      );
+                                    });
+                                  },
+                                  child: CustomPaint(
+                                    size: Size(w, h),
+                                    painter: CropPainter(rect),
+                                    child: Container(),
                                   ),
-                                  // Handles
-                                  _buildCropHandle(rect.topLeft, (d) => _updateCropRect(d, w, h, isTop: true, isLeft: true)),
-                                  _buildCropHandle(rect.topRight, (d) => _updateCropRect(d, w, h, isTop: true, isLeft: false)),
-                                  _buildCropHandle(rect.bottomLeft, (d) => _updateCropRect(d, w, h, isTop: false, isLeft: true)),
-                                  _buildCropHandle(rect.bottomRight, (d) => _updateCropRect(d, w, h, isTop: false, isLeft: false)),
-                                ],
-                              );
-                            },
-                          ),
+                                ),
+                                // Handles
+                                _buildCropHandle(
+                                  rect.topLeft,
+                                  (d) => _updateCropRect(
+                                    d,
+                                    w,
+                                    h,
+                                    isTop: true,
+                                    isLeft: true,
+                                  ),
+                                ),
+                                _buildCropHandle(
+                                  rect.topRight,
+                                  (d) => _updateCropRect(
+                                    d,
+                                    w,
+                                    h,
+                                    isTop: true,
+                                    isLeft: false,
+                                  ),
+                                ),
+                                _buildCropHandle(
+                                  rect.bottomLeft,
+                                  (d) => _updateCropRect(
+                                    d,
+                                    w,
+                                    h,
+                                    isTop: false,
+                                    isLeft: true,
+                                  ),
+                                ),
+                                _buildCropHandle(
+                                  rect.bottomRight,
+                                  (d) => _updateCropRect(
+                                    d,
+                                    w,
+                                    h,
+                                    isTop: false,
+                                    isLeft: false,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
-                    ],
-                  ),
-                );
+                      ),
+                  ],
+                ),
+              );
             },
           ),
         ),
@@ -512,7 +659,9 @@ class _StoryEditPageState extends State<StoryEditPage> {
     return Container(
       height: 4.h,
       decoration: BoxDecoration(
-        color: active ? const Color(0xFFE91E63) : const Color(0xFFE91E63).withOpacity(0.3),
+        color: active
+            ? const Color(0xFFE91E63)
+            : const Color(0xFFE91E63).withOpacity(0.3),
         borderRadius: BorderRadius.circular(2.r),
       ),
     );
@@ -551,8 +700,12 @@ class _StoryEditPageState extends State<StoryEditPage> {
             _toolIcon(Icons.layers_clear_rounded, "BG", StoryEditTool.bg),
             _toolIcon(Icons.wb_sunny_outlined, "Adjust", StoryEditTool.adjust),
             _toolIcon(Icons.crop_rounded, "Crop", StoryEditTool.crop),
-            _toolIcon(Icons.auto_awesome_motion_rounded, "Filter", StoryEditTool.filter),
-            _toolIcon(Icons.compare_arrows_rounded, "Split", null), 
+            _toolIcon(
+              Icons.auto_awesome_motion_rounded,
+              "Filter",
+              StoryEditTool.filter,
+            ),
+            _toolIcon(Icons.compare_arrows_rounded, "Split", null),
             _toolIcon(Icons.content_cut_rounded, "Trim", null),
             _toolIcon(Icons.crop_free_rounded, "Frame", StoryEditTool.frame),
           ],
@@ -581,7 +734,11 @@ class _StoryEditPageState extends State<StoryEditPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 24.r, color: isActive ? Colors.black : Colors.black54),
+            Icon(
+              icon,
+              size: 24.r,
+              color: isActive ? Colors.black : Colors.black54,
+            ),
             SizedBox(height: 4.h),
             Text(
               label,
@@ -622,17 +779,25 @@ class _StoryEditPageState extends State<StoryEditPage> {
             child: Row(
               children: [
                 _frameActionBtn(
-                  _lockFrameAspectRatio ? Icons.lock_rounded : Icons.lock_open_rounded, 
-                  _lockFrameAspectRatio ? "Locked" : "Free", 
-                  () => setState(() => _lockFrameAspectRatio = !_lockFrameAspectRatio)
+                  _lockFrameAspectRatio
+                      ? Icons.lock_rounded
+                      : Icons.lock_open_rounded,
+                  _lockFrameAspectRatio ? "Locked" : "Free",
+                  () => setState(
+                    () => _lockFrameAspectRatio = !_lockFrameAspectRatio,
+                  ),
                 ),
                 SizedBox(width: 8.w),
-                _frameActionBtn(Icons.center_focus_strong_rounded, "Center", () {
-                  setState(() {
-                    _frameRect = const Rect.fromLTWH(0.05, 0.05, 0.9, 0.9);
-                    _frameEdgeAdjustment = 0.0;
-                  });
-                }),
+                _frameActionBtn(
+                  Icons.center_focus_strong_rounded,
+                  "Center",
+                  () {
+                    setState(() {
+                      _frameRect = const Rect.fromLTWH(0.05, 0.05, 0.9, 0.9);
+                      _frameEdgeAdjustment = 0.0;
+                    });
+                  },
+                ),
                 SizedBox(width: 8.w),
                 _frameActionBtn(Icons.fullscreen_rounded, "Smart Fit", () {
                   setState(() {
@@ -652,8 +817,18 @@ class _StoryEditPageState extends State<StoryEditPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Edge Adjustment", style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: Colors.blue)),
-                  Text("${(_frameEdgeAdjustment * 100).toInt()}%", style: TextStyle(fontSize: 10.sp, color: Colors.blue)),
+                  Text(
+                    "Edge Adjustment",
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  Text(
+                    "${(_frameEdgeAdjustment * 100).toInt()}%",
+                    style: TextStyle(fontSize: 10.sp, color: Colors.blue),
+                  ),
                 ],
               ),
               SliderTheme(
@@ -666,7 +841,8 @@ class _StoryEditPageState extends State<StoryEditPage> {
                   value: _frameEdgeAdjustment,
                   min: 0.0,
                   max: 0.4,
-                  onChanged: (val) => setState(() => _frameEdgeAdjustment = val),
+                  onChanged: (val) =>
+                      setState(() => _frameEdgeAdjustment = val),
                 ),
               ),
             ],
@@ -680,9 +856,13 @@ class _StoryEditPageState extends State<StoryEditPage> {
             itemCount: _frameAssets.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
-                 return _frameItem(-1, "assets/images/edit_photo.png", "NONE");
+                return _frameItem(-1, "assets/images/edit_photo.png", "NONE");
               }
-              return _frameItem(index - 1, _frameAssets[index - 1], "Frame $index");
+              return _frameItem(
+                index - 1,
+                _frameAssets[index - 1],
+                "Frame $index",
+              );
             },
           ),
         ),
@@ -704,7 +884,9 @@ class _StoryEditPageState extends State<StoryEditPage> {
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.05),
               borderRadius: BorderRadius.circular(10.r),
-              border: selected ? Border.all(color: Colors.blue, width: 2.w) : null,
+              border: selected
+                  ? Border.all(color: Colors.blue, width: 2.w)
+                  : null,
               image: DecorationImage(
                 image: ResizeImage(AssetImage(asset), width: 150),
                 fit: BoxFit.cover,
@@ -738,7 +920,14 @@ class _StoryEditPageState extends State<StoryEditPage> {
           children: [
             Icon(icon, size: 16.r, color: Colors.blue),
             SizedBox(width: 6.w),
-            Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: Colors.black54)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.black54,
+              ),
+            ),
           ],
         ),
       ),
@@ -767,7 +956,14 @@ class _StoryEditPageState extends State<StoryEditPage> {
         children: [
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.w),
-            child: Text(title, style: TextStyle(fontSize: 11.sp, color: Colors.black38, fontWeight: FontWeight.bold)),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: Colors.black38,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           SizedBox(height: 8.h),
           content,
@@ -790,9 +986,13 @@ class _StoryEditPageState extends State<StoryEditPage> {
             margin: EdgeInsets.only(right: 12.w),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: index == 0 ? Border.all(color: Colors.blue, width: 2.w) : null,
+              border: index == 0
+                  ? Border.all(color: Colors.blue, width: 2.w)
+                  : null,
               image: const DecorationImage(
-                image: NetworkImage("https://images.unsplash.com/photo-1540189549336-e6e99c3679fe"),
+                image: NetworkImage(
+                  "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe",
+                ),
                 fit: BoxFit.cover,
               ),
             ),
@@ -816,7 +1016,8 @@ class _StoryEditPageState extends State<StoryEditPage> {
             margin: EdgeInsets.only(right: 10.w),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(6.r),
-              color: Colors.primaries[index % Colors.primaries.length].withOpacity(0.5),
+              color: Colors.primaries[index % Colors.primaries.length]
+                  .withOpacity(0.5),
             ),
           );
         },
@@ -839,7 +1040,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [Colors.primaries[index % Colors.primaries.length], Colors.white.withOpacity(0.5)],
+                colors: [
+                  Colors.primaries[index % Colors.primaries.length],
+                  Colors.white.withOpacity(0.5),
+                ],
               ),
             ),
           );
@@ -883,36 +1087,61 @@ class _StoryEditPageState extends State<StoryEditPage> {
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 20.w),
         children: [
-          _ratioItem(Icons.crop_free_rounded, "Original", _selectedAspectRatio == "Original", () {
-            setState(() {
-              _selectedAspectRatio = "Original";
-              _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
-            });
-          }),
-          _ratioItem(Icons.crop_square_rounded, "1:1", _selectedAspectRatio == "1:1", () {
-            setState(() {
-              _selectedAspectRatio = "1:1";
-              _applyCropAspectRatio(1.0);
-            });
-          }),
-          _ratioItem(Icons.crop_portrait_rounded, "4:5", _selectedAspectRatio == "4:5", () {
-            setState(() {
-              _selectedAspectRatio = "4:5";
-              _applyCropAspectRatio(4.0 / 5.0);
-            });
-          }),
-          _ratioItem(Icons.crop_16_9_rounded, "16:9", _selectedAspectRatio == "16:9", () {
-            setState(() {
-              _selectedAspectRatio = "16:9";
-              _applyCropAspectRatio(16.0 / 9.0);
-            });
-          }),
-          _ratioItem(Icons.smartphone_rounded, "9:16", _selectedAspectRatio == "9:16", () {
-            setState(() {
-              _selectedAspectRatio = "9:16";
-              _applyCropAspectRatio(9.0 / 16.0);
-            });
-          }),
+          _ratioItem(
+            Icons.crop_free_rounded,
+            "Original",
+            _selectedAspectRatio == "Original",
+            () {
+              setState(() {
+                _selectedAspectRatio = "Original";
+                _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
+              });
+            },
+          ),
+          _ratioItem(
+            Icons.crop_square_rounded,
+            "1:1",
+            _selectedAspectRatio == "1:1",
+            () {
+              setState(() {
+                _selectedAspectRatio = "1:1";
+                _applyCropAspectRatio(1.0);
+              });
+            },
+          ),
+          _ratioItem(
+            Icons.crop_portrait_rounded,
+            "4:5",
+            _selectedAspectRatio == "4:5",
+            () {
+              setState(() {
+                _selectedAspectRatio = "4:5";
+                _applyCropAspectRatio(4.0 / 5.0);
+              });
+            },
+          ),
+          _ratioItem(
+            Icons.crop_16_9_rounded,
+            "16:9",
+            _selectedAspectRatio == "16:9",
+            () {
+              setState(() {
+                _selectedAspectRatio = "16:9";
+                _applyCropAspectRatio(16.0 / 9.0);
+              });
+            },
+          ),
+          _ratioItem(
+            Icons.smartphone_rounded,
+            "9:16",
+            _selectedAspectRatio == "9:16",
+            () {
+              setState(() {
+                _selectedAspectRatio = "9:16";
+                _applyCropAspectRatio(9.0 / 16.0);
+              });
+            },
+          ),
           _ratioItem(Icons.crop_3_2, "3:2", _selectedAspectRatio == "3:2", () {
             setState(() {
               _selectedAspectRatio = "3:2";
@@ -949,9 +1178,14 @@ class _StoryEditPageState extends State<StoryEditPage> {
               setState(() => _flipHorizontal = !_flipHorizontal);
             }),
             SizedBox(width: 20.w),
-            _flipButton(Icons.flip_camera_android_rounded, "Flip V", _flipVertical, () {
-              setState(() => _flipVertical = !_flipVertical);
-            }),
+            _flipButton(
+              Icons.flip_camera_android_rounded,
+              "Flip V",
+              _flipVertical,
+              () {
+                setState(() => _flipVertical = !_flipVertical);
+              },
+            ),
           ],
         ),
       ],
@@ -962,18 +1196,18 @@ class _StoryEditPageState extends State<StoryEditPage> {
     // Calculate new crop rect maintaining aspect ratio
     double centerX = _cropRect.left + _cropRect.width / 2;
     double centerY = _cropRect.top + _cropRect.height / 2;
-    
+
     double newWidth = 0.8;
     double newHeight = newWidth / aspectRatio;
-    
+
     if (newHeight > 0.8) {
       newHeight = 0.8;
       newWidth = newHeight * aspectRatio;
     }
-    
+
     double newLeft = (centerX - newWidth / 2).clamp(0.0, 1.0 - newWidth);
     double newTop = (centerY - newHeight / 2).clamp(0.0, 1.0 - newHeight);
-    
+
     _cropRect = Rect.fromLTWH(newLeft, newTop, newWidth, newHeight);
   }
 
@@ -1005,13 +1239,20 @@ class _StoryEditPageState extends State<StoryEditPage> {
     );
   }
 
-  Widget _flipButton(IconData icon, String label, bool isActive, VoidCallback onTap) {
+  Widget _flipButton(
+    IconData icon,
+    String label,
+    bool isActive,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFE91E63) : Colors.black.withOpacity(0.05),
+          color: isActive
+              ? const Color(0xFFE91E63)
+              : Colors.black.withOpacity(0.05),
           borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
             color: isActive ? const Color(0xFFE91E63) : Colors.black26,
@@ -1020,7 +1261,11 @@ class _StoryEditPageState extends State<StoryEditPage> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: isActive ? Colors.white : Colors.black45, size: 20.r),
+            Icon(
+              icon,
+              color: isActive ? Colors.white : Colors.black45,
+              size: 20.r,
+            ),
             SizedBox(width: 8.w),
             Text(
               label,
@@ -1047,13 +1292,25 @@ class _StoryEditPageState extends State<StoryEditPage> {
             color: active ? Colors.pink : Colors.transparent,
             borderRadius: BorderRadius.circular(8.r),
           ),
-          child: Text(label, style: TextStyle(fontSize: 10.sp, color: active ? Colors.white : Colors.black38, fontWeight: FontWeight.bold)),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              color: active ? Colors.white : Colors.black38,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _ratioItem(IconData icon, String label, bool active, VoidCallback onTap) {
+  Widget _ratioItem(
+    IconData icon,
+    String label,
+    bool active,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1066,9 +1323,20 @@ class _StoryEditPageState extends State<StoryEditPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: active ? Colors.white : Colors.black45, size: 20.r),
+            Icon(
+              icon,
+              color: active ? Colors.white : Colors.black45,
+              size: 20.r,
+            ),
             SizedBox(height: 6.h),
-            Text(label, style: TextStyle(fontSize: 9.sp, color: active ? Colors.white : Colors.black45, fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9.sp,
+                color: active ? Colors.white : Colors.black45,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
@@ -1078,12 +1346,23 @@ class _StoryEditPageState extends State<StoryEditPage> {
   Widget _buildToolHeader() {
     String title = "";
     switch (_activeTool) {
-      case StoryEditTool.bg: title = "Background"; break;
-      case StoryEditTool.adjust: title = "Adjust"; break;
-      case StoryEditTool.crop: title = "Crop Photos"; break;
-      case StoryEditTool.frame: title = "Frame"; break;
-      case StoryEditTool.filter: title = "Filter"; break;
-      default: break;
+      case StoryEditTool.bg:
+        title = "Background";
+        break;
+      case StoryEditTool.adjust:
+        title = "Adjust";
+        break;
+      case StoryEditTool.crop:
+        title = "Crop Photos";
+        break;
+      case StoryEditTool.frame:
+        title = "Frame";
+        break;
+      case StoryEditTool.filter:
+        title = "Filter";
+        break;
+      default:
+        break;
     }
 
     return Container(
@@ -1097,12 +1376,15 @@ class _StoryEditPageState extends State<StoryEditPage> {
               _revertToSnapshot(); // Revert changes on Cancel
               _activeTool = null;
             }),
-            child: Text("Cancel", style: TextStyle(color: Colors.black54, fontSize: 16.sp)),
+            child: Text(
+              "Cancel",
+              style: TextStyle(color: Colors.black54, fontSize: 16.sp),
+            ),
           ),
           Text(
             title,
             style: TextStyle(
-              fontSize: 16.sp, 
+              fontSize: 16.sp,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
@@ -1112,10 +1394,12 @@ class _StoryEditPageState extends State<StoryEditPage> {
               _activeTool = null; // Keep changes on Apply
             }),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue, 
+              backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.r),
+              ),
               padding: EdgeInsets.symmetric(horizontal: 16.w),
             ),
             child: const Text("Done"),
@@ -1125,11 +1409,17 @@ class _StoryEditPageState extends State<StoryEditPage> {
     );
   }
 
-  void _updateCropRect(Offset delta, double w, double h, {required bool isTop, required bool isLeft}) {
+  void _updateCropRect(
+    Offset delta,
+    double w,
+    double h, {
+    required bool isTop,
+    required bool isLeft,
+  }) {
     setState(() {
       double dx = delta.dx / w;
       double dy = delta.dy / h;
-      
+
       double left = _cropRect.left;
       double top = _cropRect.top;
       double width = _cropRect.width;
@@ -1178,7 +1468,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
                     color: Colors.black.withOpacity(0.2),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -1188,16 +1478,22 @@ class _StoryEditPageState extends State<StoryEditPage> {
     );
   }
 
-  void _updateFrameRect(Offset delta, double w, double h, {bool? isTop, bool? isLeft}) {
+  void _updateFrameRect(
+    Offset delta,
+    double w,
+    double h, {
+    bool? isTop,
+    bool? isLeft,
+  }) {
     setState(() {
       double dx = delta.dx / w;
       double dy = delta.dy / h;
-      
+
       double left = _frameRect.left;
       double top = _frameRect.top;
       double width = _frameRect.width;
       double height = _frameRect.height;
-      
+
       double initialRatio = width / height;
 
       if (isLeft != null) {
@@ -1222,21 +1518,21 @@ class _StoryEditPageState extends State<StoryEditPage> {
 
       if (_lockFrameAspectRatio) {
         if (isTop != null && isLeft != null) {
-            height = width / initialRatio;
+          height = width / initialRatio;
         } else if (isTop != null) {
-            width = height * initialRatio;
+          width = height * initialRatio;
         } else if (isLeft != null) {
-            height = width / initialRatio;
+          height = width / initialRatio;
         }
-        
+
         if (left + width > 1.5) width = 1.5 - left;
         if (top + height > 1.5) height = 1.5 - top;
         if (width / height != initialRatio) {
-            if (width / height > initialRatio) {
-                width = height * initialRatio;
-            } else {
-                height = width / initialRatio;
-            }
+          if (width / height > initialRatio) {
+            width = height * initialRatio;
+          } else {
+            height = width / initialRatio;
+          }
         }
       }
 
@@ -1247,10 +1543,10 @@ class _StoryEditPageState extends State<StoryEditPage> {
   Widget _buildAdjustPanel() {
     return Column(
       children: [
-         SizedBox(height: 10.h),
-         _buildRuler(),
-         _buildAdjustToolList(),
-         SizedBox(height: 20.h),
+        SizedBox(height: 10.h),
+        _buildRuler(),
+        _buildAdjustToolList(),
+        SizedBox(height: 20.h),
       ],
     );
   }
@@ -1274,25 +1570,44 @@ class _StoryEditPageState extends State<StoryEditPage> {
 
   double _getAdjustValue() {
     switch (_selectedAdjustTool) {
-      case "Brightness": return _brightness * 100;
-      case "Contrast": return (_contrast - 1.0) * 100;
-      case "Saturation": return (_saturation - 1.0) * 100;
-      case "Highlights": return _highlights * 100;
-      case "Shadows": return _shadows * 100;
-      case "Temperature": return _temperature * 100;
-      default: return 0;
+      case "Brightness":
+        return _brightness * 100;
+      case "Contrast":
+        return (_contrast - 1.0) * 100;
+      case "Saturation":
+        return (_saturation - 1.0) * 100;
+      case "Highlights":
+        return _highlights * 100;
+      case "Shadows":
+        return _shadows * 100;
+      case "Temperature":
+        return _temperature * 100;
+      default:
+        return 0;
     }
   }
 
   void _updateAdjustValue(double val) {
     setState(() {
       switch (_selectedAdjustTool) {
-        case "Brightness": _brightness = val / 100; break;
-        case "Contrast": _contrast = 1.0 + val / 100; break;
-        case "Saturation": _saturation = 1.0 + val / 100; break;
-        case "Highlights": _highlights = val / 100; break;
-        case "Shadows": _shadows = val / 100; break;
-        case "Temperature": _temperature = val / 100; break;
+        case "Brightness":
+          _brightness = val / 100;
+          break;
+        case "Contrast":
+          _contrast = 1.0 + val / 100;
+          break;
+        case "Saturation":
+          _saturation = 1.0 + val / 100;
+          break;
+        case "Highlights":
+          _highlights = val / 100;
+          break;
+        case "Shadows":
+          _shadows = val / 100;
+          break;
+        case "Temperature":
+          _temperature = val / 100;
+          break;
       }
     });
   }
@@ -1308,13 +1623,25 @@ class _StoryEditPageState extends State<StoryEditPage> {
             Container(
               padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
-                color: active ? const Color(0xFF2196F3) : Colors.black.withOpacity(0.05),
+                color: active
+                    ? const Color(0xFF2196F3)
+                    : Colors.black.withOpacity(0.05),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: active ? Colors.white : Colors.black45, size: 20.r),
+              child: Icon(
+                icon,
+                color: active ? Colors.white : Colors.black45,
+                size: 20.r,
+              ),
             ),
             SizedBox(height: 5.h),
-            Text(label, style: TextStyle(fontSize: 9.sp, color: active ? Colors.black87 : Colors.black38)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9.sp,
+                color: active ? Colors.black87 : Colors.black38,
+              ),
+            ),
           ],
         ),
       ),
@@ -1325,12 +1652,12 @@ class _StoryEditPageState extends State<StoryEditPage> {
     return Column(
       children: [
         Text(
-          _getAdjustValue().toStringAsFixed(0), 
+          _getAdjustValue().toStringAsFixed(0),
           style: TextStyle(
-            color: const Color(0xFFFF2D78), 
-            fontWeight: FontWeight.bold, 
-            fontSize: 14.sp
-          )
+            color: const Color(0xFFFF2D78),
+            fontWeight: FontWeight.bold,
+            fontSize: 14.sp,
+          ),
         ),
         SizedBox(height: 5.h),
         Padding(
@@ -1339,9 +1666,11 @@ class _StoryEditPageState extends State<StoryEditPage> {
             children: [
               GestureDetector(
                 onHorizontalDragUpdate: (details) {
-                   // Drag LEFT (dx is negative) -> value INCREASES
-                   double delta = details.delta.dx / 2.w;
-                   _updateAdjustValue((_getAdjustValue() - delta).clamp(-100, 100));
+                  // Drag LEFT (dx is negative) -> value INCREASES
+                  double delta = details.delta.dx / 2.w;
+                  _updateAdjustValue(
+                    (_getAdjustValue() - delta).clamp(-100, 100),
+                  );
                 },
                 child: CustomPaint(
                   size: Size(double.infinity, 50.h),
@@ -1352,7 +1681,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
                 width: 2.w,
                 height: 30.h,
                 color: const Color(0xFFFF2D78),
-              )
+              ),
             ],
           ),
         ),
@@ -1361,120 +1690,139 @@ class _StoryEditPageState extends State<StoryEditPage> {
   }
 
   Widget _buildFilterPanel() {
-    final List<Map<String, dynamic>> filters = _filterCategories[_selectedFilterCategory]!;
+    final List<Map<String, dynamic>> filters =
+        _filterCategories[_selectedFilterCategory]!;
     return Column(
       children: [
-         // Category Tabs
-         Padding(
-           padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-           child: SingleChildScrollView(
-             scrollDirection: Axis.horizontal,
-             child: Row(
-               children: _filterCategories.keys.map((cat) {
-                 bool active = cat == _selectedFilterCategory;
-                 return Padding(
-                   padding: EdgeInsets.only(right: 20.w),
-                   child: GestureDetector(
-                     onTap: () => setState(() {
-                       _selectedFilterCategory = cat;
-                       _selectedFilterIndex = 0; // Reset to NONE when switching categories
-                     }),
-                     child: Text(
-                       cat,
-                       style: TextStyle(
-                         color: active ? const Color(0xFFE91E63) : Colors.black38,
-                         fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                         fontSize: 12.sp,
-                       ),
-                     ),
-                   ),
-                 );
-               }).toList(),
-             ),
-           ),
-         ),
-         // Filter Thumbnails
-         SizedBox(
-           height: 80.h,
-           child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 20.w),
-              itemCount: filters.length,
-              itemBuilder: (context, index) {
-                bool selected = index == _selectedFilterIndex;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedFilterIndex = index),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 65.w,
-                        height: 65.w,
-                        margin: EdgeInsets.only(right: 10.w),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.r),
-                          border: selected ? Border.all(color: const Color(0xFFE91E63), width: 2.w) : null,
-                          image: DecorationImage(
-                            image: AssetImage(filters[index]["image"] ?? "assets/images/edit_photo.png"),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+        // Category Tabs
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _filterCategories.keys.map((cat) {
+                bool active = cat == _selectedFilterCategory;
+                return Padding(
+                  padding: EdgeInsets.only(right: 20.w),
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      _selectedFilterCategory = cat;
+                      _selectedFilterIndex =
+                          0; // Reset to NONE when switching categories
+                    }),
+                    child: Text(
+                      cat,
+                      style: TextStyle(
+                        color: active
+                            ? const Color(0xFFE91E63)
+                            : Colors.black38,
+                        fontWeight: active
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        fontSize: 12.sp,
                       ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        filters[index]["name"],
-                        style: TextStyle(
-                          fontSize: 8.sp,
-                          color: selected ? Colors.black : Colors.black45,
-                          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 );
-              },
-           ),
-         ),
-         // Intensity Slider
-         Padding(
-           padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 15.h),
-           child: Row(
-             children: [
-               Expanded(
-                 child: SliderTheme(
-                   data: SliderTheme.of(context).copyWith(
-                     trackHeight: 2.h,
-                     thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6.r),
-                     activeTrackColor: const Color(0xFFE91E63),
-                     inactiveTrackColor: Colors.black12,
-                     thumbColor: const Color(0xFFE91E63),
-                   ),
-                   child: Slider(
-                     value: _filterIntensity,
-                     onChanged: (v) => setState(() => _filterIntensity = v),
-                   ),
-                 ),
-               ),
-               Text("${(_filterIntensity * 100).toInt()}%", style: TextStyle(fontSize: 10.sp, color: Colors.black54)),
-             ],
-           ),
-         ),
+              }).toList(),
+            ),
+          ),
+        ),
+        // Filter Thumbnails
+        SizedBox(
+          height: 80.h,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            itemCount: filters.length,
+            itemBuilder: (context, index) {
+              bool selected = index == _selectedFilterIndex;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedFilterIndex = index),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 65.w,
+                      height: 65.w,
+                      margin: EdgeInsets.only(right: 10.w),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10.r),
+                        border: selected
+                            ? Border.all(
+                                color: const Color(0xFFE91E63),
+                                width: 2.w,
+                              )
+                            : null,
+                        image: DecorationImage(
+                          image: AssetImage(
+                            filters[index]["image"] ??
+                                "assets/images/edit_photo.png",
+                          ),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      filters[index]["name"],
+                      style: TextStyle(
+                        fontSize: 8.sp,
+                        color: selected ? Colors.black : Colors.black45,
+                        fontWeight: selected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        // Intensity Slider
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 15.h),
+          child: Row(
+            children: [
+              Expanded(
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2.h,
+                    thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6.r),
+                    activeTrackColor: const Color(0xFFE91E63),
+                    inactiveTrackColor: Colors.black12,
+                    thumbColor: const Color(0xFFE91E63),
+                  ),
+                  child: Slider(
+                    value: _filterIntensity,
+                    onChanged: (v) => setState(() => _filterIntensity = v),
+                  ),
+                ),
+              ),
+              Text(
+                "${(_filterIntensity * 100).toInt()}%",
+                style: TextStyle(fontSize: 10.sp, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
   List<double> _getCombinedMatrix() {
     List<double> matrix = _getInterpolatedFilterMatrix();
-    
+
     // Apply Brightness
     matrix[4] += _brightness * 255;
     matrix[9] += _brightness * 255;
     matrix[14] += _brightness * 255;
-    
+
     // Apply Contrast
     for (int i in [0, 6, 12]) {
       matrix[i] *= _contrast;
     }
-    
+
     // Apply Saturation
     double invSat = 1.0 - _saturation;
     double R = 0.213 * invSat;
@@ -1482,19 +1830,51 @@ class _StoryEditPageState extends State<StoryEditPage> {
     double B = 0.072 * invSat;
 
     List<double> satMatrix = [
-      R + _saturation, G, B, 0, 0,
-      R, G + _saturation, B, 0, 0,
-      R, G, B + _saturation, 0, 0,
-      0, 0, 0, 1, 0,
+      R + _saturation,
+      G,
+      B,
+      0,
+      0,
+      R,
+      G + _saturation,
+      B,
+      0,
+      0,
+      R,
+      G,
+      B + _saturation,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
     matrix = _multiplyMatrices(matrix, satMatrix);
 
     // Apply Temperature (Warmth)
     List<double> tempMatrix = [
-      1.0 + _temperature * 0.1, 0, 0, 0, 0,
-      0, 1.0 + _temperature * 0.05, 0, 0, 0,
-      0, 0, 1.0 - _temperature * 0.1, 0, 0,
-      0, 0, 0, 1, 0,
+      1.0 + _temperature * 0.1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1.0 + _temperature * 0.05,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1.0 - _temperature * 0.1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
     matrix = _multiplyMatrices(matrix, tempMatrix);
 
@@ -1503,38 +1883,73 @@ class _StoryEditPageState extends State<StoryEditPage> {
       double hGain = 1.0 + _highlights * 0.2;
       double sOffset = _shadows * 30;
       List<double> lightMatrix = [
-        hGain, 0, 0, 0, sOffset,
-        0, hGain, 0, 0, sOffset,
-        0, 0, hGain, 0, sOffset,
-        0, 0, 0, 1, 0,
+        hGain,
+        0,
+        0,
+        0,
+        sOffset,
+        0,
+        hGain,
+        0,
+        0,
+        sOffset,
+        0,
+        0,
+        hGain,
+        0,
+        sOffset,
+        0,
+        0,
+        0,
+        1,
+        0,
       ];
       matrix = _multiplyMatrices(matrix, lightMatrix);
     }
-    
+
     return matrix;
   }
 
   List<double> _multiplyMatrices(List<double> m1, List<double> m2) {
     List<double> result = List.filled(20, 0.0);
     for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 5; j++) {
-            double sum = 0;
-            for (int k = 0; k < 4; k++) {
-                sum += m1[i * 5 + k] * m2[k * 5 + j];
-            }
-            if (j == 4) sum += m1[i * 5 + 4];
-            result[i * 5 + j] = sum;
+      for (int j = 0; j < 5; j++) {
+        double sum = 0;
+        for (int k = 0; k < 4; k++) {
+          sum += m1[i * 5 + k] * m2[k * 5 + j];
         }
+        if (j == 4) sum += m1[i * 5 + 4];
+        result[i * 5 + j] = sum;
+      }
     }
     return result;
   }
 
   List<double> _getInterpolatedFilterMatrix() {
     final List<double> identity = [
-      1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,1,0
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
     if (_selectedFilterIndex == 0) return identity;
-    
+
     final target = _getFilterMatrix(_selectedFilterIndex);
     final result = List<double>.filled(20, 0.0);
     for (int i = 0; i < 20; i++) {
@@ -1544,326 +1959,1035 @@ class _StoryEditPageState extends State<StoryEditPage> {
   }
 
   List<double> _getFilterMatrix(int index) {
-     final String name = _filterCategories[_selectedFilterCategory]![index]["name"];
-     switch (name) {
-       // --- Trending ---
-       case "DUAL":
-         return [
-           1.2, 0.1, 0.1, 0.0, 0.0,
-           1.2, 0.1, 0.1, 0.0, 0.0,
-           0.1, 1.1, 0.1, 0.0, 0.0,
-           0.1, 0.1, 1.5, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ].sublist(0, 20); // Ensuring it's exactly 20 elements
-       case "POP":
-         return [
-           1.5, 0.0, 0.0, 0.0, 0.0,
-           0.0, 1.3, 0.0, 0.0, 0.0,
-           0.0, 0.0, 1.2, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "NEON":
-         return [
-           1.5, 0.0, 0.0, 0.0, 0.0,
-           0.0, 0.0, 1.5, 0.0, 0.0,
-           0.0, 1.5, 0.0, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "FILM":
-         return [
-           0.9, 0.2, 0.0, 0.0, 0.0,
-           0.1, 0.9, 0.1, 0.0, 0.0,
-           0.0, 0.2, 0.8, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "GLOW":
-         return [
-           1.0, 0.0, 0.0, 0.0, 40.0,
-           0.0, 1.0, 0.0, 0.0, 40.0,
-           0.0, 0.0, 1.0, 0.0, 40.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "VIBE":
-         return [
-           1.1, 0.0, 0.0, 0.0, 10.0,
-           0.0, 1.0, 0.0, 0.0, 0.0,
-           0.0, 0.0, 0.9, 0.0, -10.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "MOOD":
-         return [
-           0.9, 0.0, 0.0, 0.0, -10.0,
-           0.0, 1.0, 0.0, 0.0, 0.0,
-           0.0, 0.0, 1.1, 0.0, 10.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "VINTAGE":
-       case "VINT":
-         return [
-           0.393, 0.769, 0.189, 0.0, 0.0,
-           0.349, 0.686, 0.168, 0.0, 0.0,
-           0.272, 0.534, 0.131, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "SOFT":
-         return [
-           1.0, 0.4, 0.4, 0.0, 0.0,
-           0.4, 1.0, 0.4, 0.0, 0.0,
-           0.4, 0.4, 1.0, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       // --- Glitch ---
-       case "GLITCH":
-         return [
-           -1.0, 0.0, 0.0, 0.0, 255.0,
-           0.0, 1.0, 0.0, 0.0, 0.0,
-           0.0, 0.0, -1.0, 0.0, 255.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "RGB":
-         return [
-           1.0, 0.5, 0.0, 0.0, 0.0,
-           0.0, 1.0, 0.5, 0.0, 0.0,
-           0.5, 0.0, 1.0, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "SHIFT":
-         return [
-           1.0, 0.0, 0.2, 0.0, 0.0,
-           0.2, 1.0, 0.0, 0.0, 0.0,
-           0.0, 0.2, 1.0, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "ERROR":
-         return [
-           -1.0, -1.0, -1.0, 0.0, 255.0,
-           -1.0, -1.0, -1.0, 0.0, 255.0,
-           -1.0, -1.0, -1.0, 0.0, 255.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "PIXEL":
-         return [
-           1.0, 0.2, 0.0, 0.0, 0.0,
-           0.0, 1.0, 0.2, 0.0, 0.0,
-           0.2, 0.0, 1.0, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "NOISE":
-         return [
-           1.0, 0.0, 0.0, 0.0, 20.0,
-           0.0, 1.0, 0.0, 0.0, 20.0,
-           0.0, 0.0, 1.0, 0.0, 20.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "WARP":
-         return [
-           1.5, -0.5, 0.0, 0.0, 0.0,
-           0.0, 1.5, -0.5, 0.0, 0.0,
-           -0.5, 0.0, 1.5, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       // --- Weather ---
-       case "SUN":
-         return [
-           1.1, 0.0, 0.0, 0.0, 30.0,
-           0.0, 1.0, 0.0, 0.0, 20.0,
-           0.0, 0.0, 0.9, 0.0, -10.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "WARM":
-         return [
-           1.2, 0.0, 0.0, 0.0, 20.0,
-           0.0, 1.1, 0.0, 0.0, 10.0,
-           0.0, 0.0, 0.9, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "COOL":
-         return [
-           0.9, 0.0, 0.0, 0.0, 0.0,
-           0.0, 1.0, 0.0, 0.0, 10.0,
-           0.0, 0.0, 1.2, 0.0, 20.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "FOG":
-         return [
-           0.8, 0.0, 0.0, 0.0, 50.0,
-           0.0, 0.8, 0.0, 0.0, 50.0,
-           0.0, 0.0, 0.8, 0.0, 50.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "RAIN":
-         return [
-           0.7, 0.0, 0.0, 0.0, 10.0,
-           0.0, 0.7, 0.0, 0.0, 10.0,
-           0.0, 0.0, 0.9, 0.0, 30.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "SNOW":
-         return [
-           1.2, 0.0, 0.0, 0.0, 40.0,
-           0.0, 1.2, 0.0, 0.0, 40.0,
-           0.0, 0.0, 1.3, 0.0, 50.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "DUST":
-         return [
-           1.0, 0.2, 0.2, 0.0, 10.0,
-           0.2, 1.0, 0.2, 0.0, 10.0,
-           0.2, 0.2, 0.8, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       // --- Vintage ---
-       case "SEPIA":
-         return [
-           0.393, 0.769, 0.189, 0.0, 0.0,
-           0.349, 0.686, 0.168, 0.0, 0.0,
-           0.272, 0.534, 0.131, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "RETRO":
-         return [
-           1.0, 0.0, 0.0, 0.0, 30.0,
-           0.0, 0.8, 0.0, 0.0, 0.0,
-           0.0, 0.0, 1.2, 0.0, -20.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "FADE":
-         return [
-           0.9, 0.1, 0.1, 0.0, 20.0,
-           0.1, 0.9, 0.1, 0.0, 20.0,
-           0.1, 0.1, 0.9, 0.0, 20.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "OLD":
-         return [
-           0.7, 0.2, 0.1, 0.0, 30.0,
-           0.2, 0.7, 0.1, 0.0, 30.0,
-           0.1, 0.1, 0.7, 0.0, 30.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "FILM2":
-         return [
-           1.1, 0.1, -0.1, 0.0, 0.0,
-           0.0, 1.0, 0.0, 0.0, 0.0,
-           -0.1, 0.1, 1.1, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "BROWN":
-         return [
-           1.0, 0.0, 0.0, 0.0, 30.0,
-           0.0, 0.9, 0.0, 0.0, 15.0,
-           0.0, 0.0, 0.8, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       // --- Color / Pop ---
-       case "POP2":
-         return [
-           1.6, -0.1, -0.1, 0.0, 0.0,
-           -0.1, 1.6, -0.1, 0.0, 0.0,
-           -0.1, -0.1, 1.6, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "BRIGHT":
-         return [
-           1.0, 0.0, 0.0, 0.0, 50.0,
-           0.0, 1.0, 0.0, 0.0, 50.0,
-           0.0, 0.0, 1.0, 0.0, 50.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "SAT":
-         return [
-           1.3, -0.15, -0.15, 0.0, 0.0,
-           -0.15, 1.3, -0.15, 0.0, 0.0,
-           -0.15, -0.15, 1.3, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "PASTEL":
-         return [
-           0.8, 0.1, 0.1, 0.0, 60.0,
-           0.1, 0.8, 0.1, 0.0, 60.0,
-           0.1, 0.1, 0.8, 0.0, 60.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "FRESH":
-         return [
-           1.0, 0.0, 0.0, 0.0, 0.0,
-           0.0, 1.2, 0.0, 0.0, 10.0,
-           0.0, 0.0, 1.2, 0.0, 10.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "BOOST":
-         return [
-           1.4, 0.0, 0.0, 0.0, -20.0,
-           0.0, 1.4, 0.0, 0.0, -20.0,
-           0.0, 0.0, 1.4, 0.0, -20.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "JUICY":
-         return [
-           1.5, 0.0, 0.0, 0.0, 20.0,
-           0.0, 1.2, 0.0, 0.0, 0.0,
-           0.0, 0.0, 1.0, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       // --- Moody ---
-       case "DARK":
-         return [
-           0.6, 0.0, 0.0, 0.0, 0.0,
-           0.0, 0.6, 0.0, 0.0, 0.0,
-           0.0, 0.0, 0.6, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "SHADOW":
-         return [
-           1.2, 0.0, 0.0, 0.0, -50.0,
-           0.0, 1.2, 0.0, 0.0, -50.0,
-           0.0, 0.0, 1.2, 0.0, -50.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "NIGHT":
-         return [
-           0.5, 0.0, 0.0, 0.0, -20.0,
-           0.0, 0.5, 0.0, 0.0, -20.0,
-           0.0, 0.0, 0.8, 0.0, 10.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "BLUE":
-         return [
-           0.7, 0.0, 0.0, 0.0, 0.0,
-           0.0, 0.7, 0.0, 0.0, 0.0,
-           0.0, 0.0, 1.1, 0.0, 30.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "LOW":
-         return [
-           0.4, 0.0, 0.0, 0.0, 0.0,
-           0.0, 0.4, 0.0, 0.0, 0.0,
-           0.0, 0.0, 0.4, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "DEEP":
-         return [
-           1.5, 0.0, 0.0, 0.0, -40.0,
-           0.0, 1.5, 0.0, 0.0, -40.0,
-           0.0, 0.0, 1.5, 0.0, -40.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-       case "SAD":
-         return [
-           0.5, 0.2, 0.1, 0.0, -10.0,
-           0.1, 0.5, 0.1, 0.0, -10.0,
-           0.1, 0.2, 0.5, 0.0, -10.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
+    final String name =
+        _filterCategories[_selectedFilterCategory]![index]["name"];
+    switch (name) {
+      // --- Trending ---
+      case "DUAL":
+        return [
+          1.2,
+          0.1,
+          0.1,
+          0.0,
+          0.0,
+          1.2,
+          0.1,
+          0.1,
+          0.0,
+          0.0,
+          0.1,
+          1.1,
+          0.1,
+          0.0,
+          0.0,
+          0.1,
+          0.1,
+          1.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ].sublist(0, 20); // Ensuring it's exactly 20 elements
+      case "POP":
+        return [
+          1.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.3,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "NEON":
+        return [
+          1.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.5,
+          0.0,
+          0.0,
+          0.0,
+          1.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "FILM":
+        return [
+          0.9,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.1,
+          0.9,
+          0.1,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.8,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "GLOW":
+        return [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          40.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          40.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          40.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "VIBE":
+        return [
+          1.1,
+          0.0,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.9,
+          0.0,
+          -10.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "MOOD":
+        return [
+          0.9,
+          0.0,
+          0.0,
+          0.0,
+          -10.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.1,
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "VINTAGE":
+      case "VINT":
+        return [
+          0.393,
+          0.769,
+          0.189,
+          0.0,
+          0.0,
+          0.349,
+          0.686,
+          0.168,
+          0.0,
+          0.0,
+          0.272,
+          0.534,
+          0.131,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "SOFT":
+        return [
+          1.0,
+          0.4,
+          0.4,
+          0.0,
+          0.0,
+          0.4,
+          1.0,
+          0.4,
+          0.0,
+          0.0,
+          0.4,
+          0.4,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      // --- Glitch ---
+      case "GLITCH":
+        return [
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          255.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          0.0,
+          255.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "RGB":
+        return [
+          1.0,
+          0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.5,
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "SHIFT":
+        return [
+          1.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "ERROR":
+        return [
+          -1.0,
+          -1.0,
+          -1.0,
+          0.0,
+          255.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          0.0,
+          255.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          0.0,
+          255.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "PIXEL":
+        return [
+          1.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "NOISE":
+        return [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          20.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          20.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          20.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "WARP":
+        return [
+          1.5,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.5,
+          -0.5,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          1.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      // --- Weather ---
+      case "SUN":
+        return [
+          1.1,
+          0.0,
+          0.0,
+          0.0,
+          30.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          20.0,
+          0.0,
+          0.0,
+          0.9,
+          0.0,
+          -10.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "WARM":
+        return [
+          1.2,
+          0.0,
+          0.0,
+          0.0,
+          20.0,
+          0.0,
+          1.1,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0.9,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "COOL":
+        return [
+          0.9,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          1.2,
+          0.0,
+          20.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "FOG":
+        return [
+          0.8,
+          0.0,
+          0.0,
+          0.0,
+          50.0,
+          0.0,
+          0.8,
+          0.0,
+          0.0,
+          50.0,
+          0.0,
+          0.0,
+          0.8,
+          0.0,
+          50.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "RAIN":
+        return [
+          0.7,
+          0.0,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          0.7,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0.9,
+          0.0,
+          30.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "SNOW":
+        return [
+          1.2,
+          0.0,
+          0.0,
+          0.0,
+          40.0,
+          0.0,
+          1.2,
+          0.0,
+          0.0,
+          40.0,
+          0.0,
+          0.0,
+          1.3,
+          0.0,
+          50.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "DUST":
+        return [
+          1.0,
+          0.2,
+          0.2,
+          0.0,
+          10.0,
+          0.2,
+          1.0,
+          0.2,
+          0.0,
+          10.0,
+          0.2,
+          0.2,
+          0.8,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      // --- Vintage ---
+      case "SEPIA":
+        return [
+          0.393,
+          0.769,
+          0.189,
+          0.0,
+          0.0,
+          0.349,
+          0.686,
+          0.168,
+          0.0,
+          0.0,
+          0.272,
+          0.534,
+          0.131,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "RETRO":
+        return [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          30.0,
+          0.0,
+          0.8,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.2,
+          0.0,
+          -20.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "FADE":
+        return [
+          0.9,
+          0.1,
+          0.1,
+          0.0,
+          20.0,
+          0.1,
+          0.9,
+          0.1,
+          0.0,
+          20.0,
+          0.1,
+          0.1,
+          0.9,
+          0.0,
+          20.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "OLD":
+        return [
+          0.7,
+          0.2,
+          0.1,
+          0.0,
+          30.0,
+          0.2,
+          0.7,
+          0.1,
+          0.0,
+          30.0,
+          0.1,
+          0.1,
+          0.7,
+          0.0,
+          30.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "FILM2":
+        return [
+          1.1,
+          0.1,
+          -0.1,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.1,
+          0.1,
+          1.1,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "BROWN":
+        return [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          30.0,
+          0.0,
+          0.9,
+          0.0,
+          0.0,
+          15.0,
+          0.0,
+          0.0,
+          0.8,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      // --- Color / Pop ---
+      case "POP2":
+        return [
+          1.6,
+          -0.1,
+          -0.1,
+          0.0,
+          0.0,
+          -0.1,
+          1.6,
+          -0.1,
+          0.0,
+          0.0,
+          -0.1,
+          -0.1,
+          1.6,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "BRIGHT":
+        return [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          50.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          50.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          50.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "SAT":
+        return [
+          1.3,
+          -0.15,
+          -0.15,
+          0.0,
+          0.0,
+          -0.15,
+          1.3,
+          -0.15,
+          0.0,
+          0.0,
+          -0.15,
+          -0.15,
+          1.3,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "PASTEL":
+        return [
+          0.8,
+          0.1,
+          0.1,
+          0.0,
+          60.0,
+          0.1,
+          0.8,
+          0.1,
+          0.0,
+          60.0,
+          0.1,
+          0.1,
+          0.8,
+          0.0,
+          60.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "FRESH":
+        return [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.2,
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          1.2,
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "BOOST":
+        return [
+          1.4,
+          0.0,
+          0.0,
+          0.0,
+          -20.0,
+          0.0,
+          1.4,
+          0.0,
+          0.0,
+          -20.0,
+          0.0,
+          0.0,
+          1.4,
+          0.0,
+          -20.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "JUICY":
+        return [
+          1.5,
+          0.0,
+          0.0,
+          0.0,
+          20.0,
+          0.0,
+          1.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      // --- Moody ---
+      case "DARK":
+        return [
+          0.6,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.6,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.6,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "SHADOW":
+        return [
+          1.2,
+          0.0,
+          0.0,
+          0.0,
+          -50.0,
+          0.0,
+          1.2,
+          0.0,
+          0.0,
+          -50.0,
+          0.0,
+          0.0,
+          1.2,
+          0.0,
+          -50.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "NIGHT":
+        return [
+          0.5,
+          0.0,
+          0.0,
+          0.0,
+          -20.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0,
+          -20.0,
+          0.0,
+          0.0,
+          0.8,
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "BLUE":
+        return [
+          0.7,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.7,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.1,
+          0.0,
+          30.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "LOW":
+        return [
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "DEEP":
+        return [
+          1.5,
+          0.0,
+          0.0,
+          0.0,
+          -40.0,
+          0.0,
+          1.5,
+          0.0,
+          0.0,
+          -40.0,
+          0.0,
+          0.0,
+          1.5,
+          0.0,
+          -40.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+      case "SAD":
+        return [
+          0.5,
+          0.2,
+          0.1,
+          0.0,
+          -10.0,
+          0.1,
+          0.5,
+          0.1,
+          0.0,
+          -10.0,
+          0.1,
+          0.2,
+          0.5,
+          0.0,
+          -10.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
 
-       default:
-         return [
-           1.0, 0.0, 0.0, 0.0, 0.0,
-           0.0, 1.0, 0.0, 0.0, 0.0,
-           0.0, 0.0, 1.0, 0.0, 0.0,
-           0.0, 0.0, 0.0, 1.0, 0.0,
-         ];
-     }
+      default:
+        return [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+        ];
+    }
   }
 }
 
@@ -1879,17 +3003,22 @@ class RulerPainter extends CustomPainter {
 
     final double mid = size.width / 2;
     for (int i = -40; i <= 40; i++) {
-        // Dragging LEFT (offset increases) -> Ruler visuals move LEFT
-        double x = mid + (i * 10.w) - (offset * 1.w);
-        if (x < 0 || x > size.width) continue;
-        
-        double h = i % 5 == 0 ? 20.h : 10.h;
-        canvas.drawLine(Offset(x, (size.height - h) / 2), Offset(x, (size.height + h) / 2), paint);
+      // Dragging LEFT (offset increases) -> Ruler visuals move LEFT
+      double x = mid + (i * 10.w) - (offset * 1.w);
+      if (x < 0 || x > size.width) continue;
+
+      double h = i % 5 == 0 ? 20.h : 10.h;
+      canvas.drawLine(
+        Offset(x, (size.height - h) / 2),
+        Offset(x, (size.height + h) / 2),
+        paint,
+      );
     }
   }
 
   @override
-  bool shouldRepaint(covariant RulerPainter oldDelegate) => oldDelegate.offset != offset;
+  bool shouldRepaint(covariant RulerPainter oldDelegate) =>
+      oldDelegate.offset != offset;
 }
 
 class CropPainter extends CustomPainter {
@@ -1903,9 +3032,20 @@ class CropPainter extends CustomPainter {
 
     // Draw darkened areas outside crop
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, hole.top), paint);
-    canvas.drawRect(Rect.fromLTWH(0, hole.bottom, size.width, (size.height - hole.bottom)), paint);
+    canvas.drawRect(
+      Rect.fromLTWH(0, hole.bottom, size.width, (size.height - hole.bottom)),
+      paint,
+    );
     canvas.drawRect(Rect.fromLTWH(0, hole.top, hole.left, hole.height), paint);
-    canvas.drawRect(Rect.fromLTWH(hole.right, hole.top, (size.width - hole.right), hole.height), paint);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        hole.right,
+        hole.top,
+        (size.width - hole.right),
+        hole.height,
+      ),
+      paint,
+    );
 
     // Draw white border around crop area
     final borderPaint = Paint()
@@ -1913,48 +3053,96 @@ class CropPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawRect(hole, borderPaint);
-    
+
     // Draw grid lines (rule of thirds)
     final gridPaint = Paint()
       ..color = Colors.white.withOpacity(0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-    
+
     // Vertical grid lines
     double gridX1 = hole.left + hole.width / 3;
     double gridX2 = hole.left + (hole.width * 2) / 3;
-    canvas.drawLine(Offset(gridX1, hole.top), Offset(gridX1, hole.bottom), gridPaint);
-    canvas.drawLine(Offset(gridX2, hole.top), Offset(gridX2, hole.bottom), gridPaint);
-    
+    canvas.drawLine(
+      Offset(gridX1, hole.top),
+      Offset(gridX1, hole.bottom),
+      gridPaint,
+    );
+    canvas.drawLine(
+      Offset(gridX2, hole.top),
+      Offset(gridX2, hole.bottom),
+      gridPaint,
+    );
+
     // Horizontal grid lines
     double gridY1 = hole.top + hole.height / 3;
     double gridY2 = hole.top + (hole.height * 2) / 3;
-    canvas.drawLine(Offset(hole.left, gridY1), Offset(hole.right, gridY1), gridPaint);
-    canvas.drawLine(Offset(hole.left, gridY2), Offset(hole.right, gridY2), gridPaint);
-    
+    canvas.drawLine(
+      Offset(hole.left, gridY1),
+      Offset(hole.right, gridY1),
+      gridPaint,
+    );
+    canvas.drawLine(
+      Offset(hole.left, gridY2),
+      Offset(hole.right, gridY2),
+      gridPaint,
+    );
+
     // Draw corner handles
     final accentPaint = Paint()
       ..color = Colors.blue
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
-    
+
     const double L = 20; // Longer handles for better visibility
-    
+
     // Top-left corner
-    canvas.drawLine(hole.topLeft, hole.topLeft + const Offset(L, 0), accentPaint);
-    canvas.drawLine(hole.topLeft, hole.topLeft + const Offset(0, L), accentPaint);
-    
+    canvas.drawLine(
+      hole.topLeft,
+      hole.topLeft + const Offset(L, 0),
+      accentPaint,
+    );
+    canvas.drawLine(
+      hole.topLeft,
+      hole.topLeft + const Offset(0, L),
+      accentPaint,
+    );
+
     // Top-right corner
-    canvas.drawLine(hole.topRight, hole.topRight + const Offset(-L, 0), accentPaint);
-    canvas.drawLine(hole.topRight, hole.topRight + const Offset(0, L), accentPaint);
-    
+    canvas.drawLine(
+      hole.topRight,
+      hole.topRight + const Offset(-L, 0),
+      accentPaint,
+    );
+    canvas.drawLine(
+      hole.topRight,
+      hole.topRight + const Offset(0, L),
+      accentPaint,
+    );
+
     // Bottom-left corner
-    canvas.drawLine(hole.bottomLeft, hole.bottomLeft + const Offset(L, 0), accentPaint);
-    canvas.drawLine(hole.bottomLeft, hole.bottomLeft + const Offset(0, -L), accentPaint);
-    
+    canvas.drawLine(
+      hole.bottomLeft,
+      hole.bottomLeft + const Offset(L, 0),
+      accentPaint,
+    );
+    canvas.drawLine(
+      hole.bottomLeft,
+      hole.bottomLeft + const Offset(0, -L),
+      accentPaint,
+    );
+
     // Bottom-right corner
-    canvas.drawLine(hole.bottomRight, hole.bottomRight + const Offset(-L, 0), accentPaint);
-    canvas.drawLine(hole.bottomRight, hole.bottomRight + const Offset(0, -L), accentPaint);
+    canvas.drawLine(
+      hole.bottomRight,
+      hole.bottomRight + const Offset(-L, 0),
+      accentPaint,
+    );
+    canvas.drawLine(
+      hole.bottomRight,
+      hole.bottomRight + const Offset(0, -L),
+      accentPaint,
+    );
   }
 
   @override

@@ -246,11 +246,7 @@ class PostHighlight extends StatelessWidget {
       onTap: () async {
         Navigator.pop(sheetContext);
         final ImagePicker picker = ImagePicker();
-        final XFile? image = await picker.pickImage(
-          source: source,
-          maxWidth: 1080,
-          maxHeight: 1920,
-        );
+        final XFile? image = await picker.pickImage(source: source);
 
         if (image != null && rootContext.mounted) {
           Navigator.push(

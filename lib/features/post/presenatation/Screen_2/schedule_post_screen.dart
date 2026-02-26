@@ -31,7 +31,7 @@ class SchedulePostScreen extends StatefulWidget {
 }
 
 class _SchedulePostScreenState extends State<SchedulePostScreen> {
-  String selectedPlatform = "Facebook";
+  List<String> selectedPlatforms = ["Facebook"];
   String selectedTimeMode = "Time";
   bool remindMe = true;
   int selectedHour = 5;
@@ -325,8 +325,8 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                 SizedBox(height: 30.h),
                 _buildTimeModeSelector(),
                 SizedBox(height: 20.h),
-                _buildTimePicker(),
-                SizedBox(height: 20.h),
+                if (selectedTimeMode != "Any Time") _buildTimePicker(),
+                if (selectedTimeMode != "Any Time") SizedBox(height: 20.h),
                 _buildReminderSection(),
                 SizedBox(height: 30.h),
                 _buildScheduleButton(),
@@ -378,9 +378,19 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   }
 
   Widget _buildPlatformChip(String name, IconData icon, Color color) {
-    bool isSelected = selectedPlatform == name;
+    bool isSelected = selectedPlatforms.contains(name);
     return GestureDetector(
-      onTap: () => setState(() => selectedPlatform = name),
+      onTap: () {
+        setState(() {
+          if (isSelected) {
+            if (selectedPlatforms.length > 1) {
+              selectedPlatforms.remove(name);
+            }
+          } else {
+            selectedPlatforms.add(name);
+          }
+        });
+      },
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
         decoration: BoxDecoration(
@@ -798,9 +808,19 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           : (widget.mediaPath ?? "");
 
       // Merge date with selected time
-      int hour24 = selectedHour;
-      if (period == "PM" && hour24 < 12) hour24 += 12;
-      if (period == "AM" && hour24 == 12) hour24 = 0;
+      int hour24;
+      int processMinute;
+
+      if (selectedTimeMode == "Any Time") {
+        final now = DateTime.now();
+        hour24 = now.hour;
+        processMinute = now.minute;
+      } else {
+        hour24 = selectedHour;
+        processMinute = selectedMinute;
+        if (period == "PM" && hour24 < 12) hour24 += 12;
+        if (period == "AM" && hour24 == 12) hour24 = 0;
+      }
 
       final DateTime selectedBaseDate =
           controller.scheduledDate.value ?? DateTime(2025, 6, 1);
@@ -809,7 +829,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
         selectedBaseDate.month,
         selectedBaseDate.day,
         hour24,
-        selectedMinute,
+        processMinute,
       );
 
       final String formattedDate =
@@ -829,7 +849,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               caption: caption,
               scheduledAt: scheduledAt,
               remindMe: remindMe,
-              platform: [selectedPlatform.toLowerCase()],
+              platform: selectedPlatforms.map((e) => e.toLowerCase()).toList(),
               tags: hashtags,
             )
           : await ContentService.createContent(
@@ -839,7 +859,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               contentType: widget.isImage ? "post" : "reel",
               scheduledAt: scheduledAt,
               remindMe: remindMe,
-              platform: [selectedPlatform.toLowerCase()],
+              platform: selectedPlatforms.map((e) => e.toLowerCase()).toList(),
               tags: hashtags,
             );
 

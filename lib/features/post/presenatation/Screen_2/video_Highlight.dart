@@ -90,7 +90,7 @@ class VideoHighlight extends StatelessWidget {
                 // Image section with border
                 Container(
                   width: double.infinity,
-                  height: 480,
+                  height: MediaQuery.of(context).size.height * 0.5,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
