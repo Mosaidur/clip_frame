@@ -21,11 +21,10 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   DateTime _selectedDate = DateTime.now();
   String _selectedTimeMode = "Time"; // "Any Time", "Time", "Range"
 
-  final List<String> _platforms = ["Facebook", "Instagram", "Tiktok"];
+  final List<String> _platforms = ["Facebook", "Instagram"];
   final List<IconData> _platformIcons = [
     Icons.facebook_rounded,
     Icons.camera_alt_rounded, // Placeholder for IG
-    Icons.play_circle_fill_rounded, // Placeholder for TikTok
   ];
 
   @override
@@ -38,9 +37,7 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
           Container(
             width: double.infinity,
             height: double.infinity,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF7F3EB),
-            ),
+            decoration: const BoxDecoration(color: Color(0xFFF7F3EB)),
             child: SafeArea(
               child: Column(
                 children: [
@@ -93,35 +90,81 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                   child: Container(
                     width: 320.w,
                     padding: EdgeInsets.all(24.r),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30.r)),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30.r),
+                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text("Successfully Scheduled!", style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900, color: Colors.indigo)),
+                        Text(
+                          "Successfully Scheduled!",
+                          style: TextStyle(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.indigo,
+                          ),
+                        ),
                         SizedBox(height: 8.h),
-                        Text("You have successfully scheduled 3 stories content.", textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: Colors.black54)),
+                        Text(
+                          "You have successfully scheduled 3 stories content.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.black54,
+                          ),
+                        ),
                         SizedBox(height: 25.h),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(20.r),
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              Image.file(widget.files[0], height: 180.h, width: double.infinity, fit: BoxFit.cover),
-                              Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 40.r),
+                              Image.file(
+                                widget.files[0],
+                                height: 180.h,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                              Icon(
+                                Icons.play_circle_fill_rounded,
+                                color: Colors.white70,
+                                size: 40.r,
+                              ),
                             ],
                           ),
                         ),
                         SizedBox(height: 20.h),
-                        _successDetailRow("Platform:", Icons.facebook_rounded, "FB, IG"),
+                        _successDetailRow(
+                          "Platform:",
+                          Icons.facebook_rounded,
+                          "FB, IG",
+                        ),
                         SizedBox(height: 12.h),
-                        _successDetailRow("Scheduled for:", Icons.calendar_today_rounded, "Tue, Wed, Thu\n05:00 PM, 05:00 PM, 05:00 PM"),
+                        _successDetailRow(
+                          "Scheduled for:",
+                          Icons.calendar_today_rounded,
+                          "Tue, Wed, Thu\n05:00 PM, 05:00 PM, 05:00 PM",
+                        ),
                         SizedBox(height: 25.h),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _actionBtnVertical(Icons.edit_rounded, "Edit", Colors.orange),
-                            _actionBtnVertical(Icons.copy_rounded, "Duplicate", Colors.indigo),
-                            _actionBtnVertical(Icons.delete_outline_rounded, "Delete", Colors.pink),
+                            _actionBtnVertical(
+                              Icons.edit_rounded,
+                              "Edit",
+                              Colors.orange,
+                            ),
+                            _actionBtnVertical(
+                              Icons.copy_rounded,
+                              "Duplicate",
+                              Colors.indigo,
+                            ),
+                            _actionBtnVertical(
+                              Icons.delete_outline_rounded,
+                              "Delete",
+                              Colors.pink,
+                            ),
                           ],
                         ),
                         SizedBox(height: 30.h),
@@ -132,10 +175,19 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                             onPressed: () => Navigator.pop(context),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF2196F3),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15.r),
+                              ),
                               elevation: 0,
                             ),
-                            child: Text("Back to Dashboard", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: Colors.white)),
+                            child: Text(
+                              "Back to Dashboard",
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -154,11 +206,26 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 11.sp, color: Colors.black45, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: Colors.black45,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         const Spacer(),
         Icon(icon, size: 14.r, color: Colors.blue),
         SizedBox(width: 6.w),
-        Text(val, textAlign: TextAlign.right, style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: Colors.black87)),
+        Text(
+          val,
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            fontSize: 11.sp,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
       ],
     );
   }
@@ -168,11 +235,21 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
       children: [
         Container(
           padding: EdgeInsets.all(10.r),
-          decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            shape: BoxShape.circle,
+          ),
           child: Icon(icon, color: color, size: 20.r),
         ),
         SizedBox(height: 6.h),
-        Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10.sp,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
       ],
     );
   }
@@ -186,20 +263,47 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
         child: Container(
           width: 300.w,
           padding: EdgeInsets.all(30.r),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30.r)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(30.r),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 120.r,
                 height: 120.r,
-                decoration: BoxDecoration(color: const Color(0xFFF3F4FB), shape: BoxShape.circle),
-                child: Center(child: Icon(Icons.celebration_rounded, color: const Color(0xFFFF4081), size: 60.r)),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4FB),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.celebration_rounded,
+                    color: const Color(0xFFFF4081),
+                    size: 60.r,
+                  ),
+                ),
               ),
               SizedBox(height: 25.h),
-              Text("Congratulations!", style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: Colors.black)),
+              Text(
+                "Congratulations!",
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black,
+                ),
+              ),
               SizedBox(height: 10.h),
-              Text("Your content are successfully created and scheduled.", textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: Colors.black54, fontWeight: FontWeight.w500)),
+              Text(
+                "Your content are successfully created and scheduled.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               SizedBox(height: 30.h),
               SizedBox(
                 width: double.infinity,
@@ -211,10 +315,19 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                   }),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2196F3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.r),
+                    ),
                     elevation: 0,
                   ),
-                  child: Text("Continue", style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: Text(
+                    "Continue",
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -233,19 +346,45 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
         child: Container(
           width: 300.w,
           padding: EdgeInsets.all(24.r),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(25.r)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(25.r),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: EdgeInsets.all(12.r),
-                decoration: BoxDecoration(color: const Color(0xFFFFEBF1), borderRadius: BorderRadius.circular(15.r)),
-                child: Icon(Icons.info_rounded, color: const Color(0xFFE91E63), size: 30.r),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBF1),
+                  borderRadius: BorderRadius.circular(15.r),
+                ),
+                child: Icon(
+                  Icons.info_rounded,
+                  color: const Color(0xFFE91E63),
+                  size: 30.r,
+                ),
               ),
               SizedBox(height: 15.h),
-              Text("Suggested Scheduling Option", textAlign: TextAlign.center, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: Colors.black)),
+              Text(
+                "Suggested Scheduling Option",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black,
+                ),
+              ),
               SizedBox(height: 10.h),
-              Text("After going through content our AI suggest the best time to post your content.", textAlign: TextAlign.center, style: TextStyle(fontSize: 11.sp, color: Colors.black54, fontWeight: FontWeight.w500)),
+              Text(
+                "After going through content our AI suggest the best time to post your content.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               SizedBox(height: 20.h),
               _suggestionItem("Story 1", "Tuesday", "05:00 PM"),
               SizedBox(height: 8.h),
@@ -255,9 +394,21 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
               SizedBox(height: 25.h),
               Row(
                 children: [
-                  Expanded(child: _dialogBtn("Schedule", const Color(0xFFE91E63), () => setState(() => _showSuggestedDialog = false))),
+                  Expanded(
+                    child: _dialogBtn(
+                      "Schedule",
+                      const Color(0xFFE91E63),
+                      () => setState(() => _showSuggestedDialog = false),
+                    ),
+                  ),
                   SizedBox(width: 10.w),
-                  Expanded(child: _dialogBtn("Choose different date", const Color(0xFF2196F3), () => setState(() => _showSuggestedDialog = false))),
+                  Expanded(
+                    child: _dialogBtn(
+                      "Choose different date",
+                      const Color(0xFF2196F3),
+                      () => setState(() => _showSuggestedDialog = false),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -270,16 +421,40 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   Widget _suggestionItem(String story, String day, String time) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
-      decoration: BoxDecoration(color: const Color(0xFFE3F2FD).withOpacity(0.5), borderRadius: BorderRadius.circular(12.r)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3F2FD).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(story, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: Colors.indigo)),
+          Text(
+            story,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.indigo,
+            ),
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(day, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: Colors.blue)),
-              Text(time, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w900, color: Colors.black87)),
+              Text(
+                day,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black87,
+                ),
+              ),
             ],
           ),
         ],
@@ -292,8 +467,21 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
       onTap: onTap,
       child: Container(
         height: 40.h,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10.r)),
-        child: Center(child: Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: Colors.white))),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -308,14 +496,35 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
             onTap: () => Navigator.pop(context),
             child: Container(
               padding: EdgeInsets.all(8.r),
-              decoration: BoxDecoration(color: const Color(0xFFC4B69E).withOpacity(0.3), shape: BoxShape.circle),
-              child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 18.r),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC4B69E).withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.black87,
+                size: 18.r,
+              ),
             ),
           ),
-          Text("Schedule Your Story", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: Colors.black)),
+          Text(
+            "Schedule Your Story",
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w900,
+              color: Colors.black,
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("DONE", style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: const Color(0xFFE91E63))),
+            child: Text(
+              "DONE",
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFFE91E63),
+              ),
+            ),
           ),
         ],
       ),
@@ -325,7 +534,10 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   Widget _buildPlatformTabs() {
     return Container(
       padding: EdgeInsets.all(4.r),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30.r)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30.r),
+      ),
       child: Row(
         children: List.generate(_platforms.length, (index) {
           bool isSelected = _selectedPlatformIndex == index;
@@ -335,15 +547,30 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
               child: Container(
                 padding: EdgeInsets.symmetric(vertical: 8.h),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFE3F2FD) : Colors.transparent,
+                  color: isSelected
+                      ? const Color(0xFFE3F2FD)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(25.r),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(_platformIcons[index], size: 16.r, color: isSelected ? Colors.blue : Colors.black45),
+                    Icon(
+                      _platformIcons[index],
+                      size: 16.r,
+                      color: isSelected ? Colors.blue : Colors.black45,
+                    ),
                     SizedBox(width: 6.w),
-                    Text(_platforms[index], style: TextStyle(fontSize: 11.sp, fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500, color: isSelected ? Colors.blue : Colors.black45)),
+                    Text(
+                      _platforms[index],
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: isSelected
+                            ? FontWeight.w900
+                            : FontWeight.w500,
+                        color: isSelected ? Colors.blue : Colors.black45,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -365,9 +592,19 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
               onTap: () => setState(() => _selectedStoryIndex = index),
               child: Column(
                 children: [
-                  Text("Story ${index + 1}", style: TextStyle(fontSize: 12.sp, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, color: isSelected ? Colors.pink : Colors.black45)),
+                  Text(
+                    "Story ${index + 1}",
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected ? Colors.pink : Colors.black45,
+                    ),
+                  ),
                   SizedBox(height: 4.h),
-                  if (isSelected) Container(width: 40.w, height: 2.h, color: Colors.pink),
+                  if (isSelected)
+                    Container(width: 40.w, height: 2.h, color: Colors.pink),
                 ],
               ),
             );
@@ -381,17 +618,31 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   Widget _buildCalendarSection() {
     return Container(
       padding: EdgeInsets.all(15.r),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20.r)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+      ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("January 2026", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
+              Text(
+                "January 2026",
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+              ),
               Row(
                 children: [
-                  Icon(Icons.chevron_left_rounded, size: 20.r, color: Colors.black45),
-                  Icon(Icons.chevron_right_rounded, size: 20.r, color: Colors.black45),
+                  Icon(
+                    Icons.chevron_left_rounded,
+                    size: 20.r,
+                    color: Colors.black45,
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20.r,
+                    color: Colors.black45,
+                  ),
                 ],
               ),
             ],
@@ -399,14 +650,25 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
           SizedBox(height: 15.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => Text(d, style: TextStyle(fontSize: 10.sp, color: Colors.black38))).toList(),
+            children: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                .map(
+                  (d) => Text(
+                    d,
+                    style: TextStyle(fontSize: 10.sp, color: Colors.black38),
+                  ),
+                )
+                .toList(),
           ),
           SizedBox(height: 15.h),
           // Simplified calendar grid for now
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 10, crossAxisSpacing: 10),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+            ),
             itemCount: 31,
             itemBuilder: (context, index) {
               int day = index + 1;
@@ -417,7 +679,16 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Text("$day", style: TextStyle(fontSize: 12.sp, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.white : Colors.black87)),
+                  child: Text(
+                    "$day",
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isSelected ? Colors.white : Colors.black87,
+                    ),
+                  ),
                 ),
               );
             },
@@ -431,11 +702,17 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Select Time", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
+        Text(
+          "Select Time",
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+        ),
         SizedBox(height: 12.h),
         Container(
           padding: EdgeInsets.all(4.r),
-          decoration: BoxDecoration(color: const Color(0xFFE8EAF6), borderRadius: BorderRadius.circular(20.r)),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8EAF6),
+            borderRadius: BorderRadius.circular(20.r),
+          ),
           child: Row(
             children: ["Any Time", "Time", "Range"].map((mode) {
               bool isSelected = _selectedTimeMode == mode;
@@ -449,7 +726,16 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                       borderRadius: BorderRadius.circular(15.r),
                     ),
                     child: Center(
-                      child: Text(mode, style: TextStyle(fontSize: 11.sp, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, color: isSelected ? Colors.indigo : Colors.black45)),
+                      child: Text(
+                        mode,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: isSelected ? Colors.indigo : Colors.black45,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -468,14 +754,20 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   Widget _buildAnalogTimePicker() {
     return Container(
       padding: EdgeInsets.all(20.r),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20.r)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+      ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _timeBox("00"),
-              Text(" : ", style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold)),
+              Text(
+                " : ",
+                style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold),
+              ),
               _timeBox("00"),
               SizedBox(width: 20.w),
               Column(
@@ -496,8 +788,16 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
     return Container(
       width: 60.r,
       height: 45.r,
-      decoration: BoxDecoration(color: const Color(0xFFF1F1F1), borderRadius: BorderRadius.circular(10.r)),
-      child: Center(child: Text(val, style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900))),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F1F1),
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Center(
+        child: Text(
+          val,
+          style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900),
+        ),
+      ),
     );
   }
 
@@ -510,7 +810,16 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
         borderRadius: BorderRadius.circular(10.r),
         border: selected ? null : Border.all(color: Colors.black12),
       ),
-      child: Center(child: Text(val, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: selected ? Colors.white : Colors.black38))),
+      child: Center(
+        child: Text(
+          val,
+          style: TextStyle(
+            fontSize: 10.sp,
+            fontWeight: FontWeight.bold,
+            color: selected ? Colors.white : Colors.black38,
+          ),
+        ),
+      ),
     );
   }
 
@@ -518,7 +827,10 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text("Remind me", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
+        Text(
+          "Remind me",
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+        ),
         Switch(
           value: _remindMe,
           onChanged: (val) => setState(() => _remindMe = val),
@@ -527,7 +839,6 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
       ],
     );
   }
-
 
   Widget _buildScheduleButton() {
     return SizedBox(
@@ -540,9 +851,18 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF0080FF),
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.r),
+          ),
         ),
-        child: Text("Schedule Post", style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900, color: Colors.white)),
+        child: Text(
+          "Schedule Post",
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }

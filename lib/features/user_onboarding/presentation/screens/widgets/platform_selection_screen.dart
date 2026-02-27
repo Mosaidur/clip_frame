@@ -175,28 +175,6 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
                             ),
                           ),
                         ),
-                    ] else ...[
-                      // Manual Input for generic platforms
-                      TextField(
-                        controller: controller.handleController,
-                        decoration: InputDecoration(
-                          hintText: "Enter your username",
-                          hintStyle: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey.shade400,
-                          ),
-                          fillColor: Colors.white,
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                        ),
-                      ),
                     ],
                   ],
                 ),
@@ -248,15 +226,11 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
   }
 
   Color _getPlatformColor(String platform) {
-    switch (platform) {
-      case 'facebook':
-        return const Color(0xFF1877F2);
-      case 'instagram':
-        return const Color(0xFFE4405F);
-      case 'tiktok':
-        return Colors.black;
-      default:
-        return const Color(0xFF1877F2);
+    if (platform == 'facebook') {
+      return const Color(0xFF1877F2);
+    } else if (platform == 'instagram') {
+      return const Color(0xFFE4405F);
     }
+    return const Color(0xFF1877F2);
   }
 }

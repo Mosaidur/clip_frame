@@ -43,7 +43,6 @@ class MyProfileController extends GetxController {
   final List<Map<String, dynamic>> socialPlatformOptions = [
     {'name': 'Facebook', 'key': 'facebook'},
     {'name': 'Instagram', 'key': 'instagram'},
-    {'name': 'TikTok', 'key': 'tiktok'},
   ];
   var tempSelectedPlatforms = <String>[].obs;
   var selectedPlatformIndex =
@@ -297,6 +296,27 @@ class MyProfileController extends GetxController {
       }
     } catch (e) {
       Get.snackbar('Error', 'Update failed: $e');
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
+  Future<void> disconnectPlatform(String platform) async {
+    if (userModel.value == null) return;
+
+    isUpdating.value = true;
+    try {
+      List<String> currentPlatforms = List.from(userModel.value!.platforms);
+      currentPlatforms.remove(platform);
+
+      await updatePlatforms(currentPlatforms);
+
+      // If it was facebook/instagram, also logout from SDK for cleanliness
+      if (platform == 'facebook' || platform == 'instagram') {
+        await FacebookAuth.instance.logOut();
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to disconnect: $e');
     } finally {
       isUpdating.value = false;
     }

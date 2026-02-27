@@ -71,7 +71,6 @@ class UserOnboardingPageController extends GetxController {
   final List<Map<String, dynamic>> socialPlatformOptions = [
     {'name': 'Facebook', 'key': 'facebook', 'icon': Icons.facebook},
     {'name': 'Instagram', 'key': 'instagram', 'icon': Icons.camera_alt},
-    {'name': 'TikTok', 'key': 'tiktok', 'icon': Icons.music_note},
   ];
 
   // Step 5: Handles
@@ -175,18 +174,6 @@ class UserOnboardingPageController extends GetxController {
             );
             return false;
           }
-          return true;
-        }
-
-        // Fallback for other platforms (e.g. TikTok) - require handle
-        if (handleController.text.trim().isEmpty) {
-          Get.snackbar(
-            "Required",
-            "Please enter your ${selectedPlatform.value} username.",
-            backgroundColor: Colors.red.withOpacity(0.5),
-            colorText: Colors.white,
-          );
-          return false;
         }
         return true;
       case 4: // Branding

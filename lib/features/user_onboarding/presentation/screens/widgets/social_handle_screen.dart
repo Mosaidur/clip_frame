@@ -54,11 +54,16 @@ class SocialHandleScreen extends GetView<UserOnboardingPageController> {
                               strokeWidth: 2,
                             ),
                           )
-                        : Icon(
-                            platform == 'facebook'
-                                ? Icons.facebook
-                                : Icons.camera_alt,
+                        : Image.asset(
+                            'assets/images/$platform.png',
+                            height: 24,
                             color: Colors.white,
+                            errorBuilder: (ctx, err, stack) => Icon(
+                              platform == 'facebook'
+                                  ? Icons.facebook
+                                  : Icons.camera_alt,
+                              color: Colors.white,
+                            ),
                           ),
                     label: Text(
                       controller.isConnected.value

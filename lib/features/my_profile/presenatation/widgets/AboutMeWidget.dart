@@ -56,23 +56,26 @@ class AboutMeWidget extends StatelessWidget {
                     Row(
                       children: [
                         ...user.platforms.map((platform) {
-                          String iconPath =
-                              "assets/images/facebook.png"; // Default
-                          if (platform.toLowerCase().contains("instagram")) {
+                          final key = platform.toLowerCase();
+                          String? iconPath;
+                          if (key.contains("facebook"))
+                            iconPath = "assets/images/facebook.png";
+                          else if (key.contains("instagram"))
                             iconPath = "assets/images/instagram.png";
-                          }
-                          if (platform.toLowerCase().contains("tiktok")) {
-                            iconPath = "assets/images/tiktok.png";
-                          }
+
+                          if (iconPath == null) return const SizedBox.shrink();
+
                           return Padding(
                             padding: const EdgeInsets.only(left: 8),
                             child: Image.asset(
                               iconPath,
-                              height: 22,
-                              errorBuilder: (ctx, err, stack) => const Icon(
-                                Icons.public,
-                                size: 22,
-                                color: Colors.blue,
+                              height: 20,
+                              errorBuilder: (ctx, err, stack) => Icon(
+                                key.contains('facebook')
+                                    ? Icons.facebook
+                                    : Icons.camera_alt,
+                                size: 20,
+                                color: _getPlatformColor(key),
                               ),
                             ),
                           );
@@ -201,11 +204,13 @@ class AboutMeWidget extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: controller.socialPlatformOptions.map((platform) {
                       final key = platform['key'] as String;
-                      final isSelected = controller.tempSelectedPlatforms
-                          .contains(key);
+                      final isConnected =
+                          controller.userModel.value?.platforms.contains(key) ??
+                          false;
                       final isFocused =
                           controller.selectedPlatformIndex.value ==
                           controller.socialPlatformOptions.indexOf(platform);
+
                       return GestureDetector(
                         onTap: () {
                           controller.selectedPlatformIndex.value = controller
@@ -216,20 +221,23 @@ class AboutMeWidget extends StatelessWidget {
                           clipBehavior: Clip.none,
                           children: [
                             AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: 80,
-                              height: 80,
-                              padding: const EdgeInsets.all(14),
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeInOutCubic,
+                              width: 85,
+                              height: 85,
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(24),
                                 gradient: isFocused
                                     ? LinearGradient(
                                         colors: [
                                           _getPlatformColor(
                                             key,
-                                          ).withOpacity(0.1),
-                                          Colors.white,
+                                          ).withOpacity(0.12),
+                                          _getPlatformColor(
+                                            key,
+                                          ).withOpacity(0.02),
                                         ],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
@@ -238,7 +246,7 @@ class AboutMeWidget extends StatelessWidget {
                                 border: Border.all(
                                   color: isFocused
                                       ? _getPlatformColor(key)
-                                      : (isSelected
+                                      : (isConnected
                                             ? _getPlatformColor(
                                                 key,
                                               ).withOpacity(0.4)
@@ -250,79 +258,72 @@ class AboutMeWidget extends StatelessWidget {
                                     BoxShadow(
                                       color: _getPlatformColor(
                                         key,
-                                      ).withOpacity(0.2),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 8),
-                                      spreadRadius: 1,
+                                      ).withOpacity(0.15),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                      spreadRadius: 2,
                                     )
-                                  else if (isSelected)
+                                  else if (isConnected)
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.04),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 5),
                                     ),
                                 ],
                               ),
                               child: Center(
-                                child: Opacity(
-                                  opacity: isSelected ? 1.0 : 0.4,
-                                  child: Image.asset(
-                                    'assets/images/$key.png',
-                                    fit: BoxFit.contain,
+                                child: AnimatedScale(
+                                  scale: isFocused ? 1.05 : 1.0,
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Opacity(
+                                    opacity: isConnected || isFocused
+                                        ? 1.0
+                                        : 0.4,
+                                    child: Image.asset(
+                                      'assets/images/$key.png',
+                                      fit: BoxFit.contain,
+                                      height: 36,
+                                      errorBuilder: (ctx, err, stack) => Icon(
+                                        key == 'facebook'
+                                            ? Icons.facebook
+                                            : Icons.camera_alt,
+                                        size: 36,
+                                        color: isConnected || isFocused
+                                            ? _getPlatformColor(key)
+                                            : Colors.grey,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                            // Selection Indicator (Checkmark)
-                            Positioned(
-                              top: -6,
-                              right: -6,
-                              child: GestureDetector(
-                                onTap: () {
-                                  if (isSelected) {
-                                    controller.tempSelectedPlatforms.remove(
-                                      key,
-                                    );
-                                  } else {
-                                    controller.tempSelectedPlatforms.add(key);
-                                  }
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.all(4),
+                            // Connected Indicator (Visible only if account is linked)
+                            if (isConnected)
+                              Positioned(
+                                top: -4,
+                                right: -4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? _getPlatformColor(key)
-                                        : Colors.white,
+                                    color: _getPlatformColor(key),
                                     shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? Colors.transparent
-                                          : Colors.grey.shade300,
-                                      width: 1.5,
-                                    ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: _getPlatformColor(
-                                                key,
-                                              ).withOpacity(0.3),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
-                                        : null,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _getPlatformColor(
+                                          key,
+                                        ).withOpacity(0.4),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
                                   ),
-                                  child: Icon(
+                                  child: const Icon(
                                     Icons.check,
                                     size: 14,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Colors.grey.shade400,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       );
@@ -342,32 +343,46 @@ class AboutMeWidget extends StatelessWidget {
                     Column(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 20),
+                          padding: const EdgeInsets.only(bottom: 24),
                           child: Container(
-                            padding: const EdgeInsets.all(14),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF0F7FF),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: const Color(0xFFD0E7FF),
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blue.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Row(
                               children: [
-                                const Icon(
-                                  Icons.lightbulb_outline,
-                                  size: 20,
-                                  color: Color(0xFF007CFE),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFE0EFFF),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.lightbulb_outline,
+                                    size: 20,
+                                    color: Color(0xFF007CFE),
+                                  ),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 14),
                                 Expanded(
                                   child: Text(
-                                    "Tip: If you want to switch accounts and it auto-suggests the old id, click 'Switch ID' and then logout from the browser window that appears.",
+                                    "Tip: If you want to switch accounts and it auto-suggests the old id, click 'Save Changes' after connecting and then try again.",
                                     style: GoogleFonts.poppins(
-                                      fontSize: 11,
+                                      fontSize: 11.5,
                                       color: const Color(0xFF0056B3),
                                       fontWeight: FontWeight.w500,
-                                      height: 1.4,
+                                      height: 1.5,
                                     ),
                                   ),
                                 ),
@@ -392,23 +407,37 @@ class AboutMeWidget extends StatelessWidget {
                               children: [
                                 if (isAlreadyConnected)
                                   Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.only(bottom: 16),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 4,
+                                        horizontal: 16,
+                                        vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
                                         color: Colors.green.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        "Connected as ${key.capitalizeFirst}",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.green[700],
+                                        borderRadius: BorderRadius.circular(30),
+                                        border: Border.all(
+                                          color: Colors.green.withOpacity(0.2),
                                         ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.check_circle_rounded,
+                                            size: 16,
+                                            color: Colors.green,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            "Connected as ${key.capitalizeFirst}",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.green[700],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -416,7 +445,7 @@ class AboutMeWidget extends StatelessWidget {
                                   children: [
                                     Expanded(
                                       child: SizedBox(
-                                        height: 50,
+                                        height: 52,
                                         child: OutlinedButton.icon(
                                           onPressed: controller.isUpdating.value
                                               ? null
@@ -427,68 +456,90 @@ class AboutMeWidget extends StatelessWidget {
                                                           .connectInstagram()),
                                           icon: Image.asset(
                                             'assets/images/$key.png',
-                                            height: 20,
+                                            height: 22,
+                                            errorBuilder: (ctx, err, stack) =>
+                                                Icon(
+                                                  key == 'facebook'
+                                                      ? Icons.facebook
+                                                      : (key == 'instagram'
+                                                            ? Icons.camera_alt
+                                                            : Icons.music_note),
+                                                  size: 22,
+                                                  color: _getPlatformColor(key),
+                                                ),
                                           ),
                                           label: Text(
                                             isAlreadyConnected
                                                 ? "Reconnect"
                                                 : "Connect",
                                             style: GoogleFonts.poppins(
-                                              fontSize: 15,
+                                              fontSize: 14,
                                               fontWeight: FontWeight.bold,
                                               color: _getPlatformColor(key),
                                             ),
                                           ),
                                           style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                            ),
                                             side: BorderSide(
-                                              color: _getPlatformColor(key),
-                                              width: 1.5,
+                                              color: _getPlatformColor(
+                                                key,
+                                              ).withOpacity(0.5),
+                                              width: 2,
                                             ),
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(15),
+                                                  BorderRadius.circular(16),
                                             ),
+                                            backgroundColor: isAlreadyConnected
+                                                ? _getPlatformColor(
+                                                    key,
+                                                  ).withOpacity(0.02)
+                                                : Colors.white,
                                           ),
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: SizedBox(
-                                        height: 50,
-                                        child: ElevatedButton(
-                                          onPressed: controller.isUpdating.value
-                                              ? null
-                                              : () => (key == 'facebook'
-                                                    ? controller
-                                                          .connectFacebook(
-                                                            switchAccount: true,
-                                                          )
-                                                    : controller
-                                                          .connectInstagram(
-                                                            switchAccount: true,
-                                                          )),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(
-                                              0xFF333333,
+                                    if (isAlreadyConnected) ...[
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: SizedBox(
+                                          height: 52,
+                                          child: ElevatedButton(
+                                            onPressed:
+                                                controller.isUpdating.value
+                                                ? null
+                                                : () => controller
+                                                      .disconnectPlatform(key),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(
+                                                0xFFFF277F,
+                                              ).withOpacity(0.1),
+                                              foregroundColor: const Color(
+                                                0xFFFF277F,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                side: const BorderSide(
+                                                  color: Color(0xFFFF277F),
+                                                  width: 1.5,
+                                                ),
+                                              ),
+                                              elevation: 0,
                                             ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(15),
-                                            ),
-                                            elevation: 0,
-                                          ),
-                                          child: Text(
-                                            "Switch ID",
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
+                                            child: Text(
+                                              "Disconnect",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
-                                    ),
+                                    ],
                                   ],
                                 ),
                               ],
@@ -503,41 +554,86 @@ class AboutMeWidget extends StatelessWidget {
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 54,
               child: Obx(
-                () => ElevatedButton(
-                  onPressed: controller.isUpdating.value
-                      ? null
-                      : () async {
-                          await controller.updatePlatforms(
-                            controller.tempSelectedPlatforms,
-                          );
-                          Get.back();
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF007CFE),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: controller.isUpdating.value
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          "Save Changes",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
+                () => Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      if (!controller.isUpdating.value)
+                        BoxShadow(
+                          color: const Color(0xFF007CFE).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
                         ),
+                    ],
+                    gradient: controller.isUpdating.value
+                        ? null
+                        : const LinearGradient(
+                            colors: [Color(0xFF007CFE), Color(0xFF0056B3)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: controller.isUpdating.value
+                        ? null
+                        : () async {
+                            // Extract currently connected platforms from user model
+                            // to ensure only truly connected platforms are saved
+                            final connectedPlatforms = controller
+                                .socialPlatformOptions
+                                .where(
+                                  (opt) =>
+                                      controller.userModel.value?.platforms
+                                          .contains(opt['key']) ??
+                                      false,
+                                )
+                                .map((opt) => opt['key'] as String)
+                                .toList();
+
+                            await controller.updatePlatforms(
+                              connectedPlatforms,
+                            );
+                            Get.back();
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child: controller.isUpdating.value
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.check_circle_outline,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                "Save Changes",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ),
@@ -551,16 +647,9 @@ class AboutMeWidget extends StatelessWidget {
   }
 
   Color _getPlatformColor(String platform) {
-    switch (platform) {
-      case 'facebook':
-        return const Color(0xFF1877F2);
-      case 'instagram':
-        return const Color(0xFFE4405F);
-      case 'tiktok':
-        return Colors.black;
-      default:
-        return const Color(0xFF1877F2);
-    }
+    if (platform.contains('facebook')) return const Color(0xFF1877F2);
+    if (platform.contains('instagram')) return const Color(0xFFE4405F);
+    return const Color(0xFF1877F2);
   }
 
   Widget _infoRow(
