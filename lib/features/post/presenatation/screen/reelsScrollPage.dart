@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:clip_frame/core/model/content_template_model.dart';
 import 'package:clip_frame/core/services/api_services/content_template_service.dart';
 import 'package:clip_frame/features/post/presenatation/widget2/beautifulEmptyState.dart';
@@ -54,10 +55,48 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(color: Color(0xFFFF277F)),
+        body: Shimmer.fromColors(
+          baseColor: Colors.grey[900]!,
+          highlightColor: Colors.grey[800]!,
+          child: Stack(
+            children: [
+              Container(color: Colors.black),
+              Positioned(
+                bottom: 100,
+                left: 20,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(width: 150, height: 20, color: Colors.white),
+                    const SizedBox(height: 10),
+                    Container(width: 100, height: 15, color: Colors.white),
+                  ],
+                ),
+              ),
+              Positioned(
+                bottom: 100,
+                right: 20,
+                child: Column(
+                  children: List.generate(
+                    4,
+                    (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -83,7 +122,6 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
             itemCount: templates.length,
             itemBuilder: (context, index) {
               final template = templates[index];
-              // Use the URL from the first step if available, otherwise use a placeholder
               final videoUrl =
                   (template.steps != null && template.steps!.isNotEmpty)
                   ? template.steps![0].url ?? ""
@@ -94,12 +132,12 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
                 templateId: template.id ?? "",
                 videoUrl: videoUrl,
                 category: template.category ?? "General",
-                format: "MP4", // Default format
+                format: "MP4",
                 title: template.title ?? "Untitled Reel",
                 tags: template.hashtags ?? [],
                 musicTitle: "Original Audio",
                 profileImageUrl:
-                    template.thumbnail ?? template.createdBy?.email, // Fallback
+                    template.thumbnail ?? template.createdBy?.email,
               );
             },
           ),

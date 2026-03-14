@@ -1,3 +1,4 @@
+import 'package:shimmer/shimmer.dart';
 import 'package:clip_frame/core/model/content_template_model.dart';
 import 'package:clip_frame/features/dashboard/presenatation/controller/dashboard_controller.dart';
 import 'package:clip_frame/features/home/presentation/controller/homeController.dart';
@@ -79,15 +80,10 @@ class _DashBoardPageState extends State<DashBoardPage> {
               _buildPromotionBanner(),
               SizedBox(height: 15.h),
               Obx(() {
-                if (!Get.isRegistered<ScheduleController>()) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
                 final controller = Get.find<ScheduleController>();
+                if (controller.isLoading.value) {
+                  return _buildSummaryGridShimmer();
+                }
                 return _buildSummaryGrid(controller);
               }),
               _buildActionButtons(context),
@@ -99,10 +95,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
                 final controller = Get.find<DashboardController>();
                 if (controller.isLoading.value &&
                     controller.recentTemplates.isEmpty) {
-                  return SizedBox(
-                    height: 200.h,
-                    child: const Center(child: CircularProgressIndicator()),
-                  );
+                  return _buildListShimmer();
                 }
                 return _buildHorizontalPostList(controller.recentTemplates);
               }),
@@ -115,10 +108,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
                 final controller = Get.find<DashboardController>();
                 if (controller.isLoading.value &&
                     controller.forYouTemplates.isEmpty) {
-                  return SizedBox(
-                    height: 200.h,
-                    child: const Center(child: CircularProgressIndicator()),
-                  );
+                  return _buildListShimmer();
                 }
                 return _buildHorizontalPostList(controller.forYouTemplates);
               }),
@@ -713,6 +703,98 @@ class _DashBoardPageState extends State<DashBoardPage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListShimmer() {
+    return SizedBox(
+      height: 200.h,
+      child: ListView.separated(
+        padding: EdgeInsets.symmetric(horizontal: 15.w),
+        scrollDirection: Axis.horizontal,
+        itemCount: 3,
+        separatorBuilder: (_, __) => SizedBox(width: 12.w),
+        itemBuilder: (context, index) => Shimmer.fromColors(
+          baseColor: Colors.white.withOpacity(0.5),
+          highlightColor: Colors.white.withOpacity(0.2),
+          child: Container(
+            width: 140.w,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryGridShimmer() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 15.w),
+      child: Shimmer.fromColors(
+        baseColor: Colors.white.withOpacity(0.5),
+        highlightColor: Colors.white.withOpacity(0.2),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 80.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Container(
+                    height: 80.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 80.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Container(
+                    height: 80.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Container(
+              height: 70.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+            ),
+          ],
         ),
       ),
     );

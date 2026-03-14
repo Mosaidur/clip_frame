@@ -320,26 +320,48 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         originalDurations[file.path] = d;
       }
 
-      setState(() {
-        // If it's a new segment from picker/init, set its endOffset to the full duration
-        if (seg.endOffset == Duration.zero) {
-          seg.endOffset = d;
-        }
-      });
+      if (mounted) {
+        setState(() {
+          // If it's a new segment from picker/init, set its endOffset to the full duration
+          if (seg.endOffset == Duration.zero) {
+            seg.endOffset = d;
+          }
+        });
+      }
 
-      _generateThumbnailForOriginal(file);
-      _generateFilmstripForOriginal(file);
+      // Serialize these to avoid resource contention on high-res files
+      await _generateThumbnailForOriginal(file);
+      await _generateFilmstripForOriginal(file);
     }
   }
 
   Future<Duration> _getVideoDuration(File file) async {
-    final vpc = VideoPlayerController.file(file);
     try {
-      await vpc.initialize();
-      final duration = vpc.value.duration;
-      await vpc.dispose();
-      return duration;
+      final session = await FFprobeKit.getMediaInformation(file.path);
+      final info = session.getMediaInformation();
+      if (info == null) return const Duration(seconds: 5);
+
+      final durationStr = info.getDuration();
+      if (durationStr != null) {
+        final double seconds = double.parse(durationStr);
+        return Duration(milliseconds: (seconds * 1000).toInt());
+      }
+
+      // Check streams if global duration is missing
+      final streams = info.getStreams();
+      for (var stream in streams) {
+        if (stream.getType() == "video") {
+          final sDuration = stream.getStringProperty('duration');
+          if (sDuration != null) {
+            final double sSec = double.parse(sDuration);
+            return Duration(milliseconds: (sSec * 1000).toInt());
+          }
+        }
+      }
+
+      return const Duration(seconds: 5);
     } catch (e) {
+      debugPrint("Error getting duration via ffprobe: $e");
       return const Duration(seconds: 5); // Fallback
     }
   }

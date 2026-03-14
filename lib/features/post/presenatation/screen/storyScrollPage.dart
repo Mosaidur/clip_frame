@@ -4,6 +4,7 @@ import 'package:clip_frame/features/post/presenatation/widget2/beautifulEmptySta
 import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../Screen_2/post_highlight.dart';
 import '../widgets/postContent.dart';
@@ -62,73 +63,11 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
     }
   }
 
-  final List<Map<String, dynamic>> posts = const [
-    {
-      'image': 'assets/images/1.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Alice Wonderland',
-      'likeCount': 1200,
-      'repostCount': 345,
-    },
-    {
-      'image': 'assets/images/2.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Bob Builder',
-      'likeCount': 987,
-      'repostCount': 55,
-    },
-    {
-      'image': 'assets/images/3.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Charlie Chaplin',
-      'likeCount': 5400,
-      'repostCount': 230,
-    },
-    {
-      'image': 'assets/images/5.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Diana Prince',
-      'likeCount': 120,
-      'repostCount': 12,
-    },
-    {
-      'image': 'assets/images/6.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Eve Online',
-      'likeCount': 1500,
-      'repostCount': 70,
-    },
-    {
-      'image': 'assets/images/7.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Frank Ocean',
-      'likeCount': 2200,
-      'repostCount': 150,
-    },
-    {
-      'image': 'assets/images/8.jpg',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Grace Hopper',
-      'likeCount': 3100,
-      'repostCount': 400,
-    },
-    {
-      'image': 'assets/images/9.png',
-      'profileImage': 'assets/images/profile_image.png',
-      'name': 'Hank Pym',
-      'likeCount': 890,
-      'repostCount': 60,
-    },
-  ];
-
-  String? profileImageUrl = "assets/images/profile_image.png";
-
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double spacing = 8;
     double itemHeight = 280;
-    double padding = 12;
     double itemWidth = (screenWidth - spacing * 3) / 2.2;
 
     return Scaffold(
@@ -145,9 +84,7 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
         ),
         child: SafeArea(
           child: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFFFF277F)),
-                )
+              ? _buildGridShimmer(itemWidth, itemHeight, spacing)
               : templates.isEmpty
               ? BeautifulEmptyState(
                   title: "No Stories Found",
@@ -267,11 +204,11 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
                                   width: itemWidth,
                                   image: imageUrl,
                                   profileImage:
-                                      'assets/images/profile_image.png', // Fallback local asset for now
+                                      'assets/images/profile_image.png',
                                   name: template.createdBy?.name ?? "Unknown",
                                   likeCount: template.stats?.loveCount ?? 0,
                                   repostCount: template.stats?.reuseCount ?? 0,
-                                  padding: padding,
+                                  padding: 12,
                                 ),
                               ),
                             );
@@ -282,6 +219,58 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
                   ),
                 ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildGridShimmer(
+    double itemWidth,
+    double itemHeight,
+    double spacing,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Shimmer.fromColors(
+            baseColor: Colors.white.withOpacity(0.5),
+            highlightColor: Colors.white.withOpacity(0.2),
+            child: Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: List.generate(
+                6,
+                (index) => Container(
+                  width: itemWidth,
+                  height: itemHeight,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

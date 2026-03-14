@@ -1,4 +1,5 @@
 import 'package:clip_frame/core/model/user_model.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:clip_frame/core/services/api_services/authentication/logout_controller.dart'
     as api;
 import 'package:clip_frame/core/services/api_services/network_caller.dart';
@@ -500,7 +501,16 @@ class MyProfilePage extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Colors.transparent,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF3E7E9), // Light peach/pink
+            Color(0xFFE3EEFF), // Light blue/purple
+          ],
+        ),
+      ),
       child: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -524,9 +534,9 @@ class MyProfilePage extends StatelessWidget {
                       Text(
                         "Profile",
                         style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black.withOpacity(0.8),
                         ),
                       ),
                       _roundIcon(Icons.edit, () {
@@ -568,118 +578,114 @@ class MyProfilePage extends StatelessWidget {
                       ),
                     );
                   }
-
-                  final user = controller.userModel.value;
-
-                  return Column(
-                    children: [
-                      GestureDetector(
-                        onTap: () async {
-                          await controller.pickImage();
-                          if (controller.selectedImage.value != null) {
-                            // Show loading or confirm update
-                            await controller.updateProfile(
-                              name: user?.name ?? "",
-                              phone: user?.phone ?? "",
+                  return Obx(() {
+                    final user = controller.userModel.value;
+                    if (user == null || controller.isLoading.value) {
+                      return _buildHeaderShimmer();
+                    }
+                    return Column(
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            if (controller.isUpdating.value) return;
+                            final ImagePicker picker = ImagePicker();
+                            final XFile? image = await picker.pickImage(
+                              source: ImageSource.gallery,
                             );
-                          }
-                        },
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 140,
-                              width: 140,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFFF277F),
-                                  width: 3,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFFFF277F,
-                                    ).withOpacity(0.2),
-                                    blurRadius: 15,
-                                    spreadRadius: 5,
-                                  ),
-                                ],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(3.0),
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white,
-                                  ),
-                                  child: ClipOval(
-                                    child:
-                                        controller.selectedImage.value != null
-                                        ? Image.file(
-                                            controller.selectedImage.value!,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : (user?.image != null &&
-                                              user!.image!.isNotEmpty)
-                                        ? Image.network(
-                                            user.image!,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (
-                                                  context,
-                                                  error,
-                                                  stackTrace,
-                                                ) => Image.asset(
-                                                  "assets/images/profile_image.png",
-                                                  fit: BoxFit.cover,
-                                                ),
-                                          )
-                                        : Image.asset(
-                                            "assets/images/profile_image.png",
-                                            fit: BoxFit.cover,
-                                          ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 5,
-                              right: 5,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
+                            if (image != null) {
+                              controller.selectedImage.value = File(image.path);
+                              await controller.updateProfile(
+                                name: user.name,
+                                phone: user.phone,
+                              );
+                            }
+                          },
+                          child: Stack(
+                            children: [
+                              Container(
+                                height: 140,
+                                width: 140,
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Color(0xFF007CFE),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 4,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
                                 ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 20,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(3.0),
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                    child: ClipOval(
+                                      child:
+                                          controller.selectedImage.value != null
+                                          ? Image.file(
+                                              controller.selectedImage.value!,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : (user.image != null &&
+                                                user.image!.isNotEmpty)
+                                          ? Image.network(
+                                              user.image!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => Image.asset(
+                                                    "assets/images/profile_image.png",
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                            )
+                                          : Image.asset(
+                                              "assets/images/profile_image.png",
+                                              fit: BoxFit.cover,
+                                            ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  // Keep existing camera icon but position per mockup if needed
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        user?.name ?? "User",
-                        style: GoogleFonts.poppins(
-                          color: Colors.black,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
+                        const SizedBox(height: 8),
+                        Text(
+                          user.name,
+                          style: GoogleFonts.poppins(
+                            color: Colors.black,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Text(
-                        user?.email ?? "",
-                        style: GoogleFonts.poppins(
-                          color: Colors.black54,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
+                        Text(
+                          user.email,
+                          style: GoogleFonts.poppins(
+                            color: Colors.black54,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
-                      ),
-                    ],
-                  );
+                      ],
+                    );
+                  });
                 }),
 
                 const SizedBox(height: 20),
@@ -701,10 +707,10 @@ class MyProfilePage extends StatelessWidget {
                       Obx(() {
                         return Container(
                           margin: const EdgeInsets.symmetric(horizontal: 16),
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(60),
-                            color: Colors.black.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(30),
+                            color: Colors.white.withOpacity(0.5),
                           ),
                           child: Row(
                             children: [
@@ -713,7 +719,7 @@ class MyProfilePage extends StatelessWidget {
                                   onTap: () => controller.selectedTab.value = 0,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 10,
+                                      vertical: 12,
                                     ),
                                     decoration: BoxDecoration(
                                       gradient:
@@ -721,11 +727,11 @@ class MyProfilePage extends StatelessWidget {
                                           ? const LinearGradient(
                                               colors: [
                                                 Color(0xFFFF277F),
-                                                Color(0xFF007CFE),
+                                                Color(0xFF2870F3),
                                               ],
                                             )
                                           : null,
-                                      borderRadius: BorderRadius.circular(60),
+                                      borderRadius: BorderRadius.circular(30),
                                     ),
                                     child: Center(
                                       child: Text(
@@ -734,7 +740,7 @@ class MyProfilePage extends StatelessWidget {
                                           color:
                                               controller.selectedTab.value == 0
                                               ? Colors.white
-                                              : Colors.black54,
+                                              : Colors.black38,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14,
                                         ),
@@ -751,7 +757,7 @@ class MyProfilePage extends StatelessWidget {
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 10,
+                                      vertical: 12,
                                     ),
                                     decoration: BoxDecoration(
                                       gradient:
@@ -759,11 +765,11 @@ class MyProfilePage extends StatelessWidget {
                                           ? const LinearGradient(
                                               colors: [
                                                 Color(0xFFFF277F),
-                                                Color(0xFF007CFE),
+                                                Color(0xFF2870F3),
                                               ],
                                             )
                                           : null,
-                                      borderRadius: BorderRadius.circular(60),
+                                      borderRadius: BorderRadius.circular(30),
                                     ),
                                     child: Center(
                                       child: Text(
@@ -772,7 +778,7 @@ class MyProfilePage extends StatelessWidget {
                                           color:
                                               controller.selectedTab.value == 1
                                               ? Colors.white
-                                              : Colors.black54,
+                                              : Colors.black38,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14,
                                         ),
@@ -802,6 +808,29 @@ class MyProfilePage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderShimmer() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[100]!,
+      child: Column(
+        children: [
+          Container(
+            height: 140,
+            width: 140,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(height: 24, width: 150, color: Colors.white),
+          const SizedBox(height: 8),
+          Container(height: 16, width: 200, color: Colors.white),
+        ],
       ),
     );
   }

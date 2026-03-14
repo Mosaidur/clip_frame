@@ -1,6 +1,5 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -64,6 +63,7 @@ class HomePage extends StatelessWidget {
 
       return GestureDetector(
         onTap: () {
+          HapticFeedback.selectionClick();
           debugPrint('Nav item $label tapped, index: $index');
           controller.changePage(index);
         },
@@ -118,55 +118,57 @@ class HomePage extends StatelessWidget {
               debugPrint('Building page: ${controller.selectedIndex.value}');
               return controller.pages[controller.selectedIndex.value];
             }),
-            bottomNavigationBar: Container(
-              color: Colors.transparent,
-              child: Stack(
-                alignment: Alignment.bottomCenter,
-                clipBehavior: Clip.none,
-                children: [
-                  PhysicalShape(
-                    color: Colors.white,
-                    elevation: 15,
-                    clipper: CustomNotchClipper(),
-                    child: Container(
-                      height: 70.h,
-                      padding: EdgeInsets.only(
-                        left: 15.w,
-                        right: 15.w,
-                        bottom: 10.h,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: navItem(
-                              Icons.grid_view_rounded,
-                              0,
-                              "Dashboard",
+            bottomNavigationBar: SafeArea(
+              child: Container(
+                color: Colors.transparent,
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  clipBehavior: Clip.none,
+                  children: [
+                    PhysicalShape(
+                      color: Colors.white,
+                      elevation: 15,
+                      clipper: CustomNotchClipper(),
+                      child: Container(
+                        height: 70.h,
+                        padding: EdgeInsets.symmetric(horizontal: 10.w),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: navItem(
+                                Icons.grid_view_rounded,
+                                0,
+                                "Dashboard",
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: navItem(
-                              Icons.video_library_rounded,
-                              1,
-                              "Posts",
+                            Expanded(
+                              child: navItem(
+                                Icons.video_library_rounded,
+                                1,
+                                "Posts",
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 80.w), // Space for FAB
-                          Expanded(
-                            child: navItem(
-                              Icons.access_time_filled_rounded,
-                              2,
-                              "Schedules",
+                            SizedBox(width: 75.w), // Space for FAB
+                            Expanded(
+                              child: navItem(
+                                Icons.access_time_filled_rounded,
+                                2,
+                                "Schedules",
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: navItem(Icons.person_rounded, 3, "Profile"),
-                          ),
-                        ],
+                            Expanded(
+                              child: navItem(
+                                Icons.person_rounded,
+                                3,
+                                "Profile",
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             floatingActionButtonLocation:
@@ -175,6 +177,7 @@ class HomePage extends StatelessWidget {
               padding: EdgeInsets.only(top: 5.h),
               child: GestureDetector(
                 onTap: () {
+                  HapticFeedback.lightImpact();
                   debugPrint(
                     'FAB tapped, isExpanded: ${controller.isExpanded.value}',
                   );

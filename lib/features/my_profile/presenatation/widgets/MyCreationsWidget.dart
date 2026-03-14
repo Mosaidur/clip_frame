@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MyCreationsWidget extends StatelessWidget {
   const MyCreationsWidget({super.key});
@@ -15,12 +16,7 @@ class MyCreationsWidget extends StatelessWidget {
 
     return Obx(() {
       if (controller.isCreationsLoading.value) {
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(40.0),
-            child: CircularProgressIndicator(),
-          ),
-        );
+        return _buildShimmerMasonry();
       }
 
       if (controller.creationsErrorMessage.isNotEmpty) {
@@ -72,10 +68,12 @@ class MyCreationsWidget extends StatelessWidget {
             Expanded(
               child: Column(
                 children: leftColumnItems
+                    .asMap()
+                    .entries
                     .map(
-                      (item) => _buildMasonryItem(
-                        item,
-                        i: leftColumnItems.indexOf(item),
+                      (entry) => _buildMasonryItem(
+                        entry.value,
+                        i: entry.key,
                         isLeft: true,
                       ),
                     )
@@ -86,10 +84,12 @@ class MyCreationsWidget extends StatelessWidget {
             Expanded(
               child: Column(
                 children: rightColumnItems
+                    .asMap()
+                    .entries
                     .map(
-                      (item) => _buildMasonryItem(
-                        item,
-                        i: rightColumnItems.indexOf(item),
+                      (entry) => _buildMasonryItem(
+                        entry.value,
+                        i: entry.key,
                         isLeft: false,
                       ),
                     )
@@ -112,7 +112,6 @@ class MyCreationsWidget extends StatelessWidget {
       imageUrl = item.mediaUrls.first;
     }
 
-    // Assign varying heights to simulate the masonry effect
     final double height = (i % 3 == 0)
         ? 200
         : (i % 3 == 1)
@@ -203,5 +202,54 @@ class MyCreationsWidget extends StatelessWidget {
         lowercase.endsWith('.mov') ||
         lowercase.endsWith('.avi') ||
         lowercase.endsWith('.mkv');
+  }
+
+  Widget _buildShimmerMasonry() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[100]!,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  _shimmerBox(200),
+                  const SizedBox(height: 12),
+                  _shimmerBox(280),
+                  const SizedBox(height: 12),
+                  _shimmerBox(240),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                children: [
+                  _shimmerBox(280),
+                  const SizedBox(height: 12),
+                  _shimmerBox(200),
+                  const SizedBox(height: 12),
+                  _shimmerBox(260),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _shimmerBox(double height) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+      ),
+    );
   }
 }
