@@ -118,57 +118,59 @@ class HomePage extends StatelessWidget {
               debugPrint('Building page: ${controller.selectedIndex.value}');
               return controller.pages[controller.selectedIndex.value];
             }),
-            bottomNavigationBar: SafeArea(
-              child: Container(
-                color: Colors.transparent,
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  clipBehavior: Clip.none,
-                  children: [
-                    PhysicalShape(
-                      color: Colors.white,
-                      elevation: 15,
-                      clipper: CustomNotchClipper(),
-                      child: Container(
-                        height: 70.h,
-                        padding: EdgeInsets.symmetric(horizontal: 10.w),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: navItem(
-                                Icons.grid_view_rounded,
-                                0,
-                                "Dashboard",
-                              ),
+            bottomNavigationBar: Container(
+              color: Colors.transparent,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                clipBehavior: Clip.none,
+                children: [
+                  PhysicalShape(
+                    color: Colors.white,
+                    elevation: 15,
+                    clipper: CustomNotchClipper(),
+                    child: Container(
+                      height: 70.h + MediaQuery.of(context).padding.bottom,
+                      padding: EdgeInsets.only(
+                        left: 10.w,
+                        right: 10.w,
+                        bottom: MediaQuery.of(context).padding.bottom,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: navItem(
+                              Icons.grid_view_rounded,
+                              0,
+                              "Dashboard",
                             ),
-                            Expanded(
-                              child: navItem(
-                                Icons.video_library_rounded,
-                                1,
-                                "Posts",
-                              ),
+                          ),
+                          Expanded(
+                            child: navItem(
+                              Icons.video_library_rounded,
+                              1,
+                              "Posts",
                             ),
-                            SizedBox(width: 75.w), // Space for FAB
-                            Expanded(
-                              child: navItem(
-                                Icons.access_time_filled_rounded,
-                                2,
-                                "Schedules",
-                              ),
+                          ),
+                          SizedBox(width: 75.w), // Space for FAB
+                          Expanded(
+                            child: navItem(
+                              Icons.access_time_filled_rounded,
+                              2,
+                              "Schedules",
                             ),
-                            Expanded(
-                              child: navItem(
-                                Icons.person_rounded,
-                                3,
-                                "Profile",
-                              ),
+                          ),
+                          Expanded(
+                            child: navItem(
+                              Icons.person_rounded,
+                              3,
+                              "Profile",
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             floatingActionButtonLocation:
