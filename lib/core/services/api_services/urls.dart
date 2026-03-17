@@ -1,6 +1,7 @@
 class Urls {
   // base url
-  static const String baseUrl = "http://10.10.7.50:5001";
+  //static const String baseUrl = "http://10.10.7.50:5001";
+  static const String baseUrl = "https://mohosin5001.binarybards.online";
   // static const String baseUrl = "http://10.0.2.2:5001"; // Reverted
 
   //auth api
