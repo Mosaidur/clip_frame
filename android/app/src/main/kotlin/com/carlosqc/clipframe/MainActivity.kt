@@ -1,9 +1,9 @@
-package com.example.clip_frame
+package com.carlosqc.clipframe
 
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.example.clip_frame/video_engine"
+    private val CHANNEL = "com.carlosqc.clipframe/video_engine"
     private lateinit var videoEngine: VideoEngine
 
     override fun configureFlutterEngine(flutterEngine: io.flutter.embedding.engine.FlutterEngine) {

@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'dart:typed_data';
 
 class NativeVideoService {
-  static const MethodChannel _channel = MethodChannel('com.example.clip_frame/video_engine');
+  static const MethodChannel _channel = MethodChannel('com.carlosqc.clipframe/video_engine');
 
   /// Initialize the native engine.
   Future<void> initialize() async {

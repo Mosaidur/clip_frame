@@ -13,7 +13,7 @@
 
 
     <application
-        android:label="clip_frame"
+        android:label="Clip Frame"
         android:name="${applicationName}"
         android:requestLegacyExternalStorage="true"
         android:icon="@mipmap/ic_launcher">
