@@ -6,6 +6,7 @@ import '../../../Shared/widgets/customText.dart';
 import '../../../Shared/widgets/language_toggle_button.dart';
 import '../../../splashScreen/controllers/language_controller.dart';
 import '../../controllers/SignUpControllerPage.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 
 class signUpScreen extends GetView<SignUpController> {
   // Use 'controller' (from GetView) instead of 'signUpcontroller' if possible,
@@ -189,8 +190,20 @@ class signUpScreen extends GetView<SignUpController> {
                             style: TextStyle(color: Colors.grey),
                           ),
                         ),
-                        CustomTextField(
+                        IntlPhoneField(
                           controller: signUpcontroller.phoneController,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          initialCountryCode: 'ES',
+                          onChanged: (phone) {
+                            signUpcontroller.fullPhoneNumber.value = phone.completeNumber;
+                          },
                         ),
                         const SizedBox(height: 15),
                         // Password Field with toggle

@@ -152,28 +152,18 @@ class UserOnboardingPageController extends GetxController {
         }
         return true;
       case 3: // Platform Selection & Connect Form
-        if (selectedPlatform.value.isEmpty) {
-          Get.snackbar(
-            "Required",
-            "Please select a social media platform.",
-            backgroundColor: Colors.red.withOpacity(0.5),
-            colorText: Colors.white,
-          );
-          return false;
-        }
-
-        // If Facebook or Instagram, check for connection status
-        if (selectedPlatform.value == 'facebook' ||
-            selectedPlatform.value == 'instagram') {
-          if (!isConnected.value) {
-            Get.snackbar(
-              "Required",
-              "Please connect your ${selectedPlatform.value} account.",
-              backgroundColor: Colors.red.withOpacity(0.5),
-              colorText: Colors.white,
-            );
-            return false;
-          }
+        // Users can optionally connect platforms or just enter handles later.
+        // If they connected, we can proceed. If not, they can still proceed manually.
+        // But if required, we ask them to connect at least one.
+        if (!isFacebookConnected.value && !isInstagramConnected.value) {
+           Get.snackbar(
+             "Recommendation",
+             "Connecting a social platform is recommended for the best experience.",
+             backgroundColor: Colors.blue.withOpacity(0.5),
+             colorText: Colors.white,
+           );
+           // We will let them pass anyway for smoother onboarding
+           return true; 
         }
         return true;
       case 4: // Branding
@@ -246,7 +236,8 @@ class UserOnboardingPageController extends GetxController {
   final SocialAuthService _socialAuthService = SocialAuthService();
 
   // Connected status
-  var isConnected = false.obs;
+  var isFacebookConnected = false.obs;
+  var isInstagramConnected = false.obs;
 
   Future<void> connectFacebook() async {
     try {
@@ -269,9 +260,9 @@ class UserOnboardingPageController extends GetxController {
           accessToken.tokenString,
         );
         if (success) {
-          isConnected.value = true;
+          isFacebookConnected.value = true;
           Get.snackbar("Success", "Connected to Facebook successfully!");
-          nextPage(); // Auto advance or let user click continue
+          // Don't auto-advance so they can connect Instagram too if they want
         } else {
           Get.snackbar(
             "Error",
@@ -327,9 +318,8 @@ class UserOnboardingPageController extends GetxController {
           accessToken.tokenString,
         );
         if (success) {
-          isConnected.value = true;
+          isInstagramConnected.value = true;
           Get.snackbar("Success", "Connected to Instagram successfully!");
-          nextPage();
         } else {
           Get.snackbar(
             "Error",
@@ -385,7 +375,6 @@ class UserOnboardingPageController extends GetxController {
 
   void selectPlatform(String platform) {
     selectedPlatform.value = platform;
-    isConnected.value = false; // Reset connection status when platform changes
   }
 
   String get handleLabel {

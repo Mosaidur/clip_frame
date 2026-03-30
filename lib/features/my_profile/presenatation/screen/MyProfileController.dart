@@ -530,7 +530,7 @@ class MyProfilePage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _roundIcon(Icons.settings, () {}),
+                      const SizedBox(width: 40), // Placeholder to keep title centered
                       Text(
                         "Profile",
                         style: GoogleFonts.poppins(
@@ -643,14 +643,22 @@ class MyProfilePage extends StatelessWidget {
                                                     context,
                                                     error,
                                                     stackTrace,
-                                                  ) => Image.asset(
-                                                    "assets/images/profile_image.png",
-                                                    fit: BoxFit.cover,
+                                                  ) => Container(
+                                                    color: Colors.grey[200],
+                                                    child: const Icon(
+                                                      Icons.person,
+                                                      size: 80,
+                                                      color: Colors.grey,
+                                                    ),
                                                   ),
                                             )
-                                          : Image.asset(
-                                              "assets/images/profile_image.png",
-                                              fit: BoxFit.cover,
+                                          : Container(
+                                              color: Colors.grey[200],
+                                              child: const Icon(
+                                                Icons.person,
+                                                size: 80,
+                                                color: Colors.grey,
+                                              ),
                                             ),
                                     ),
                                   ),

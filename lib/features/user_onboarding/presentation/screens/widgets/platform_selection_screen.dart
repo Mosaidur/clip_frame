@@ -90,57 +90,46 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
             const SizedBox(height: 30),
 
             // Connect Form Section
-            Obx(() {
-              if (controller.selectedPlatform.value.isEmpty) {
-                return const SizedBox();
-              }
-
-              final platformName = controller.socialPlatformOptions.firstWhere(
-                (element) =>
-                    element['key'] == controller.selectedPlatform.value,
-              )['name'];
-
-              return Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F3FF),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      "Connect $platformName",
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F3FF),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    "Connect Accounts",
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
                     ),
-                    const SizedBox(height: 20),
+                  ),
+                  const SizedBox(height: 20),
 
-                    // Dynamic Content based on platform
-                    if (controller.selectedPlatform.value == 'facebook' ||
-                        controller.selectedPlatform.value == 'instagram') ...[
-                      SizedBox(
+                  // Facebook
+                  Obx(() => SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: controller.isLoading.value
+                          onPressed: controller.isLoading.value ||
+                                  controller.isFacebookConnected.value
                               ? null
-                              : (controller.selectedPlatform.value == 'facebook'
-                                    ? controller.connectFacebook
-                                    : controller.connectInstagram),
+                              : () {
+                                  controller.selectPlatform('facebook');
+                                  controller.connectFacebook();
+                                },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                controller.selectedPlatform.value == 'facebook'
-                                ? const Color(0xFF1877F2)
-                                : const Color(0xFFE4405F),
+                            backgroundColor: const Color(0xFF1877F2),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 0,
                           ),
-                          child: controller.isLoading.value
+                          child: controller.isLoading.value &&
+                                  !controller.isFacebookConnected.value &&
+                                  controller.selectedPlatform.value == 'facebook'
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
@@ -150,9 +139,9 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
                                   ),
                                 )
                               : Text(
-                                  controller.isConnected.value
-                                      ? "Connected"
-                                      : "Connect ${controller.selectedPlatform.value.capitalizeFirst}",
+                                  controller.isFacebookConnected.value
+                                      ? "✅ Facebook Connected"
+                                      : "Connect Facebook",
                                   style: GoogleFonts.poppins(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -160,26 +149,55 @@ class PlatformSelectionScreen extends GetView<UserOnboardingPageController> {
                                   ),
                                 ),
                         ),
-                      ),
+                      )),
 
-                      if (controller.isConnected.value)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Center(
-                            child: Text(
-                              "✅ Account Connected",
-                              style: GoogleFonts.poppins(
-                                color: Colors.green,
-                                fontWeight: FontWeight.w600,
-                              ),
+                  const SizedBox(height: 12),
+
+                  // Instagram
+                  Obx(() => SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: controller.isLoading.value ||
+                                  controller.isInstagramConnected.value
+                              ? null
+                              : () {
+                                  controller.selectPlatform('instagram');
+                                  controller.connectInstagram();
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE4405F),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 0,
                           ),
+                          child: controller.isLoading.value &&
+                                  !controller.isInstagramConnected.value &&
+                                  controller.selectedPlatform.value == 'instagram'
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  controller.isInstagramConnected.value
+                                      ? "✅ Instagram Connected"
+                                      : "Connect Instagram",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
-                    ],
-                  ],
-                ),
-              );
-            }),
+                      )),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 30),
 

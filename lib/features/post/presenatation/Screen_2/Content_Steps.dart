@@ -126,21 +126,39 @@ class StepByStepPage extends StatelessWidget {
                           ),
                         );
                       } else {
-                        final videoFile = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const ProfessionalCameraPage(),
-                          ),
-                        );
-                        if (videoFile != null &&
-                            videoFile is File &&
-                            context.mounted) {
+                        List<File> recordedClips = [];
+                        int totalSteps = steps.isNotEmpty ? steps.length : 1;
+
+                        for (int i = 0; i < totalSteps; i++) {
+                          final Map<String, dynamic>? currentStepData = steps.isNotEmpty ? steps[i] : null;
+
+                          final videoFile = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProfessionalCameraPage(
+                                stepData: currentStepData,
+                                stepIndex: i + 1,
+                                totalSteps: totalSteps,
+                              ),
+                            ),
+                          );
+
+                          if (videoFile != null && videoFile is File) {
+                            recordedClips.add(videoFile);
+                          } else {
+                            // User backed out of the camera, break the recording flow
+                            break;
+                          }
+                          
+                          if (!context.mounted) break;
+                        }
+
+                        if (recordedClips.isNotEmpty && context.mounted) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  ReviewClipsPage(recordedClips: [videoFile]),
+                                  ReviewClipsPage(recordedClips: recordedClips),
                             ),
                           );
                         }

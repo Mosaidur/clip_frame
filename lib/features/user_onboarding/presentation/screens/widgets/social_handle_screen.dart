@@ -66,7 +66,7 @@ class SocialHandleScreen extends GetView<UserOnboardingPageController> {
                             ),
                           ),
                     label: Text(
-                      controller.isConnected.value
+                      (platform == 'facebook' ? controller.isFacebookConnected.value : controller.isInstagramConnected.value)
                           ? "Connected"
                           : "Connect $platform",
                       style: GoogleFonts.poppins(
@@ -86,7 +86,7 @@ class SocialHandleScreen extends GetView<UserOnboardingPageController> {
                   ),
                 ),
               ),
-              if (controller.isConnected.value)
+              if (platform == 'facebook' ? controller.isFacebookConnected.value : controller.isInstagramConnected.value)
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0),
                   child: Center(

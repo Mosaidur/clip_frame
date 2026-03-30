@@ -44,7 +44,7 @@ class BusinessDescriptionScreen extends GetView<UserOnboardingPageController> {
                     maxLength: 500,
                     decoration: InputDecoration(
                       hintText:
-                          'e.g., "We serve authentic Italian pasta with a modern twist"',
+                          'Example: Luigi’s Pizzeria — a family-owned restaurant with over 20 years of experience, specializing in authentic Italian food and friendly service.',
                       hintStyle: GoogleFonts.poppins(
                         fontSize: 14,
                         color: Colors.grey.shade400,

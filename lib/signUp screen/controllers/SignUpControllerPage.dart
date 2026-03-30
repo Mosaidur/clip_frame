@@ -17,14 +17,13 @@ class SignUpController extends GetxController {
   var obscurePassword = true.obs;
   var obscureConfirmPassword = true.obs;
   var isLoading = false.obs;
+  var fullPhoneNumber = ''.obs;
 
   // API Controller instance
   final api.signUp_Controller _apiController = api.signUp_Controller();
 
   // Validation regex
   final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-  // Updated regex to accept: +8801XXXXXXXXX, 8801XXXXXXXXX, 01XXXXXXXXX, or international format
-  final phoneRegex = RegExp(r'^(\+?88)?01[3-9]\d{8}$');
 
   void togglePasswordVisibility() {
     obscurePassword.value = !obscurePassword.value;
@@ -39,7 +38,7 @@ class SignUpController extends GetxController {
     return emailController.text.trim().isNotEmpty &&
         passwordController.text.trim().isNotEmpty &&
         confirmPasswordController.text.trim().isNotEmpty &&
-        phoneController.text.trim().isNotEmpty &&
+        fullPhoneNumber.value.trim().isNotEmpty &&
         firstNameController.text.trim().isNotEmpty &&
         lastNameController.text.trim().isNotEmpty;
   }
@@ -49,7 +48,7 @@ class SignUpController extends GetxController {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final confirmPassword = confirmPasswordController.text.trim();
-    final phone = phoneController.text.trim();
+    final phone = fullPhoneNumber.value.trim();
     final firstName = firstNameController.text.trim();
     final lastName = lastNameController.text.trim();
 
@@ -67,11 +66,6 @@ class SignUpController extends GetxController {
 
     if (!emailRegex.hasMatch(email)) {
       Get.snackbar('error'.tr, 'please EnterValidEmail'.tr);
-      return;
-    }
-
-    if (phone.isNotEmpty && !phoneRegex.hasMatch(phone)) {
-      Get.snackbar('error'.tr, 'Please Enter Valid Phone Number (e.g., 01XXXXXXXXX or +8801XXXXXXXXX)');
       return;
     }
 
