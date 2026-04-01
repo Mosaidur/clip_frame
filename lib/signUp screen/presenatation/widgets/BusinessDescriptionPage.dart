@@ -30,7 +30,7 @@ class BusinessDescriptionPage extends StatelessWidget {
             // Search
             TextField(
               decoration: InputDecoration(
-                hintText: "Tell us what makes your business unique.",
+                hintText: "Example: Luigi’s Pizzeria — a family-owned restaurant with over 20 years of experience, specializing in authentic Italian food and friendly service.",
                 // prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),

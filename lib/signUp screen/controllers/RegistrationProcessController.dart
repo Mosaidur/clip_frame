@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../splashScreen/controllers/language_controller.dart';
 import '../presenatation/widgets/BusinessDescriptionPage.dart';
 import '../presenatation/widgets/BusinessTypeSelection.dart';
+import '../presenatation/widgets/LogoUploadPage.dart';
 import '../presenatation/widgets/SocailMedia.dart';
 import '../presenatation/widgets/audianceAndLanguage.dart';
 import 'BusinessTypeSelectionController.dart';
@@ -15,7 +16,7 @@ class RegistrationProcessController extends GetxController {
 
   final List<Widget> pages = [
     BusinessTypeSelectionPage(),
-    // PlaceholderPage(),
+    LogoUploadPage(),
     BusinessDescriptionPage(),
     AudienceAndLanguagePage(),
     ScoicalMediaPage()

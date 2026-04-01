@@ -19,6 +19,8 @@ class ReviewClipsPage extends StatefulWidget {
 class _ReviewClipsPageState extends State<ReviewClipsPage> {
   // Map to store thumbnails for each clip to avoid re-generating them
   Map<String, String?> _thumbnails = {};
+  // Map to store durations for each clip
+  Map<String, String> _durations = {};
 
   @override
   void initState() {
@@ -27,27 +29,60 @@ class _ReviewClipsPageState extends State<ReviewClipsPage> {
   }
 
   Future<void> _generateThumbnails() async {
-    final tempDir = await getTemporaryDirectory();
-    final List<Future> futures = [];
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final List<Future> futures = [];
 
-    for (var file in widget.recordedClips) {
-      if (!_thumbnails.containsKey(file.path)) {
-        futures.add(VideoThumbnail.thumbnailFile(
-          video: file.path,
-          thumbnailPath: tempDir.path,
-          imageFormat: ImageFormat.JPEG,
-          maxHeight: 150, // Reduced height for faster loading
-          quality: 50,    // Reduced quality for speed
-        ).then((thumb) {
-          if (mounted && thumb != null) {
-            setState(() {
-              _thumbnails[file.path] = thumb;
-            });
-          }
-        }));
+      for (var file in widget.recordedClips) {
+        if (!_durations.containsKey(file.path)) {
+          final tempController = VideoPlayerController.file(file);
+          tempController.initialize().then((_) {
+            if (mounted) {
+              final duration = tempController.value.duration;
+              setState(() {
+                _durations[file.path] = _formatDuration(duration.inSeconds);
+              });
+              tempController.dispose();
+            }
+          }).catchError((e) {
+            debugPrint("Duration fetching error: $e");
+            tempController.dispose();
+          });
+        }
+
+        if (!_thumbnails.containsKey(file.path) || _thumbnails[file.path] == null) {
+          futures.add(VideoThumbnail.thumbnailFile(
+            video: file.path,
+            thumbnailPath: tempDir.path,
+            imageFormat: ImageFormat.JPEG,
+            maxHeight: 400, // Increased for higher resolution
+            quality: 90,    // Increased for better sharpness
+          ).then((thumb) {
+            if (mounted) {
+              setState(() {
+                _thumbnails[file.path] = thumb;
+              });
+            }
+          }).catchError((e) {
+            debugPrint("Thumbnail generation error for ${file.path}: $e");
+            if (mounted) {
+              setState(() {
+                _thumbnails[file.path] = null; // Ensure it doesn't hang forever
+              });
+            }
+          }));
+        }
       }
+      await Future.wait(futures);
+    } catch (e) {
+      debugPrint("Global thumbnail generation error: $e");
     }
-    await Future.wait(futures);
+  }
+
+  String _formatDuration(int seconds) {
+    final int minutes = seconds ~/ 60;
+    final int remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
   void _addNewClip() async {
@@ -56,6 +91,9 @@ class _ReviewClipsPageState extends State<ReviewClipsPage> {
     // But since the camera is "above" us in the stack if we came from it, 
     // we might actually want to Push a new camera instance or Pop with a signal?
     // The user flow describes: Camera -> Review -> Camera (add more) -> Review.
+    
+    // Small delay before pushing camera to allow any background disposal to complete
+    await Future.delayed(const Duration(milliseconds: 100));
     
     final File? newVideo = await Navigator.push(
       context,
@@ -72,6 +110,9 @@ class _ReviewClipsPageState extends State<ReviewClipsPage> {
 
   void _onReRecord(int index) async {
     // Open camera to replace this specific clip
+    // Small delay before pushing camera
+    await Future.delayed(const Duration(milliseconds: 100));
+
     final File? replacedVideo = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const ProfessionalCameraPage()),
@@ -203,9 +244,9 @@ class _ReviewClipsPageState extends State<ReviewClipsPage> {
                                   color: Colors.black54,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Text(
-                                  "00:00", // Placeholder, would need to get actual duration
-                                  style: TextStyle(color: Colors.white, fontSize: 12),
+                                child: Text(
+                                  _durations[file.path] ?? "00:00",
+                                  style: const TextStyle(color: Colors.white, fontSize: 12),
                                 ),
                               ),
                             ),

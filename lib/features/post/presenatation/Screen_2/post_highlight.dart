@@ -6,6 +6,154 @@ import 'Content_Steps.dart';
 import 'photo_preview_screen.dart';
 import 'package:clip_frame/core/model/content_template_model.dart';
 
+/// Screen that shows a horizontal carousel of selected images with a confirm button.
+class MultiImagePreviewScreen extends StatefulWidget {
+  final List<String> imagePaths;
+
+  const MultiImagePreviewScreen({super.key, required this.imagePaths});
+
+  @override
+  State<MultiImagePreviewScreen> createState() =>
+      _MultiImagePreviewScreenState();
+}
+
+class _MultiImagePreviewScreenState extends State<MultiImagePreviewScreen> {
+  late final PageController _pageController;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new,
+              color: Colors.white, size: 20.r),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          "${_currentIndex + 1} / ${widget.imagePaths.length}",
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        actions: [
+          TextButton(
+            onPressed: () {
+              // TODO: submit carousel images to backend
+              Navigator.pop(context, widget.imagePaths);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Post carousel created!")),
+              );
+            },
+            child: Text(
+              "NEXT",
+              style: TextStyle(
+                  color: const Color(0xFFFF4D8D),
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: widget.imagePaths.length,
+              onPageChanged: (i) => setState(() => _currentIndex = i),
+              itemBuilder: (context, index) {
+                return Image.file(
+                  File(widget.imagePaths[index]),
+                  fit: BoxFit.contain,
+                );
+              },
+            ),
+          ),
+          // Dot indicator
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(widget.imagePaths.length, (i) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: EdgeInsets.symmetric(horizontal: 4.w),
+                  width: i == _currentIndex ? 14.w : 8.w,
+                  height: 8.h,
+                  decoration: BoxDecoration(
+                    color: i == _currentIndex
+                        ? const Color(0xFFFF4D8D)
+                        : Colors.white38,
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
+                );
+              }),
+            ),
+          ),
+          // Thumbnail strip
+          SizedBox(
+            height: 70.h,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 12.w),
+              itemCount: widget.imagePaths.length,
+              itemBuilder: (context, index) {
+                final isSelected = index == _currentIndex;
+                return GestureDetector(
+                  onTap: () {
+                    _pageController.animateToPage(index,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut);
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(right: 8.w),
+                    width: 60.w,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFFFF4D8D)
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(7.r),
+                      child: Image.file(
+                        File(widget.imagePaths[index]),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          SizedBox(height: 16.h),
+        ],
+      ),
+    );
+  }
+}
+
 class PostHighlight extends StatelessWidget {
   final String url;
   final String contentType;
@@ -246,15 +394,31 @@ class PostHighlight extends StatelessWidget {
       onTap: () async {
         Navigator.pop(sheetContext);
         final ImagePicker picker = ImagePicker();
-        final XFile? image = await picker.pickImage(source: source);
-
-        if (image != null && rootContext.mounted) {
-          Navigator.push(
-            rootContext,
-            MaterialPageRoute(
-              builder: (context) => PhotoPreviewScreen(imagePath: image.path),
-            ),
-          );
+        
+        if (source == ImageSource.gallery) {
+          // Multi-image pick for carousel posts
+          final List<XFile> images = await picker.pickMultiImage();
+          if (images.isNotEmpty && rootContext.mounted) {
+            Navigator.push(
+              rootContext,
+              MaterialPageRoute(
+                builder: (context) => MultiImagePreviewScreen(
+                  imagePaths: images.map((e) => e.path).toList(),
+                ),
+              ),
+            );
+          }
+        } else {
+          // Camera: single image → existing photo editor
+          final XFile? image = await picker.pickImage(source: source);
+          if (image != null && rootContext.mounted) {
+            Navigator.push(
+              rootContext,
+              MaterialPageRoute(
+                builder: (context) => PhotoPreviewScreen(imagePath: image.path),
+              ),
+            );
+          }
         }
       },
       child: Column(

@@ -17,6 +17,7 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
   List<CameraDescription>? _cameras;
   bool _isReady = false;
   bool _isRecording = false;
+  bool _hasError = false; // Added to handle error state
 
   @override
   void initState() {
@@ -25,13 +26,36 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
   }
 
   Future<void> _initCamera() async {
-    _cameras = await availableCameras();
-    if (_cameras != null && _cameras!.isNotEmpty) {
-      _controller = CameraController(_cameras![0], ResolutionPreset.max, enableAudio: true);
-      await _controller!.initialize();
-      if (mounted) {
-        setState(() => _isReady = true);
+    try {
+      if (_controller != null) {
+        await _controller!.dispose();
+        _controller = null;
+        // Small delay to ensure hardware is released
+        await Future.delayed(const Duration(milliseconds: 150));
       }
+
+      _cameras = await availableCameras();
+      if (_cameras != null && _cameras!.isNotEmpty) {
+        _controller = CameraController(
+          _cameras![0], 
+          ResolutionPreset.max, 
+          enableAudio: true,
+          imageFormatGroup: ImageFormatGroup.jpeg,
+        );
+        
+        await _controller!.initialize();
+        if (mounted) {
+          setState(() {
+            _isReady = true;
+            _hasError = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _hasError = true);
+      }
+    } catch (e) {
+      debugPrint("Camera Error: $e");
+      if (mounted) setState(() => _hasError = true);
     }
   }
 
@@ -72,6 +96,34 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_hasError) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: Colors.white, size: 24.r),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 50.r),
+              SizedBox(height: 10.h),
+              Text(
+                "Failed to initialize camera.\nPlease check your permissions.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 16.sp),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (!_isReady || _controller == null) {
       return const Scaffold(backgroundColor: Colors.black, body: Center(child: CircularProgressIndicator()));
     }
@@ -81,8 +133,18 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
       body: Stack(
         children: [
           // 1. Camera Preview
-          Center(
-            child: CameraPreview(_controller!),
+          SizedBox.expand(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Center(
+                  child: AspectRatio(
+                    aspectRatio: 1 / (_controller!.value.aspectRatio),
+                    child: CameraPreview(_controller!),
+                  ),
+                ),
+              ],
+            ),
           ),
 
           // 2. Header Overlay

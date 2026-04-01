@@ -39,7 +39,8 @@ class PostListPage extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => PostHighlight(
                       url: template.thumbnail ?? "", 
-                      contentType: 'Post'
+                      contentType: 'Post',
+                      template: template,
                     )
                   ),
                 );

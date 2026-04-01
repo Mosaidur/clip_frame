@@ -193,6 +193,7 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
                                     builder: (context) => PostHighlight(
                                       url: imageUrl,
                                       contentType: 'Story',
+                                      template: template,
                                     ),
                                   ),
                                 );

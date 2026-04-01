@@ -45,16 +45,20 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>0
-	<string>We need camera access to let you capture photos and videos for your posts.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to let you capture photos and videos for your posts and stories.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need microphone access to record audio when capturing videos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need photo library access to let you select and upload photos/videos from your gallery.</string>
+	<string>We need photo library access to let you select and upload photos and videos from your gallery.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>We need permission to save videos to your gallery.</string>
+	<string>We need permission to save videos and photos to your gallery.</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier will be used to deliver personalized ads to you.</string>
+	<string>This identifier will be used to deliver personalized content to you.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>We use Face ID to securely authenticate your account.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location to tag your posts and suggest nearby content ideas.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

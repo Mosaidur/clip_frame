@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../story_creation/story_capture.dart';
 import 'package:clip_frame/features/post/presenatation/screen/ReviewClipsPage.dart';
-import '../../../../features/Video Editing/ProfessionalCamera.dart';
+import 'package:clip_frame/features/post/presenatation/screen/ShotBriefingPage.dart';
 
 class StepByStepPage extends StatelessWidget {
   final String contentType;
@@ -132,11 +132,18 @@ class StepByStepPage extends StatelessWidget {
                         for (int i = 0; i < totalSteps; i++) {
                           final Map<String, dynamic>? currentStepData = steps.isNotEmpty ? steps[i] : null;
 
+                          // Small safety delay between steps to ensure camera hardware is released
+                          if (i > 0) {
+                            await Future.delayed(const Duration(milliseconds: 200));
+                          }
+
+                          if (!context.mounted) break;
+
                           final videoFile = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ProfessionalCameraPage(
-                                stepData: currentStepData,
+                              builder: (context) => ShotBriefingPage(
+                                stepData: currentStepData ?? {},
                                 stepIndex: i + 1,
                                 totalSteps: totalSteps,
                               ),

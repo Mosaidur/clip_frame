@@ -2,8 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/BusinessTypeSelectionController.dart';
 
-class ScoicalMediaPage extends StatelessWidget {
-  final TextEditingController customTypeController = TextEditingController();
+class ScoicalMediaPage extends StatefulWidget {
+  const ScoicalMediaPage({super.key});
+
+  @override
+  State<ScoicalMediaPage> createState() => _ScoicalMediaPageState();
+}
+
+class _ScoicalMediaPageState extends State<ScoicalMediaPage> {
+  final Set<String> _selectedPlatforms = {};
+
+  final List<Map<String, String>> platforms = [
+    {"name": "Facebook", "icon": "assets/images/facebook.png"},
+    {"name": "Instagram", "icon": "assets/images/instagram.png"},
+    {"name": "TikTok", "icon": "assets/images/tiktok.png"},
+  ];
+
+  void _togglePlatform(String name) {
+    setState(() {
+      if (_selectedPlatforms.contains(name)) {
+        _selectedPlatforms.remove(name);
+      } else {
+        _selectedPlatforms.add(name);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,44 +71,52 @@ class ScoicalMediaPage extends StatelessWidget {
                     padding: const EdgeInsets.all(15.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          // width: double.infinity,
-                          height: 50,
-                          width: 90,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.white,
+                      children: platforms.map((platform) {
+                        final isSelected = _selectedPlatforms.contains(platform['name']);
+                        return GestureDetector(
+                          onTap: () => _togglePlatform(platform['name']!),
+                          child: Container(
+                            height: 60,
+                            width: 90,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.white,
+                              border: Border.all(
+                                color: isSelected ? Colors.blue : Colors.transparent,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                if (isSelected)
+                                  BoxShadow(
+                                    color: Colors.blue.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                              ],
+                            ),
+                            child: Stack(
+                              children: [
+                                Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Image.asset(platform['icon']!),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  const Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: Icon(
+                                      Icons.check_circle,
+                                      color: Colors.blue,
+                                      size: 16,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                          child: Image.asset("assets/images/facebook.png") ,
-                        ),
-
-                        const SizedBox(width: 10,),
-                        Container(
-                          // width: double.infinity,
-                          height: 50,
-                          width: 90,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.white,
-                          ),
-                          child: Image.asset("assets/images/instagram.png") ,
-                        ),
-
-                        const SizedBox(width: 10,),
-
-                        Container(
-                          // width: double.infinity,
-                          height: 50,
-                          width: 90,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.white,
-                          ),
-                          child: Image.asset("assets/images/tiktok.png") ,
-                        ),
-
-                      ],
+                        );
+                      }).toList(),
                     ),
                   ),
 

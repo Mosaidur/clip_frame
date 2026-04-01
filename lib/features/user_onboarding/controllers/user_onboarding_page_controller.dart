@@ -183,13 +183,13 @@ class UserOnboardingPageController extends GetxController {
       "targetAudience": selectedAudiences,
       "preferredLanguages": [
         selectedLanguage.value,
-      ], // Must be a list for the API
+      ],
       "autoTranslateCaptions": autoTranslateCaptions.value,
       "socialHandles": [
         {
           "platform": selectedPlatform.value.toLowerCase(),
           "username": handleController.text,
-          "password": passwordController.text, // Added password
+          "password": passwordController.text,
         },
       ],
       "branding": {
@@ -197,8 +197,6 @@ class UserOnboardingPageController extends GetxController {
             "#${primaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
         "secondaryColor":
             "#${secondaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
-        "logo": logoPath
-            .value, // This might need to be uploaded separately or as base64
       },
     };
 
@@ -207,20 +205,26 @@ class UserOnboardingPageController extends GetxController {
     String? token = await AuthService.getToken();
     print("🔑 Token available: ${token != null && token.isNotEmpty}");
 
-    // API Call
-    bool success = await _apiService.submitOnboardingData(data);
+    // API Call — use multipart if logo file exists, otherwise standard JSON
+    bool success;
+    if (logoFile != null) {
+      success = await _apiService.submitOnboardingWithLogo(
+        data: data,
+        logoFile: logoFile!,
+        token: token,
+      );
+    } else {
+      success = await _apiService.submitOnboardingData(data);
+    }
     print("📡 Onboarding API Success: $success");
 
     isLoading.value = false;
 
     if (success) {
-      // Mark onboarding as complete for this specific user
       String? email = OnboardingStatusService.getEmailFromToken(token ?? "");
       if (email != null) {
         await OnboardingStatusService.markOnboardingComplete(email);
       }
-
-      // Navigate to Home directly instead of Login
       Get.offAllNamed(AppRoutes.HOME);
     } else {
       Get.snackbar(

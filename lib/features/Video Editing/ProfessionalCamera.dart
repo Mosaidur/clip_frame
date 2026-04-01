@@ -23,8 +23,10 @@ class ProfessionalCameraPage extends StatefulWidget {
 class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
   List<CameraDescription> cameras = [];
   CameraController? controller;
-  bool isRecording = false;
+  bool isRecording = false; // Restored missing variable
   bool isFlashOn = false;
+  bool isVideoLoading = false; // Controls the loading state for video preview
+  String? errorMessage; // Stores initialization or recording errors
 
   double currentZoom = 1.0;
   double maxZoom = 1.0;
@@ -53,21 +55,36 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
   }
 
   Future<void> initCamera(CameraDescription cameraDescription) async {
+    setState(() {
+      errorMessage = null;
+    });
+
     if (controller != null) {
       await controller!.dispose();
+      controller = null;
+      // Small delay to ensure hardware is released
+      await Future.delayed(const Duration(milliseconds: 150));
     }
 
     controller = CameraController(
       cameraDescription,
       ResolutionPreset.max,
       enableAudio: true,
+      imageFormatGroup: ImageFormatGroup.jpeg,
     );
 
-    await controller!.initialize();
-
-    maxZoom = await controller!.getMaxZoomLevel();
-
-    setState(() {});
+    try {
+      await controller!.initialize();
+      maxZoom = await controller!.getMaxZoomLevel();
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint("Camera Init Error: $e");
+      if (mounted) {
+        setState(() {
+          errorMessage = "Failed to open camera. Please try again.";
+        });
+      }
+    }
   }
 
   @override
@@ -78,12 +95,25 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
     super.dispose();
   }
 
-  void _initVideoPlayer(File file) async {
-    _videoPlayerController = VideoPlayerController.file(file);
-    await _videoPlayerController!.initialize();
-    await _videoPlayerController!.setLooping(true);
-    _videoPlayerController!.play();
-    setState(() {});
+  Future<void> _initVideoPlayer(File file) async {
+    if (!file.existsSync()) {
+      setState(() => isVideoLoading = false);
+      return;
+    }
+
+    try {
+      setState(() => isVideoLoading = true);
+      _videoPlayerController = VideoPlayerController.file(file);
+      await _videoPlayerController!.initialize();
+      await _videoPlayerController!.setLooping(true);
+      await _videoPlayerController!.play();
+    } catch (e) {
+      debugPrint("Video Player Error: $e");
+    } finally {
+      if (mounted) {
+        setState(() => isVideoLoading = false);
+      }
+    }
   }
 
   void _retakeVideo() {
@@ -134,15 +164,25 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
   }
 
   Future<void> stopRecording() async {
-    _timer?.cancel();
-    final file = await controller!.stopVideoRecording();
-    
-    setState(() {
-      isRecording = false;
-      recordedVideoFile = File(file.path);
-    });
+    if (controller == null || !controller!.value.isRecordingVideo) return;
 
-    _initVideoPlayer(recordedVideoFile!);
+    try {
+      _timer?.cancel();
+      final file = await controller!.stopVideoRecording();
+      
+      setState(() {
+        isRecording = false;
+        recordedVideoFile = File(file.path);
+      });
+
+      await _initVideoPlayer(recordedVideoFile!);
+    } catch (e) {
+      debugPrint("Stop Recording Error: $e");
+      setState(() {
+        isRecording = false;
+        errorMessage = "Recording failed. Please try again.";
+      });
+    }
   }
 
   String _formatDuration(int seconds) {
@@ -187,18 +227,37 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
           : Stack(
               children: [
                 // Camera View or Video Preview
-                if (recordedVideoFile != null &&
-                    _videoPlayerController != null &&
-                    _videoPlayerController!.value.isInitialized)
+                if (recordedVideoFile != null)
                   SizedBox.expand(
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: _videoPlayerController!.value.size.width,
-                        height: _videoPlayerController!.value.size.height,
-                        child: VideoPlayer(_videoPlayerController!),
-                      ),
-                    ),
+                    child: isVideoLoading
+                        ? Container(
+                            color: Colors.black,
+                            child: const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(color: Colors.white),
+                                  SizedBox(height: 15),
+                                  Text("Processing clip...", style: TextStyle(color: Colors.white70)),
+                                ],
+                              ),
+                            ),
+                          )
+                        : (_videoPlayerController != null && _videoPlayerController!.value.isInitialized)
+                            ? FittedBox(
+                                fit: BoxFit.cover,
+                                child: SizedBox(
+                                  width: _videoPlayerController!.value.size.width,
+                                  height: _videoPlayerController!.value.size.height,
+                                  child: VideoPlayer(_videoPlayerController!),
+                                ),
+                              )
+                            : Container(
+                                color: Colors.black,
+                                child: const Center(
+                                  child: Text("Preview failed. Try retaking.", style: TextStyle(color: Colors.white)),
+                                ),
+                              ),
                   )
                 else
                   GestureDetector(
@@ -207,13 +266,16 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
                       await controller!.setZoomLevel(currentZoom);
                     },
                     child: SizedBox.expand(
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: controller!.value.previewSize?.height ?? MediaQuery.of(context).size.width,
-                          height: controller!.value.previewSize?.width ?? MediaQuery.of(context).size.height,
-                          child: CameraPreview(controller!),
-                        ),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Center(
+                            child: AspectRatio(
+                              aspectRatio: 1 / (controller!.value.aspectRatio),
+                              child: CameraPreview(controller!),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
