@@ -4,13 +4,21 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'Content_Steps.dart';
 import 'photo_preview_screen.dart';
+import 'package:get/get.dart';
+import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:clip_frame/core/model/content_template_model.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 /// Screen that shows a horizontal carousel of selected images with a confirm button.
 class MultiImagePreviewScreen extends StatefulWidget {
   final List<String> imagePaths;
+  final ContentTemplateModel? template;
 
-  const MultiImagePreviewScreen({super.key, required this.imagePaths});
+  const MultiImagePreviewScreen({
+    super.key,
+    required this.imagePaths,
+    this.template,
+  });
 
   @override
   State<MultiImagePreviewScreen> createState() =>
@@ -20,17 +28,38 @@ class MultiImagePreviewScreen extends StatefulWidget {
 class _MultiImagePreviewScreenState extends State<MultiImagePreviewScreen> {
   late final PageController _pageController;
   int _currentIndex = 0;
+  late List<String> _currentPaths;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _currentPaths = List.from(widget.imagePaths);
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _editCurrentImage() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PhotoPreviewScreen(
+          imagePaths: _currentPaths,
+          initialIndex: _currentIndex,
+          isCarouselEdit: true,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _currentPaths[_currentIndex] = result;
+      });
+    }
   }
 
   @override
@@ -40,11 +69,7 @@ class _MultiImagePreviewScreenState extends State<MultiImagePreviewScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new,
-              color: Colors.white, size: 20.r),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: const CustomBackButton(iconColor: Colors.white),
         title: Text(
           "${_currentIndex + 1} / ${widget.imagePaths.length}",
           style: TextStyle(
@@ -54,12 +79,29 @@ class _MultiImagePreviewScreenState extends State<MultiImagePreviewScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            onPressed: _editCurrentImage,
+            icon: Icon(Icons.brush_rounded,
+                color: const Color(0xFFFF4D8D), size: 22.sp),
+            tooltip: "Edit this photo",
+          ),
           TextButton(
             onPressed: () {
-              // TODO: submit carousel images to backend
-              Navigator.pop(context, widget.imagePaths);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Post carousel created!")),
+              if (Get.isRegistered<ContentCreationController>()) {
+                final controller = Get.find<ContentCreationController>();
+                controller.selectedFiles.assignAll(
+                  _currentPaths.map((e) => File(e)).toList(),
+                );
+                controller.selectedContentType.value = 'carousel';
+                controller.templateId.value = widget.template?.id ?? "";
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PhotoPreviewScreen(
+                    imagePaths: _currentPaths,
+                  ),
+                ),
               );
             },
             child: Text(
@@ -77,11 +119,11 @@ class _MultiImagePreviewScreenState extends State<MultiImagePreviewScreen> {
           Expanded(
             child: PageView.builder(
               controller: _pageController,
-              itemCount: widget.imagePaths.length,
+              itemCount: _currentPaths.length,
               onPageChanged: (i) => setState(() => _currentIndex = i),
               itemBuilder: (context, index) {
                 return Image.file(
-                  File(widget.imagePaths[index]),
+                  File(_currentPaths[index]),
                   fit: BoxFit.contain,
                 );
               },
@@ -92,7 +134,7 @@ class _MultiImagePreviewScreenState extends State<MultiImagePreviewScreen> {
             padding: EdgeInsets.symmetric(vertical: 12.h),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(widget.imagePaths.length, (i) {
+              children: List.generate(_currentPaths.length, (i) {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   margin: EdgeInsets.symmetric(horizontal: 4.w),
@@ -114,7 +156,7 @@ class _MultiImagePreviewScreenState extends State<MultiImagePreviewScreen> {
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(horizontal: 12.w),
-              itemCount: widget.imagePaths.length,
+              itemCount: _currentPaths.length,
               itemBuilder: (context, index) {
                 final isSelected = index == _currentIndex;
                 return GestureDetector(
@@ -138,7 +180,7 @@ class _MultiImagePreviewScreenState extends State<MultiImagePreviewScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(7.r),
                       child: Image.file(
-                        File(widget.imagePaths[index]),
+                        File(_currentPaths[index]),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -197,29 +239,7 @@ class PostHighlight extends StatelessWidget {
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: Colors.black87,
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
+                    child: const CustomBackButton(),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -404,6 +424,7 @@ class PostHighlight extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => MultiImagePreviewScreen(
                   imagePaths: images.map((e) => e.path).toList(),
+                  template: template,
                 ),
               ),
             );
@@ -412,10 +433,17 @@ class PostHighlight extends StatelessWidget {
           // Camera: single image → existing photo editor
           final XFile? image = await picker.pickImage(source: source);
           if (image != null && rootContext.mounted) {
+            if (Get.isRegistered<ContentCreationController>()) {
+              final controller = Get.find<ContentCreationController>();
+              controller.selectedFiles.assignAll([File(image.path)]);
+              controller.selectedContentType.value =
+                  (contentType ?? 'post').toLowerCase();
+              controller.templateId.value = template?.id ?? "";
+            }
             Navigator.push(
               rootContext,
               MaterialPageRoute(
-                builder: (context) => PhotoPreviewScreen(imagePath: image.path),
+                builder: (context) => PhotoPreviewScreen(imagePaths: [image.path]),
               ),
             );
           }

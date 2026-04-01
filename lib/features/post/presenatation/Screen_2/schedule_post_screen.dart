@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:intl/intl.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
 import 'package:flutter/material.dart';
@@ -8,10 +9,12 @@ import 'package:clip_frame/core/services/api_services/content_service.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:get/get.dart';
 import 'scheduling_success_screen.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'dart:io';
 
 class SchedulePostScreen extends StatefulWidget {
   final String? mediaPath;
+  final List<String>? imagePaths;
   final String? caption;
   final List<String>? hashtags;
   final bool isImage;
@@ -20,6 +23,7 @@ class SchedulePostScreen extends StatefulWidget {
   const SchedulePostScreen({
     super.key,
     this.mediaPath,
+    this.imagePaths,
     this.caption,
     this.hashtags,
     this.isImage = true,
@@ -307,7 +311,10 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                   ),
                 ),
                 SizedBox(height: 10.h),
-                _buildMediaPreview(),
+                if (widget.imagePaths != null && widget.imagePaths!.isNotEmpty)
+                  _buildCarouselPreview()
+                else
+                  _buildMediaPreview(),
                 SizedBox(height: 10.h),
                 Text(
                   "Select platform ad pick the best time to\npublish.",
@@ -340,23 +347,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   }
 
   Widget _buildAppBar() {
-    return Align(
+    return const Align(
       alignment: Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: Container(
-          padding: EdgeInsets.all(8.w),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black,
-            size: 20.sp,
-          ),
-        ),
-      ),
+      child: CustomBackButton(),
     );
   }
 
@@ -843,6 +836,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
         "time": formattedTime,
       };
 
+      final String contentType = controller.selectedContentType.value;
+      final List<File> selectedFiles = controller.selectedFiles;
+
       final response = widget.postToEdit != null
           ? await ContentService.updateContent(
               id: widget.postToEdit!.id,
@@ -855,8 +851,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           : await ContentService.createContent(
               templateId: templateId,
               caption: caption,
+              files: selectedFiles.isNotEmpty ? selectedFiles : null,
               mediaPath: finalMediaPath,
-              contentType: widget.isImage ? "post" : "reel",
+              contentType: contentType,
               scheduledAt: scheduledAt,
               remindMe: remindMe,
               platform: selectedPlatforms.map((e) => e.toLowerCase()).toList(),
@@ -1026,6 +1023,37 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
     );
   }
 
+  Widget _buildCarouselPreview() {
+    return Container(
+      height: 150.h,
+      width: double.infinity,
+      child: CarouselSlider(
+        options: CarouselOptions(
+          height: 150.h,
+          viewportFraction: 0.35,
+          enlargeCenterPage: true,
+          enableInfiniteScroll: false,
+        ),
+        items: widget.imagePaths!.map((path) {
+          return Container(
+            margin: EdgeInsets.symmetric(horizontal: 5.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15.r),
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(13.r),
+              child: Image.file(
+                File(path),
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildMediaPreview() {
     final controller = Get.find<ContentCreationController>();
     final mediaPath = controller.mediaPath.value;
@@ -1140,7 +1168,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               Image.memory(
                 snapshot.data!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildErrorIcon(),
+                errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
               ),
               Center(
                 child: Icon(

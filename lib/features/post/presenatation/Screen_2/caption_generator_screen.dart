@@ -1,14 +1,21 @@
 import 'dart:io';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'schedule_post_screen.dart';
 
 class CaptionGeneratorScreen extends StatefulWidget {
   final String imagePath;
+  final List<String>? imagePaths;
 
-  const CaptionGeneratorScreen({super.key, required this.imagePath});
+  const CaptionGeneratorScreen({
+    super.key,
+    required this.imagePath,
+    this.imagePaths,
+  });
 
   @override
   State<CaptionGeneratorScreen> createState() => _CaptionGeneratorScreenState();
@@ -65,23 +72,9 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: 10.h),
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: EdgeInsets.all(8.w),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.black,
-                        size: 20.sp,
-                      ),
-                    ),
-                  ),
+                  child: CustomBackButton(),
                 ),
                 SizedBox(height: 20.h),
                 Text(
@@ -98,6 +91,11 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
                   style: TextStyle(fontSize: 14.sp, color: Colors.black54),
                 ),
                 SizedBox(height: 30.h),
+                if (widget.imagePaths != null && widget.imagePaths!.isNotEmpty)
+                  _buildCarouselPreview()
+                else
+                  _buildSingleImagePreview(),
+                SizedBox(height: 20.h),
                 _buildCardSection(),
                 SizedBox(height: 20.h),
                 _buildSuggestionSection("Emoji Suggestions", [
@@ -327,6 +325,50 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
     );
   }
 
+  Widget _buildSingleImagePreview() {
+    return Container(
+      height: 150.h,
+      width: 150.w,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(13.r),
+        child: Image.file(
+          File(widget.imagePath),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCarouselPreview() {
+    return CarouselSlider(
+      options: CarouselOptions(
+        height: 150.h,
+        viewportFraction: 0.5,
+        enlargeCenterPage: true,
+        enableInfiniteScroll: false,
+      ),
+      items: widget.imagePaths!.map((path) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15.r),
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(13.r),
+            child: Image.file(
+              File(path),
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildContinueButton() {
     return SizedBox(
       width: double.infinity,
@@ -343,6 +385,7 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
             MaterialPageRoute(
               builder: (context) => SchedulePostScreen(
                 mediaPath: widget.imagePath,
+                imagePaths: widget.imagePaths,
                 isImage: true,
               ),
             ),

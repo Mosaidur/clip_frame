@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../Shared/widgets/language_toggle_button.dart';
 import '../../../splashScreen/controllers/language_controller.dart';
 import '../../controllers/email_verification_controller.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class EmailVerificationScreen extends StatelessWidget {
   final EmailVerificationController controller = Get.find<EmailVerificationController>();
@@ -40,16 +41,9 @@ class EmailVerificationScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Back Button
-                      GestureDetector(
-                        onTap: () => Get.back(),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.black12,
-                          ),
-                          child: const Icon(Icons.arrow_back, color: Colors.white),
-                        ),
+                      CustomBackButton(
+                        onPressed: () => Get.back(),
+                        iconColor: Colors.white,
                       ),
                       // Language Toggle
                       Obx(() {

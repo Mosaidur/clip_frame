@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:video_player/video_player.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class ProfessionalCameraPage extends StatefulWidget {
   final Map<String, dynamic>? stepData;
@@ -295,12 +296,9 @@ class _ProfessionalCameraPageState extends State<ProfessionalCameraPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           // Close Button
-                          IconButton(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 32,
-                            ),
+                          CustomBackButton(
+                            backgroundColor: Colors.black26,
+                            iconColor: Colors.white,
                             onPressed: () => Navigator.pop(context),
                           ),
 

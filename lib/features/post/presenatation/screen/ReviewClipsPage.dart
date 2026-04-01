@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:clip_frame/features/Video%20Editing/ProfessionalCamera.dart';
 import 'package:clip_frame/features/Video%20Editing/VideoEditing.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -145,15 +146,8 @@ class _ReviewClipsPageState extends State<ReviewClipsPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-             backgroundColor: Colors.black12,
-             child: IconButton(
-               icon: const Icon(Icons.arrow_back, color: Colors.black),
-               onPressed: () => Navigator.pop(context),
-             ),
-          ),
+        leading: const Center(
+          child: CustomBackButton(),
         ),
       ),
       body: SafeArea(

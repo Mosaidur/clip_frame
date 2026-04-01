@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:clip_frame/core/model/content_template_model.dart';
 import 'package:clip_frame/core/services/api_services/content_template_service.dart';
@@ -144,20 +145,10 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             left: 20,
-            child: GestureDetector(
-              onTap: () => Get.back(),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black26,
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
+            child: CustomBackButton(
+              onPressed: () => Get.back(),
+              backgroundColor: Colors.black26,
+              iconColor: Colors.white,
             ),
           ),
         ],

@@ -334,6 +334,86 @@ class NetworkCaller {
     }
   }
 
+  static Future<NetworkResponse> postMultipartRequestList({
+    required String url,
+    required Map<String, dynamic> body,
+    required String fileKey,
+    required List<File> files,
+    String? token,
+  }) async {
+    try {
+      Uri uri = Uri.parse(url);
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add Authorization header
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Wrap JSON body in 'data' field
+      request.fields['data'] = jsonEncode(body);
+
+      // Add multiple files
+      for (var file in files) {
+        final fileName = p.basename(file.path);
+        final mimeType = fileName.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg';
+        
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            fileKey,
+            file.path,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      }
+
+      debugPrint(
+        '🚀🚀🚀 [MULTIPART LIST REQUEST] 🚀🚀🚀\n'
+        'URL: $url \n'
+        'FIELDS: ${request.fields} \n'
+        'FILES: ${files.length} items as $fileKey\n'
+        '==================================================',
+      );
+
+      final streamedResponse = await request.send().timeout(
+            const Duration(seconds: 300),
+          );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      logResponse(url, response);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decodedJson = jsonDecode(response.body);
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: true,
+          responseBody: decodedJson,
+        );
+      } else {
+        final decodedJson = jsonDecode(response.body);
+        debugPrint("⛔ [NetworkCaller] Multipart List failed: $decodedJson");
+        String? errorMsg;
+        if (decodedJson['message'] != null &&
+            decodedJson['message'] is String) {
+          errorMsg = decodedJson['message'];
+        }
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseBody: decodedJson,
+          errorMessage: errorMsg ?? _defaultErrorMessage,
+        );
+      }
+    } catch (e) {
+      debugPrint("⛔ [NetworkCaller] Multipart List error: $e");
+      return NetworkResponse(
+        statusCode: -1,
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
   static Future<NetworkResponse> postMultipartRequest({
     required String url,
     required Map<String, dynamic> body,

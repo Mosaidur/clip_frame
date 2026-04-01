@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:image_picker/image_picker.dart';
 import 'caption_generator_screen.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class TextItem {
   final String id;
@@ -33,10 +35,42 @@ class TextItem {
   });
 }
 
-class PhotoPreviewScreen extends StatefulWidget {
-  final String imagePath;
+class PhotoEditSession {
+  String imagePath;
+  int selectedFilterIndex = 0;
+  double filterIntensity = 1.0;
+  String selectedFilterCategory = "Trending";
+  Map<String, double> adjustValues;
+  Rect cropRect = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0);
+  String selectedCropRatio = "Free";
+  int rotation = 0;
+  List<TextItem> textItems = [];
+  Size? imageSize;
+  bool isError = false;
 
-  const PhotoPreviewScreen({super.key, required this.imagePath});
+  PhotoEditSession({
+    required this.imagePath,
+  }) : adjustValues = {
+          "Brightness": 0.0,
+          "Contrast": 1.0,
+          "Saturation": 1.0,
+          "Highlights": 0.0,
+          "Shadows": 0.0,
+          "Temperature": 0.0,
+        };
+}
+
+class PhotoPreviewScreen extends StatefulWidget {
+  final List<String> imagePaths;
+  final int initialIndex;
+  final bool isCarouselEdit;
+
+  const PhotoPreviewScreen({
+    super.key,
+    required this.imagePaths,
+    this.initialIndex = 0,
+    this.isCarouselEdit = false,
+  });
 
   @override
   State<PhotoPreviewScreen> createState() => _PhotoPreviewScreenState();
@@ -46,35 +80,30 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
   final GlobalKey _renderKey = GlobalKey();
   String? activeTool; // 'Filter', 'Adjust', 'Crop', 'BG', 'Split', 'Trim'
 
+  // Sessions Logic
+  late List<PhotoEditSession> _sessions;
+  int _currentIndex = 0;
+  final ImagePicker _picker = ImagePicker();
+  late PageController _pageController;
+
   // Scroll Controller for Adjust Ruler
   late ScrollController _adjustScrollController;
   bool _isChangingTool = false;
   bool _isSaving = false;
 
-  // Filter States
+  // Shortcuts to current session state (will be synced on page change)
   int selectedFilterIndex = 0;
   double filterIntensity = 1.0;
   String selectedFilterCategory = "Trending";
-
-  // Adjust States
   String selectedAdjustTool = "Brightness";
-  Map<String, double> adjustValues = {
-    "Brightness": 0.0, // -0.5 to 0.5
-    "Contrast": 1.0, // 0.5 to 1.5
-    "Saturation": 1.0, // 0.0 to 2.0
-    "Highlights": 0.0, // -0.5 to 0.5
-    "Shadows": 0.0, // -0.5 to 0.5
-    "Temperature": 0.0, // -0.5 to 0.5
-  };
-
-  // Crop States
+  Map<String, double> adjustValues = {};
   Rect cropRect = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0);
   String selectedCropRatio = "Free";
-  int _rotation = 0; // 0, 1, 2, 3 (0, 90, 180, 270 degrees)
-
-  // Text States
+  int _rotation = 0;
   List<TextItem> textItems = [];
   String? selectedTextId;
+  Size? _imageSize;
+  bool _isError = false;
 
   //how to work this const is rect from twm
   final Map<String, List<Map<String, dynamic>>> filterCategories = {
@@ -137,38 +166,133 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     ],
   };
 
-  Size? _imageSize;
+  List<Map<String, dynamic>>? filterCategoriesList;
   Size? _latestRenderSize;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
     _adjustScrollController = ScrollController();
     _adjustScrollController.addListener(_onAdjustScroll);
-    _loadImageDimensions();
+
+    // Initialize sessions
+    _sessions = widget.imagePaths
+        .map((path) => PhotoEditSession(imagePath: path))
+        .toList();
+    _pageController = PageController(initialPage: _currentIndex);
+
+    // Load initial session state into UI
+    _syncFromSession();
   }
 
-  void _loadImageDimensions() {
-    Image.file(File(widget.imagePath)).image
-        .resolve(const ImageConfiguration())
-        .addListener(
-          ImageStreamListener((ImageInfo info, bool _) {
-            if (mounted) {
-              setState(() {
-                _imageSize = Size(
-                  info.image.width.toDouble(),
-                  info.image.height.toDouble(),
-                );
-              });
-            }
-          }),
-        );
+  void _syncToSession() {
+    final s = _sessions[_currentIndex];
+    s.selectedFilterIndex = selectedFilterIndex;
+    s.filterIntensity = filterIntensity;
+    s.selectedFilterCategory = selectedFilterCategory;
+    s.adjustValues = Map.from(adjustValues);
+    s.cropRect = cropRect;
+    s.selectedCropRatio = selectedCropRatio;
+    s.rotation = _rotation;
+    s.textItems = List.from(textItems);
+    s.imageSize = _imageSize;
+    s.isError = _isError;
+  }
+
+  void _syncFromSession() {
+    final s = _sessions[_currentIndex];
+    selectedFilterIndex = s.selectedFilterIndex;
+    filterIntensity = s.filterIntensity;
+    selectedFilterCategory = s.selectedFilterCategory;
+    adjustValues = Map.from(s.adjustValues);
+    cropRect = s.cropRect;
+    selectedCropRatio = s.selectedCropRatio;
+    _rotation = s.rotation;
+    textItems = List.from(s.textItems);
+    _imageSize = s.imageSize;
+    _isError = s.isError;
+    selectedTextId = null;
+
+    if (_imageSize == null) {
+      _loadImageDimensions();
+    }
+  }
+
+  Future<void> _syncFromSessionAsync() async {
+    final s = _sessions[_currentIndex];
+    selectedFilterIndex = s.selectedFilterIndex;
+    filterIntensity = s.filterIntensity;
+    selectedFilterCategory = s.selectedFilterCategory;
+    adjustValues = Map.from(s.adjustValues);
+    cropRect = s.cropRect;
+    selectedCropRatio = s.selectedCropRatio;
+    _rotation = s.rotation;
+    textItems = List.from(s.textItems);
+    _imageSize = s.imageSize;
+    _isError = s.isError;
+    selectedTextId = null;
+
+    if (_imageSize == null) {
+      await _loadImageDimensionsAsync();
+    }
+  }
+
+  void _onPageChanged(int index) {
+    _syncToSession();
+    setState(() {
+      _currentIndex = index;
+      activeTool = null; // Reset tool when switching images
+      _syncFromSession();
+    });
+  }
+
+  void _loadImageDimensions() async {
+    final s = _sessions[_currentIndex];
+    try {
+      final File file = File(s.imagePath);
+      if (!file.existsSync()) {
+        debugPrint(
+            "PhotoPreviewScreen: Image file does not exist at ${s.imagePath}");
+        if (mounted) {
+          setState(() {
+            _isError = true;
+            s.isError = true;
+          });
+        }
+        return;
+      }
+
+      final Uint8List bytes = await file.readAsBytes();
+      final ui.Image image = await decodeImageFromList(bytes);
+
+      if (mounted) {
+        setState(() {
+          _imageSize = Size(
+            image.width.toDouble(),
+            image.height.toDouble(),
+          );
+          s.imageSize = _imageSize;
+          _isError = false;
+          s.isError = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("PhotoPreviewScreen: Exception in _loadImageDimensions: $e");
+      if (mounted) {
+        setState(() {
+          _isError = true;
+          s.isError = true;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
     _adjustScrollController.removeListener(_onAdjustScroll);
     _adjustScrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -225,29 +349,38 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: const Color(0xFFF9F1E6),
+    return PopScope(
+      canPop: activeTool == null,
+      onPopInvoked: (didPop) {
+        if (!didPop && activeTool != null) {
+          setState(() => activeTool = null);
+        }
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: const Color(0xFFF9F1E6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Container(
-            padding: EdgeInsets.all(8.w),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Colors.black87,
-              size: 20.sp,
+        leadingWidth: 66.w,
+        leading: Padding(
+          padding: EdgeInsets.only(left: 20.w),
+          child: Center(
+            child: CustomBackButton(
+              onPressed: () {
+                if (activeTool != null) {
+                  setState(() => activeTool = null);
+                } else {
+                  Navigator.pop(context);
+                }
+              },
             ),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Preview",
+          widget.imagePaths.length > 1
+              ? "${_currentIndex + 1} / ${widget.imagePaths.length}"
+              : "Preview",
           style: TextStyle(
             color: Colors.black,
             fontSize: 20.sp,
@@ -257,9 +390,9 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: _isSaving ? null : _handleSaveAndContinue,
             child: Text(
-              "DONE",
+              widget.isCarouselEdit ? "SAVE" : "DONE",
               style: TextStyle(
                 color: const Color(0xFFFF4D8D),
                 fontSize: 16.sp,
@@ -273,61 +406,94 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
         child: Column(
           children: [
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  if (_imageSize == null) {
-                    // Image dimensions not loaded yet — show thumbnail placeholder
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  // Actual image dimensions (swap if rotated 90° or 270°)
-                  double imgW = _imageSize!.width;
-                  double imgH = _imageSize!.height;
-                  if (_rotation % 2 != 0) {
-                    final t = imgW;
-                    imgW = imgH;
-                    imgH = t;
-                  }
-
-                  // Calculate canvas size that fits inside available space
-                  // while preserving the exact image aspect ratio.
-                  //  → Start at full available width
-                  //  → If that makes canvas taller than available height, shrink to fit height
-                  double maxW = constraints.maxWidth;
-                  double maxH = constraints.maxHeight;
-
-                  double canvasW = maxW;
-                  double canvasH = canvasW * (imgH / imgW);
-
-                  if (canvasH > maxH) {
-                    canvasH = maxH;
-                    canvasW = canvasH * (imgW / imgH);
-                  }
-
-                  final imageConstraints = BoxConstraints(
-                    maxWidth: _rotation % 2 == 0 ? canvasW : canvasH,
-                    maxHeight: _rotation % 2 == 0 ? canvasH : canvasW,
-                  );
-
-                  return Center(
-                    child: SizedBox(
-                      width: canvasW,
-                      height: canvasH,
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: RepaintBoundary(
-                              key: _renderKey,
-                              child: _buildPreviewImage(imageConstraints),
-                            ),
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _sessions.length,
+                onPageChanged: _onPageChanged,
+                physics: activeTool != null
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
+                itemBuilder: (context, index) {
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      if ((_imageSize == null || index != _currentIndex) && !_isSaving) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (_isSaving && _imageSize == null) {
+                        return const SizedBox.shrink(); // Hide background during saving
+                      }
+                      if (_isError) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline,
+                                  color: Colors.red, size: 48.sp),
+                              SizedBox(height: 16.h),
+                              Text(
+                                "Failed to load image",
+                                style: TextStyle(
+                                    color: Colors.black54, fontSize: 16.sp),
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                _sessions[index].imagePath,
+                                style: TextStyle(
+                                    color: Colors.black38, fontSize: 10.sp),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                          if (activeTool == 'Crop')
-                            _buildCropOverlay(imageConstraints),
-                          if (activeTool == 'BG') _buildBGOverlay(),
-                          _buildTextOverlay(imageConstraints),
-                        ],
-                      ),
-                    ),
+                        );
+                      }
+
+                      // Actual image dimensions (swap if rotated 90° or 270°)
+                      double imgW = _imageSize!.width;
+                      double imgH = _imageSize!.height;
+                      if (_rotation % 2 != 0) {
+                        final t = imgW;
+                        imgW = imgH;
+                        imgH = t;
+                      }
+
+                      // Calculate canvas size that fits inside available space
+                      double maxW = constraints.maxWidth;
+                      double maxH = constraints.maxHeight;
+
+                      double canvasW = maxW;
+                      double canvasH = canvasW * (imgH / imgW);
+
+                      if (canvasH > maxH) {
+                        canvasH = maxH;
+                        canvasW = canvasH * (imgW / imgH);
+                      }
+
+                      final imageConstraints = BoxConstraints(
+                        maxWidth: _rotation % 2 == 0 ? canvasW : canvasH,
+                        maxHeight: _rotation % 2 == 0 ? canvasH : canvasW,
+                      );
+
+                      return Center(
+                        child: SizedBox(
+                          width: canvasW,
+                          height: canvasH,
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: RepaintBoundary(
+                                  key: _renderKey,
+                                  child: _buildPreviewImage(imageConstraints),
+                                ),
+                              ),
+                              if (activeTool == 'Crop')
+                                _buildCropOverlay(imageConstraints),
+                              if (activeTool == 'BG') _buildBGOverlay(),
+                              _buildTextOverlay(imageConstraints),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -336,6 +502,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -349,7 +516,8 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
 
     Widget imageWidget = ColorFiltered(
       colorFilter: ui.ColorFilter.matrix(_getCombinedMatrix()),
-      child: Image.file(File(widget.imagePath), fit: BoxFit.contain),
+      child: Image.file(File(_sessions[_currentIndex].imagePath),
+          fit: BoxFit.contain),
     );
 
     Widget content;
@@ -1605,7 +1773,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context, 'retake'),
+                    onTap: _handleRetakeImage,
                     child: Container(
                       padding: EdgeInsets.all(12.w),
                       decoration: BoxDecoration(
@@ -1630,7 +1798,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
                     child: Padding(
                       padding: EdgeInsets.only(left: 20.w),
                       child: ElevatedButton(
-                        onPressed: _isSaving ? null : _continueToCaption,
+                        onPressed: _isSaving ? null : _handleSaveAndContinue,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF007AFF),
                           foregroundColor: Colors.white,
@@ -1640,22 +1808,13 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
                           padding: EdgeInsets.symmetric(vertical: 15.h),
                           elevation: 2,
                         ),
-                        child: _isSaving
-                            ? SizedBox(
-                                width: 20.w,
-                                height: 20.w,
-                                child: const CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(
-                                "Continue",
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                        child: Text(
+                          widget.isCarouselEdit ? "Save" : "Continue",
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1692,7 +1851,11 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
           _buildToolIcon(Icons.compare_arrows_rounded, "Split"),
           _buildToolIcon(Icons.content_cut_rounded, "Trim"),
           _buildToolIcon(Icons.text_fields_rounded, "Text"),
-          _buildToolIcon(Icons.delete_outline_rounded, "Delete"),
+          _buildToolIcon(
+            Icons.delete_outline_rounded,
+            "Delete",
+            onTap: _handleDeleteImage,
+          ),
         ],
       ),
     );
@@ -3426,7 +3589,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
   Future<String?> _saveEditedImage() async {
     if (_imageSize == null) return null;
     try {
-      final originalImage = await _getUiImage(File(widget.imagePath));
+      final originalImage = await _getUiImage(File(_sessions[_currentIndex].imagePath));
       final double fullW = originalImage.width.toDouble();
       final double fullH = originalImage.height.toDouble();
 
@@ -3579,9 +3742,10 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     }
   }
 
-  void _continueToCaption() async {
+  void _handleSaveAndContinue() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
+    _syncToSession();
 
     // Show processing overlay
     showDialog(
@@ -3596,7 +3760,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
-                Text("Preparing image..."),
+                Text("Preparing images..."),
               ],
             ),
           ),
@@ -3604,20 +3768,104 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       ),
     );
 
-    final editedPath = await _saveEditedImage();
+    try {
+      List<String> editedPaths = [];
+      final originalIndex = _currentIndex;
 
-    if (mounted) Navigator.pop(context); // dismiss dialog
+      for (int i = 0; i < _sessions.length; i++) {
+        _currentIndex = i;
+        await _syncFromSessionAsync();
+        
+        final path = await _saveEditedImage();
+        if (path != null) {
+          editedPaths.add(path);
+        }
+      }
 
-    setState(() => _isSaving = false);
+      // Restore
+      _currentIndex = originalIndex;
+      _syncFromSession();
 
-    if (editedPath != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CaptionGeneratorScreen(imagePath: editedPath),
-        ),
-      );
+      if (mounted) Navigator.pop(context); // dismiss dialog
+      setState(() => _isSaving = false);
+
+      if (editedPaths.isNotEmpty && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CaptionGeneratorScreen(
+              imagePath: editedPaths[0],
+              imagePaths: editedPaths,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error in batch save: $e");
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isSaving = false);
+      }
     }
+  }
+
+  Future<void> _loadImageDimensionsAsync() async {
+    final s = _sessions[_currentIndex];
+    try {
+      final File file = File(s.imagePath);
+      if (!file.existsSync()) return;
+      final Uint8List bytes = await file.readAsBytes();
+      final ui.Image image = await decodeImageFromList(bytes);
+      _imageSize = Size(image.width.toDouble(), image.height.toDouble());
+      s.imageSize = _imageSize;
+    } catch (_) {}
+  }
+
+  Future<void> _handleRetakeImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null && mounted) {
+      setState(() {
+        _sessions[_currentIndex].imagePath = image.path;
+        _isError = false;
+        _imageSize = null;
+      });
+      _syncFromSession();
+    }
+  }
+
+  void _handleDeleteImage() {
+    if (_sessions.length <= 1) {
+      Navigator.pop(context);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Image"),
+        content: const Text("Are you sure you want to remove this image from the carousel?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _sessions.removeAt(_currentIndex);
+                if (_currentIndex >= _sessions.length) {
+                  _currentIndex = _sessions.length - 1;
+                }
+              });
+              _syncFromSession();
+              _pageController.jumpToPage(_currentIndex);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildToolIcon(IconData icon, String label, {VoidCallback? onTap}) {

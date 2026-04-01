@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 enum StoryEditTool { bg, adjust, crop, filter, frame }
 
@@ -243,22 +244,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Back Button
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 36.r,
-              height: 36.r,
-              decoration: BoxDecoration(
-                color: const Color(0xFFC4B69E).withOpacity(0.3),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 16.r,
-                color: Colors.black87,
-              ),
-            ),
-          ),
+          const CustomBackButton(),
           // Title
           Text(
             "Preview",

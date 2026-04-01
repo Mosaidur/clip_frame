@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:clip_frame/core/model/content_template_model.dart';
 import 'package:clip_frame/core/services/api_services/content_template_service.dart';
 import 'package:flutter/material.dart';
@@ -161,8 +162,14 @@ class ContentCreationController extends GetxController {
   // Template ID from which this creation started
   final RxString templateId = ''.obs;
 
-  // Final processed media path
+  // Final processed media path (Single)
   final RxString mediaPath = ''.obs;
+
+  // Selected Media Files (Multiple - for Carousel)
+  final RxList<File> selectedFiles = <File>[].obs;
+
+  // Content Type (post, reel, story, carousel)
+  final RxString selectedContentType = 'post'.obs;
 
   // Caption generated or edited
   final RxString caption = ''.obs;
@@ -185,6 +192,8 @@ class ContentCreationController extends GetxController {
   void reset() {
     templateId.value = '';
     mediaPath.value = '';
+    selectedFiles.clear();
+    selectedContentType.value = 'post';
     caption.value = '';
     hashtags.clear();
     isImage.value = false;

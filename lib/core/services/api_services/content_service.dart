@@ -8,7 +8,8 @@ class ContentService {
   static Future<NetworkResponse> createContent({
     required String templateId,
     required String caption,
-    required String mediaPath,
+    List<File>? files,
+    String? mediaPath,
     required String contentType,
     required Map<String, dynamic> scheduledAt,
     required bool remindMe,
@@ -29,18 +30,36 @@ class ContentService {
         "tags": tags,
       };
 
-      final String fileKey = contentType == "post" ? 'image' : 'media';
+      final String fileKey = (contentType == "post" || contentType == "carousel") ? 'image' : 'media';
 
       debugPrint(
-        "🚀 [ContentService] Creating content (Multipart) for template: $templateId using key: $fileKey",
+        "🚀 [ContentService] Creating content (Multipart) for template: $templateId using key: $fileKey, type: $contentType",
       );
-      final response = await NetworkCaller.postMultipartRequest(
-        url: url,
-        body: body,
-        fileKey: fileKey,
-        file: File(mediaPath),
-        token: token,
-      );
+
+      final NetworkResponse response;
+      if (contentType == 'carousel' && files != null && files.isNotEmpty) {
+        response = await NetworkCaller.postMultipartRequestList(
+          url: url,
+          body: body,
+          fileKey: fileKey,
+          files: files,
+          token: token,
+        );
+      } else if (mediaPath != null && mediaPath.isNotEmpty) {
+        response = await NetworkCaller.postMultipartRequest(
+          url: url,
+          body: body,
+          fileKey: fileKey,
+          file: File(mediaPath),
+          token: token,
+        );
+      } else {
+        return NetworkResponse(
+          isSuccess: false,
+          statusCode: -1,
+          errorMessage: "No media provided for creation",
+        );
+      }
 
       return response;
     } catch (e) {

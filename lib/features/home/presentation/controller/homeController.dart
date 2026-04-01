@@ -117,7 +117,7 @@ class HomeController extends GetxController
     if (isExpanded.value) toggleExpand();
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      Get.to(() => PhotoPreviewScreen(imagePath: image.path));
+      Get.to(() => PhotoPreviewScreen(imagePaths: [image.path]));
     }
   }
 

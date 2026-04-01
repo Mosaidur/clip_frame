@@ -3,6 +3,7 @@ import 'package:path/path.dart' as widget;
 
 import 'Content_Steps.dart';
 import 'package:clip_frame/core/model/content_template_model.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class VideoHighlight extends StatelessWidget {
   final String url;
@@ -42,25 +43,7 @@ class VideoHighlight extends StatelessWidget {
               children: [
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(
-                        Icons.chevron_left,
-                        color: Colors.black,
-                        size: 28,
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
+                  child: const CustomBackButton(),
                 ),
                 const SizedBox(height: 15),
                 Text(

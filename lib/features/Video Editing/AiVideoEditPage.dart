@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
 import 'CaptionGeneratorPage.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -94,21 +95,7 @@ class _AiVideoEditPageState extends State<AiVideoEditPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: EdgeInsets.all(12.r),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFDCC8B0),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 20.r,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
+                    const CustomBackButton(),
                     Text(
                       "Ai Video Edit",
                       style: TextStyle(

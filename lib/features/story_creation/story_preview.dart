@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'story_review_shots.dart';
 
 class StoryPreviewPage extends StatelessWidget {
@@ -39,13 +40,9 @@ class StoryPreviewPage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      icon: Container(
-                        padding: EdgeInsets.all(8.r),
-                        decoration: BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
-                        child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20.r),
-                      ),
-                      onPressed: () => Navigator.pop(context),
+                    const CustomBackButton(
+                      backgroundColor: Colors.black26,
+                      iconColor: Colors.white,
                     ),
                     Text("Preview", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold)),
                     SizedBox(width: 48.w), // Spacer to balance

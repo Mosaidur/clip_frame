@@ -15,6 +15,7 @@ import 'package:clip_frame/features/post/presenatation/controller/content_creati
 import 'package:get/get.dart';
 import 'AiVideoEditPage.dart';
 import 'ProfessionalCamera.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 /// ---- Models for Video Segments ----
 class ClipSegment {
@@ -2537,21 +2538,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       padding: EdgeInsets.all(12.r),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: EdgeInsets.all(8.r),
-              decoration: const BoxDecoration(
-                color: Color(0xFFDCC8B0),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 16.r,
-                color: Colors.black,
-              ),
-            ),
-          ),
+          const CustomBackButton(),
           SizedBox(width: 12.w),
           Text(
             "Video Editor",
@@ -2688,21 +2675,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Back Button
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: EdgeInsets.all(12.r),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFDCC8B0),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20.r,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
+                const CustomBackButton(),
                 // Title
                 Text(
                   "Manual Video Edit",

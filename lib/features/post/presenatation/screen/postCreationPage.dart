@@ -10,6 +10,7 @@ import '../widgets/reelContainer.dart';
 import '../widgets/storyListPage.dart';
 import 'CustomDrawer.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class PostCreationPage extends StatefulWidget {
   const PostCreationPage({Key? key}) : super(key: key);
@@ -73,21 +74,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
-                        onTap: () => Get.back(),
-                        child: Container(
-                          width: 50,
-                          height: 50,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.black12,
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.black,
-                            size: 20,
-                          ),
-                        ),
+                      CustomBackButton(
+                        onPressed: () => Get.back(),
+                        backgroundColor: Colors.black12,
                       ),
                       Obx(() {
                         final profileController =

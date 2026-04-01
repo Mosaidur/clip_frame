@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'story_capture.dart';
 import 'story_Edit.dart';
 import 'story_schedule.dart';
@@ -71,14 +72,7 @@ class _StoryReviewShotsPageState extends State<StoryReviewShotsPage> {
         children: [
           Align(
             alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: EdgeInsets.all(8.r),
-                decoration: BoxDecoration(color: const Color(0xFFC4B69E).withOpacity(0.3), shape: BoxShape.circle),
-                child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 18.r),
-              ),
-            ),
+            child: const CustomBackButton(),
           ),
           Column(
             children: [

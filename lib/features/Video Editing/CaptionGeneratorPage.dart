@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'VideoFinalPreviewPage.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class CaptionGeneratorPage extends StatefulWidget {
   final File videoFile;
@@ -64,21 +65,7 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                 ),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: EdgeInsets.all(12.r),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFDCC8B0),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 20.r,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
+                    const CustomBackButton(),
                   ],
                 ),
               ),

@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import '../post/presenatation/Screen_2/schedule_post_screen.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:get/get.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class VideoFinalPreviewPage extends StatefulWidget {
   final File videoFile;
@@ -146,20 +147,9 @@ class _VideoFinalPreviewPageState extends State<VideoFinalPreviewPage> {
             Positioned(
               top: MediaQuery.of(context).padding.top + 10.h,
               left: 20.w,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  padding: EdgeInsets.all(12.r),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 20.r,
-                    color: Colors.white,
-                  ),
-                ),
+              child: const CustomBackButton(
+                backgroundColor: Colors.black38,
+                iconColor: Colors.white,
               ),
             ),
 

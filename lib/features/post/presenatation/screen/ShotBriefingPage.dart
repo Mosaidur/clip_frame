@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'package:clip_frame/features/Video%20Editing/ProfessionalCamera.dart';
 
 class ShotBriefingPage extends StatelessWidget {
@@ -36,10 +37,7 @@ class ShotBriefingPage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+                    const CustomBackButton(),
                     Text(
                       "Shot $stepIndex of $totalSteps",
                       style: GoogleFonts.poppins(

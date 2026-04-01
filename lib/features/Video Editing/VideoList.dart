@@ -7,6 +7,7 @@ import '../../video_edit.dart';
 import '../post/presenatation/widget2/MediaDisplayWidget.dart';
 import 'ProfessionalCamera.dart';
 import 'VideoEditing.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class VideoListPage extends StatefulWidget {
   const VideoListPage({super.key});
@@ -80,24 +81,7 @@ class _VideoListPageState extends State<VideoListPage> {
                 const SizedBox(height: 10),
 
                 // Back button
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.5),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Colors.black87),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
+                const CustomBackButton(),
 
               const SizedBox(height: 20),
                 

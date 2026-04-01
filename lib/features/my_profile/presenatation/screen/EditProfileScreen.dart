@@ -2,6 +2,7 @@ import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileCon
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -60,9 +61,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+        leading: CustomBackButton(
           onPressed: () => Get.back(),
+          iconColor: Colors.white,
         ),
       ),
       body: Container(

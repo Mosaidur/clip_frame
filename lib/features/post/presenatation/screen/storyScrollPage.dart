@@ -4,6 +4,7 @@ import 'package:clip_frame/features/post/presenatation/widget2/beautifulEmptySta
 import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../Screen_2/post_highlight.dart';
@@ -109,23 +110,10 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             // Back Button
-                            GestureDetector(
-                              onTap: () {
-                                Get.back();
-                              },
-                              child: Container(
-                                width: 50,
-                                height: 50,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.black26,
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
+                            CustomBackButton(
+                              onPressed: () => Get.back(),
+                              backgroundColor: Colors.black26,
+                              iconColor: Colors.white,
                             ),
 
                             // Refresh Button

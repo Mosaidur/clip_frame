@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../splashScreen/controllers/language_controller.dart';
 import 'language_toggle_button.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class HeaderWithBackAndLanguage extends StatelessWidget {
   // Controller for language (example GetX controller)
@@ -17,16 +18,9 @@ class HeaderWithBackAndLanguage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Back Button
-          GestureDetector(
-            onTap: () => Get.back(),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.black12,
-              ),
-              child: const Icon(Icons.arrow_back, color: Colors.white),
-            ),
+          CustomBackButton(
+            onPressed: () => Get.back(),
+            iconColor: Colors.white,
           ),
 
           // Language Toggle

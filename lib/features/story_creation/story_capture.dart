@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'story_preview.dart';
 
 class StoryCapturePage extends StatefulWidget {
@@ -102,10 +103,7 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
         appBar: AppBar(
           backgroundColor: Colors.black,
           elevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white, size: 24.r),
-            onPressed: () => Navigator.pop(context),
-          ),
+          leading: const CustomBackButton(iconColor: Colors.white),
         ),
         body: Center(
           child: Column(
@@ -158,9 +156,9 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      icon: Icon(Icons.close, color: Colors.white, size: 28.r),
-                      onPressed: () => Navigator.pop(context),
+                    const CustomBackButton(
+                      backgroundColor: Colors.black26,
+                      iconColor: Colors.white,
                     ),
                     Expanded(
                       child: Column(

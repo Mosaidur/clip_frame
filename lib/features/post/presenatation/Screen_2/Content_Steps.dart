@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../story_creation/story_capture.dart';
 import 'package:clip_frame/features/post/presenatation/screen/ReviewClipsPage.dart';
 import 'package:clip_frame/features/post/presenatation/screen/ShotBriefingPage.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class StepByStepPage extends StatelessWidget {
   final String contentType;
@@ -35,21 +36,7 @@ class StepByStepPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.05),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: Colors.black87,
-                          size: 20,
-                        ),
-                      ),
-                    ),
+                    const CustomBackButton(),
                   ],
                 ),
               ),

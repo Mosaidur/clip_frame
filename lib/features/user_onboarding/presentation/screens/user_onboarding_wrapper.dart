@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../controllers/user_onboarding_page_controller.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'widgets/business_type_screen.dart';
 import 'widgets/business_description_screen.dart';
 import 'widgets/audience_language_screen.dart';
@@ -39,8 +40,7 @@ class UserOnboardingWrapper extends GetView<UserOnboardingPageController> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                    CustomBackButton(
                       onPressed: () {
                         if (controller.currentPage.value > 0) {
                           controller.previousPage();
@@ -48,6 +48,7 @@ class UserOnboardingWrapper extends GetView<UserOnboardingPageController> {
                           Get.back();
                         }
                       },
+                      iconColor: Colors.black,
                     ),
                     Obx(
                       () => Text(

@@ -1,6 +1,7 @@
 import 'package:clip_frame/features/post/presenatation/widget2/MediaDisplayWidget.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
 import 'package:flutter/material.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class ScheduledPostPreviewScreen extends StatelessWidget {
   final SchedulePost post;
@@ -65,16 +66,9 @@ class ScheduledPostPreviewScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.4),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.close, color: Colors.white),
-                      ),
+                    const CustomBackButton(
+                      backgroundColor: Colors.black38,
+                      iconColor: Colors.white,
                     ),
                     const Spacer(),
                     Container(

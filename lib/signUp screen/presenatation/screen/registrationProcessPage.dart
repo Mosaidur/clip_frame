@@ -5,6 +5,7 @@ import '../../../Shared/widgets/language_toggle_button.dart';
 import '../../../splashScreen/controllers/language_controller.dart';
 import '../../controllers/RegistrationProcessController.dart';
 import '../widgets/BusinessTypeSelection.dart';
+import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class RegistrationProcessPage extends StatelessWidget {
   final RegistrationProcessController controller = Get.find<RegistrationProcessController>();
@@ -34,22 +35,15 @@ class RegistrationProcessPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Back Button
-                    GestureDetector(
-                      onTap: () {
+                    CustomBackButton(
+                      onPressed: () {
                         if (controller.currentPage.value == 0) {
                           Get.back();
                         } else {
                           controller.previousPage();
                         }
                       },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black12,
-                        ),
-                        child: const Icon(Icons.arrow_back, color: Colors.white),
-                      ),
+                      iconColor: Colors.white,
                     ),
                     // Language Toggle
                     Obx(() {
