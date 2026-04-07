@@ -7,8 +7,9 @@ import 'package:get/get.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../Screen_2/post_highlight.dart';
-import '../widgets/postContent.dart';
+
+
+import 'storyFullScreenView.dart';
 
 class StoryScrollPage extends StatefulWidget {
   final String? initialId;
@@ -130,79 +131,165 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
 
                       const SizedBox(height: 10),
 
-                      // Search Bar
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search for anything',
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.3),
-                            prefixIcon: const Icon(Icons.search),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 0,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(25),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
                       // Custom Tab Bar
                       const CustomTabBar(),
 
                       const SizedBox(height: 20),
 
-                      // Posts Grid using Wrap
-                      Padding(
+                      GridView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Wrap(
-                          spacing: spacing,
-                          runSpacing: spacing,
-                          children: templates.map((template) {
-                            final imageUrl =
-                                (template.steps != null &&
-                                    template.steps!.isNotEmpty)
-                                ? template.steps![0].url ?? ""
-                                : (template.thumbnail ?? "");
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: spacing,
+                          mainAxisSpacing: spacing,
+                          mainAxisExtent: itemHeight,
+                        ),
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: templates.length,
+                        itemBuilder: (context, index) {
+                          final template = templates[index];
+                          String imageUrl = template.thumbnail ?? "";
+                          if (imageUrl.isEmpty || imageUrl.toLowerCase().endsWith('.mp4') || imageUrl.toLowerCase().endsWith('.mov')) {
+                            if (template.steps != null && template.steps!.isNotEmpty) {
+                              final stepUrl = template.steps![0].url ?? "";
+                              if (!stepUrl.toLowerCase().endsWith('.mp4') && !stepUrl.toLowerCase().endsWith('.mov')) {
+                                imageUrl = stepUrl;
+                              }
+                            }
+                          }
 
-                            return GestureDetector(
-                              key: template.id != null
-                                  ? _itemKeys[template.id]
-                                  : null,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => PostHighlight(
-                                      url: imageUrl,
-                                      contentType: 'Story',
-                                      template: template,
+                          return GestureDetector(
+                            key: template.id != null ? _itemKeys[template.id] : null,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => StoryFullScreenView(
+                                    templates: templates,
+                                    initialIndex: index,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                color: const Color(0xFF1A1A2E),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  // Background image
+                                  if (imageUrl.isNotEmpty &&
+                                      imageUrl.startsWith('http'))
+                                    Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return Container(
+                                          color: const Color(0xFF1A1A2E),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Color(0xFFFF4D8D),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (_, error, __) {
+                                        return Container(
+                                          decoration: const BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                Color(0xFF1A1A2E),
+                                                Color(0xFF16213E)
+                                              ],
+                                            ),
+                                          ),
+                                          child: const Center(
+                                            child: Icon(Icons.image_outlined,
+                                                color: Colors.white24, size: 48),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  else if (imageUrl.isNotEmpty)
+                                    Image.asset(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: const Color(0xFF1A1A2E),
+                                        child: const Center(
+                                          child: Icon(Icons.image_outlined,
+                                              color: Colors.white24, size: 48),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Container(
+                                      decoration: const BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Color(0xFF1A1A2E),
+                                            Color(0xFF16213E)
+                                          ],
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: Icon(Icons.image_outlined,
+                                            color: Colors.white24, size: 48),
+                                      ),
+                                    ),
+
+                                  // Gradient overlay at bottom
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: 80,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.black.withOpacity(0.7),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                );
-                              },
-                              child: SizedBox(
-                                width: itemWidth,
-                                height: itemHeight,
-                                child: PostContent(
-                                  width: itemWidth,
-                                  image: imageUrl,
-                                  profileImage:
-                                      'assets/images/profile_image.png',
-                                  name: template.createdBy?.name ?? "Unknown",
-                                  likeCount: template.stats?.loveCount ?? 0,
-                                  repostCount: template.stats?.reuseCount ?? 0,
-                                  padding: 12,
-                                ),
+
+                                  // Title at bottom
+                                  Positioned(
+                                    bottom: 12,
+                                    left: 10,
+                                    right: 10,
+                                    child: Text(
+                                      template.title ?? "Untitled",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          }).toList(),
-                        ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -230,16 +317,8 @@ class _StoryScrollPageState extends State<StoryScrollPage> {
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(25),
-            ),
-          ),
           const SizedBox(height: 20),
+
           Shimmer.fromColors(
             baseColor: Colors.white.withOpacity(0.5),
             highlightColor: Colors.white.withOpacity(0.2),

@@ -40,97 +40,108 @@ class PostContent extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
         image: DecorationImage(
-          image:
-              (image.startsWith('http')
-                      ? NetworkImage(image)
-                      : AssetImage(image))
-                  as ImageProvider,
+          image: image.isEmpty
+              ? const AssetImage('assets/images/1.jpg') as ImageProvider
+              : (image.startsWith('http')
+                  ? NetworkImage(image)
+                  : AssetImage(image)) as ImageProvider,
           fit: BoxFit.cover,
         ),
       ),
       child: Stack(
         children: [
-          // Top-left profile + name
           Positioned(
-            top: 8,
-            left: 8,
-            child: Container(
-              // height: 24,
-              // width: width-15,
-              // padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Row(
-                // mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 12.5,
-                    backgroundImage:
-                        (profileImage.startsWith('http')
-                                ? NetworkImage(profileImage)
-                                : AssetImage(profileImage))
-                            as ImageProvider,
-                  ),
-
-                  const SizedBox(width: 5),
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+            top: 10,
+            left: 10,
+            right: 10,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundImage: profileImage.isEmpty
+                              ? const AssetImage('assets/images/profile_image.png') as ImageProvider
+                              : (profileImage.startsWith('http')
+                                      ? NetworkImage(profileImage)
+                                      : AssetImage(profileImage))
+                                  as ImageProvider,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           // Bottom row with repost and likes
           Positioned(
-            bottom: 5,
-            left: 5,
-            right: 5,
+            bottom: 10,
+            left: 10,
+            right: 10,
             child: Padding(
               padding: EdgeInsets.only(right: padding!),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.repeat, color: Colors.white, size: 12),
-                    // const SizedBox(width: 4),
-                    Text(
-                      formatCount(repostCount),
-                      overflow: TextOverflow.fade,
-                      style: const TextStyle(color: Colors.white, fontSize: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.repeat, color: Colors.white, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            formatCount(repostCount),
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Text('|', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                          ),
+                          const Icon(Icons.favorite_border, color: Colors.white, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            formatCount(likeCount),
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
                     ),
-                    // const SizedBox(width: 4),
-                    const Text(
-                      ' | ',
-                      style: TextStyle(color: Colors.white, fontSize: 10),
-                    ),
-                    // const SizedBox(width: 4),
-                    const Icon(
-                      Icons.favorite_border,
-                      color: Colors.white,
-                      size: 12,
-                    ),
-                    // const SizedBox(width: 4),
-                    Text(
-                      formatCount(likeCount),
-                      overflow: TextOverflow.fade,
-                      style: const TextStyle(color: Colors.white, fontSize: 10),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

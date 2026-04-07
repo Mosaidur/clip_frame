@@ -35,8 +35,6 @@ class _PostCreationPageState extends State<PostCreationPage> {
   int selectedIndex = 0; // Track selected tab
   final List<String> tabs = ["Reels", "Posts", "Stories"]; // tabs
 
-  TextEditingController searchController = TextEditingController();
-
   final List<String> images = [
     "assets/images/1.jpg",
     "assets/images/2.jpg",
@@ -224,30 +222,6 @@ class _PostCreationPageState extends State<PostCreationPage> {
                   }),
                 ),
 
-                // Search Bar
-                Padding(
-                  padding: const EdgeInsets.all(15.0),
-                  child: Container(
-                    height: 50,
-                    // padding: const EdgeInsets.only(left:  15,right: 15),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: Colors.white, // border color
-                        width: 1, // border width
-                      ),
-                    ),
-                    child: TextField(
-                      controller: searchController,
-                      decoration: const InputDecoration(
-                        hintText: "Search for anything",
-                        border: InputBorder.none,
-                        prefixIcon: Icon(Icons.search, color: Colors.black54),
-                      ),
-                    ),
-                  ),
-                ),
 
                 // Tab bar
                 Obx(
