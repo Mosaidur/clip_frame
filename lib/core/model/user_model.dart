@@ -95,7 +95,7 @@ class UserModel {
           ? List<String>.from(json['preferredLanguages'])
           : [],
       businessType: json['businessType'] ?? '',
-      image: json['image'],
+      image: json['profile'] ?? json['image'],
       businessName: json['businessName'],
       businessCategory: json['businessCategory'],
     );
@@ -120,6 +120,7 @@ class UserModel {
       'preferredLanguages': preferredLanguages,
       'businessType': businessType,
       'image': image,
+      'profile': image,
       'businessName': businessName,
       'businessCategory': businessCategory,
     };
