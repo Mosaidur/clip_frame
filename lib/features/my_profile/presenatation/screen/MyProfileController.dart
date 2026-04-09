@@ -145,10 +145,11 @@ class MyProfileController extends GetxController {
             response.errorMessage ?? 'Failed to fetch creations';
         print('🔵 Network error: ${creationsErrorMessage.value}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       creationsErrorMessage.value =
-          "An error occurred while fetching creations";
+          "An error occurred while fetching creations: $e";
       print('🔵 fetchMyCreations exception: $e');
+      print('🔵 Stacktrace: $stackTrace');
     } finally {
       isCreationsLoading.value = false;
       print(

@@ -17,11 +17,11 @@ class PostListPage extends StatelessWidget {
     }
 
     double screenWidth = MediaQuery.of(context).size.width;
-    double spacing = 2;
+    double spacing = 8;
     double itemHeight = 180;
 
-    // Each item takes 1/3 of screen width minus spacing
-    double itemWidth = (screenWidth - spacing * 4) / 3.2;
+    // Accounts for the 10px padding on each side of SingleChildScrollView
+    double itemWidth = (screenWidth - 20 - spacing * 2) / 3.2;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(10),

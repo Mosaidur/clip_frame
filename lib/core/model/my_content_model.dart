@@ -13,10 +13,10 @@ class MyContentsResponse {
 
   factory MyContentsResponse.fromJson(Map<String, dynamic> json) {
     return MyContentsResponse(
-      statusCode: json['statusCode'],
-      success: json['success'],
-      message: json['message'],
-      data: ContentData.fromJson(json['data']),
+      statusCode: json['statusCode'] ?? 500,
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      data: ContentData.fromJson(json['data'] ?? {}),
     );
   }
 
@@ -41,10 +41,12 @@ class ContentData {
 
   factory ContentData.fromJson(Map<String, dynamic> json) {
     return ContentData(
-      meta: Meta.fromJson(json['meta']),
-      data: (json['data'] as List)
-          .map((item) => ContentItem.fromJson(item))
-          .toList(),
+      meta: Meta.fromJson(json['meta'] ?? {}),
+      data: (json['data'] is List)
+          ? (json['data'] as List)
+              .map((item) => ContentItem.fromJson(item))
+              .toList()
+          : [],
     );
   }
 
@@ -71,10 +73,10 @@ class Meta {
 
   factory Meta.fromJson(Map<String, dynamic> json) {
     return Meta(
-      page: json['page'],
-      limit: json['limit'],
-      total: json['total'],
-      totalPages: json['totalPages'],
+      page: json['page'] ?? 0,
+      limit: json['limit'] ?? 0,
+      total: json['total'] ?? 0,
+      totalPages: json['totalPages'] ?? 0,
     );
   }
 
@@ -129,23 +131,23 @@ class ContentItem {
 
   factory ContentItem.fromJson(Map<String, dynamic> json) {
     return ContentItem(
-      scheduledAt: ScheduledAt.fromJson(json['scheduledAt']),
-      id: json['_id'],
-      templateId: json['templateId'],
-      caption: json['caption'],
-      mediaUrls: List<String>.from(json['mediaUrls']),
-      contentType: json['contentType'],
-      remindMe: json['remindMe'],
-      status: json['status'],
-      user: User.fromJson(json['user']),
-      platform: List<String>.from(json['platform']),
-      tags: List<String>.from(json['tags']),
-      clips: json['clips'],
-      stats: json['stats'],
-      platformStatus: json['platformStatus'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-      v: json['__v'],
+      scheduledAt: ScheduledAt.fromJson(json['scheduledAt'] ?? {}),
+      id: json['_id'] ?? '',
+      templateId: json['templateId'] ?? '',
+      caption: json['caption'] ?? '',
+      mediaUrls: json['mediaUrls'] != null ? List<String>.from(json['mediaUrls']) : [],
+      contentType: json['contentType'] ?? '',
+      remindMe: json['remindMe'] ?? false,
+      status: json['status'] ?? '',
+      user: User.fromJson(json['user'] ?? {}),
+      platform: json['platform'] != null ? List<String>.from(json['platform']) : [],
+      tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
+      clips: json['clips'] ?? [],
+      stats: json['stats'] ?? [],
+      platformStatus: json['platformStatus'] ?? {},
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) ?? DateTime.now() : DateTime.now(),
+      updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt']) ?? DateTime.now() : DateTime.now(),
+      v: json['__v'] ?? 0,
     );
   }
 
@@ -185,9 +187,9 @@ class ScheduledAt {
 
   factory ScheduledAt.fromJson(Map<String, dynamic> json) {
     return ScheduledAt(
-      type: json['type'],
-      date: DateTime.parse(json['date']),
-      time: json['time'],
+      type: json['type'] ?? '',
+      date: json['date'] != null ? DateTime.tryParse(json['date']) ?? DateTime.now() : DateTime.now(),
+      time: json['time'] ?? '',
     );
   }
 
@@ -215,10 +217,10 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['_id'],
-      name: json['name'],
-      email: json['email'],
-      verified: json['verified'],
+      id: json['_id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      verified: json['verified'] ?? false,
     );
   }
 

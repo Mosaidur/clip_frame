@@ -36,7 +36,6 @@ class PostContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: width,
-      margin: const EdgeInsets.only(right: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
         image: DecorationImage(
@@ -111,8 +110,11 @@ class PostContent extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(20),
@@ -141,6 +143,7 @@ class PostContent extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
                 ],
               ),
             ),
