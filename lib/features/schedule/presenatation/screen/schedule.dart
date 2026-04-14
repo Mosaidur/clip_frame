@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:intl/intl.dart';
 import '../../data/model.dart';
 import '../controller/schedule_controller.dart';
 import '../widgets/SchedulePost.dart';
@@ -46,6 +47,23 @@ class ScheduleScreenPage extends StatelessWidget {
                       SizedBox(height: 20.h),
                       // Tab Switcher from Mockup
                       _buildTabBar(controller),
+
+                      Obx(() {
+                        if (controller.lastSyncedAt.value != null) {
+                          final time = DateFormat('hh:mm a').format(controller.lastSyncedAt.value!);
+                          return Padding(
+                            padding: EdgeInsets.only(top: 8.h),
+                            child: Text(
+                              "Last synced: $time",
+                              style: GoogleFonts.poppins(
+                                fontSize: 10.sp,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }),
 
                       SizedBox(height: 20.h),
 

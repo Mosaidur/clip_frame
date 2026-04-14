@@ -50,6 +50,7 @@ class UserModel {
   final String? image;
   final String? businessName;
   final String? businessCategory;
+  final String? businessDescription;
 
   UserModel({
     required this.sId,
@@ -71,6 +72,7 @@ class UserModel {
     this.image,
     this.businessName,
     this.businessCategory,
+    this.businessDescription,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -98,6 +100,7 @@ class UserModel {
       image: json['profile'] ?? json['image'],
       businessName: json['businessName'],
       businessCategory: json['businessCategory'],
+      businessDescription: json['businessDescription'],
     );
   }
 
@@ -123,6 +126,7 @@ class UserModel {
       'profile': image,
       'businessName': businessName,
       'businessCategory': businessCategory,
+      'businessDescription': businessDescription,
     };
   }
 }

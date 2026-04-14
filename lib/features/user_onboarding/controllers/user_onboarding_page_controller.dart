@@ -156,14 +156,14 @@ class UserOnboardingPageController extends GetxController {
         // If they connected, we can proceed. If not, they can still proceed manually.
         // But if required, we ask them to connect at least one.
         if (!isFacebookConnected.value && !isInstagramConnected.value) {
-           Get.snackbar(
-             "Recommendation",
-             "Connecting a social platform is recommended for the best experience.",
-             backgroundColor: Colors.blue.withOpacity(0.5),
-             colorText: Colors.white,
-           );
-           // We will let them pass anyway for smoother onboarding
-           return true; 
+          Get.snackbar(
+            "Recommendation",
+            "Connecting a social platform is recommended for the best experience.",
+            backgroundColor: Colors.blue.withOpacity(0.5),
+            colorText: Colors.white,
+          );
+          // We will let them pass anyway for smoother onboarding
+          return true;
         }
         return true;
       case 4: // Branding
@@ -174,66 +174,94 @@ class UserOnboardingPageController extends GetxController {
     }
   }
 
-  Future<void> submitOnboarding() async {
+  Future<bool> submitOnboarding() async {
     isLoading.value = true;
+    bool success = false;
 
-    Map<String, dynamic> data = {
-      "businessType": selectedBusinessType.value,
-      "businessDescription": businessDescriptionController.text,
-      "targetAudience": selectedAudiences,
-      "preferredLanguages": [
-        selectedLanguage.value,
-      ],
-      "autoTranslateCaptions": autoTranslateCaptions.value,
-      "socialHandles": [
-        {
-          "platform": selectedPlatform.value.toLowerCase(),
-          "username": handleController.text,
-          "password": passwordController.text,
+    try {
+      Map<String, dynamic> data = {
+        "businessType": selectedBusinessType.value,
+        "businessDescription": businessDescriptionController.text,
+        "targetAudience": selectedAudiences,
+        "preferredLanguages": [selectedLanguage.value],
+        "autoTranslateCaptions": autoTranslateCaptions.value,
+        "socialHandles": [
+          if (isFacebookConnected.value)
+            {"platform": "facebook", "accessToken": facebookAccessToken.value},
+          if (isInstagramConnected.value)
+            {
+              "platform": "instagram",
+              "accessToken": instagramAccessToken.value,
+            },
+          if (!isFacebookConnected.value && !isInstagramConnected.value)
+            {
+              "platform": selectedPlatform.value.toLowerCase().isEmpty
+                  ? "none"
+                  : selectedPlatform.value.toLowerCase(),
+              "username": handleController.text,
+              "password": passwordController.text,
+            },
+        ],
+        "branding": {
+          "primaryColor":
+              "#${primaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
+          "secondaryColor":
+              "#${secondaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
         },
-      ],
-      "branding": {
-        "primaryColor":
-            "#${primaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
-        "secondaryColor":
-            "#${secondaryColor.value.value.toRadixString(16).substring(2).toUpperCase()}",
-      },
-    };
+      };
 
-    print("📦 Onboarding Payload: $data");
+      print("📦 Onboarding Payload: $data");
 
-    String? token = await AuthService.getToken();
-    print("🔑 Token available: ${token != null && token.isNotEmpty}");
+      String? token = await AuthService.getToken();
+      print("🔑 Token available: ${token != null && token.isNotEmpty}");
 
-    // API Call — use multipart if logo file exists, otherwise standard JSON
-    bool success;
-    if (logoFile != null) {
+      // Validation: Check if logo is picked if they chose to continue
+      if (logoFile == null) {
+        Get.snackbar(
+          "Logo Required",
+          "Please upload your business logo to continue.",
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return false;
+      }
+
+      // API Call — use multipart with logo
       success = await _apiService.submitOnboardingWithLogo(
         data: data,
         logoFile: logoFile!,
         token: token,
       );
-    } else {
-      success = await _apiService.submitOnboardingData(data);
-    }
-    print("📡 Onboarding API Success: $success");
+      print("📡 Onboarding API Success: $success");
 
-    isLoading.value = false;
-
-    if (success) {
-      String? email = OnboardingStatusService.getEmailFromToken(token ?? "");
-      if (email != null) {
-        await OnboardingStatusService.markOnboardingComplete(email);
+      if (success) {
+        String? email = OnboardingStatusService.getEmailFromToken(token ?? "");
+        if (email != null) {
+          await OnboardingStatusService.markOnboardingComplete(email);
+        }
+        // Navigation will be handled by the UI or here if needed
+      } else {
+        Get.snackbar(
+          "Submission Failed",
+          "There was an error saving your data. Please try again.",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
-      Get.offAllNamed(AppRoutes.HOME);
-    } else {
+    } catch (e) {
+      print("❌ Error in submitOnboarding: $e");
       Get.snackbar(
         "Error",
-        "Failed to submit onboarding data. Please try again.",
+        "An unexpected error occurred: $e",
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
+    } finally {
+      isLoading.value = false;
     }
+    return success;
   }
 
   // Social Auth Service
@@ -242,6 +270,8 @@ class UserOnboardingPageController extends GetxController {
   // Connected status
   var isFacebookConnected = false.obs;
   var isInstagramConnected = false.obs;
+  var facebookAccessToken = ''.obs;
+  var instagramAccessToken = ''.obs;
 
   Future<void> connectFacebook() async {
     try {
@@ -259,6 +289,7 @@ class UserOnboardingPageController extends GetxController {
       if (result.status == LoginStatus.success) {
         final AccessToken accessToken = result.accessToken!;
         print("Facebook Access Token: ${accessToken.tokenString}");
+        facebookAccessToken.value = accessToken.tokenString;
 
         bool success = await _socialAuthService.connectFacebook(
           accessToken.tokenString,
@@ -266,7 +297,8 @@ class UserOnboardingPageController extends GetxController {
         if (success) {
           isFacebookConnected.value = true;
           Get.snackbar("Success", "Connected to Facebook successfully!");
-          // Don't auto-advance so they can connect Instagram too if they want
+          // Advance to branding page if that's the desired flow,
+          // but we'll let user click Continue manually
         } else {
           Get.snackbar(
             "Error",
@@ -317,6 +349,7 @@ class UserOnboardingPageController extends GetxController {
       if (result.status == LoginStatus.success) {
         final AccessToken accessToken = result.accessToken!;
         print("Instagram (via FB) Access Token: ${accessToken.tokenString}");
+        instagramAccessToken.value = accessToken.tokenString;
 
         bool success = await _socialAuthService.connectInstagram(
           accessToken.tokenString,

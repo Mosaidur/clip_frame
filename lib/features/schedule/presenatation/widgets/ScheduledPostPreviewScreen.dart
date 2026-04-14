@@ -1,20 +1,35 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:clip_frame/features/post/presenatation/widget2/MediaDisplayWidget.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
 import 'package:flutter/material.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
-class ScheduledPostPreviewScreen extends StatelessWidget {
+class ScheduledPostPreviewScreen extends StatefulWidget {
   final SchedulePost post;
 
   const ScheduledPostPreviewScreen({super.key, required this.post});
 
   @override
+  State<ScheduledPostPreviewScreen> createState() =>
+      _ScheduledPostPreviewScreenState();
+}
+
+class _ScheduledPostPreviewScreenState
+    extends State<ScheduledPostPreviewScreen> {
+  int _current = 0;
+  final CarouselSliderController _carouselController =
+      CarouselSliderController();
+
+  @override
   Widget build(BuildContext context) {
     final bool isVideo =
-        _isVideoUrl(post.imageUrl) ||
-        post.contentType.toLowerCase() == 'reel' ||
-        post.contentType.toLowerCase() == 'story';
-    final String mediaUrl = post.imageUrl;
+        _isVideoUrl(widget.post.imageUrl) ||
+        widget.post.contentType.toLowerCase() == 'reel' ||
+        widget.post.contentType.toLowerCase() == 'story';
+
+    final List<String> mediaUrls = widget.post.mediaUrls.isNotEmpty
+        ? widget.post.mediaUrls
+        : (widget.post.imageUrl.isNotEmpty ? [widget.post.imageUrl] : []);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -22,7 +37,7 @@ class ScheduledPostPreviewScreen extends StatelessWidget {
         children: [
           // Media Content
           Positioned.fill(
-            child: mediaUrl.isEmpty
+            child: mediaUrls.isEmpty
                 ? const Center(
                     child: Icon(
                       Icons.broken_image,
@@ -30,30 +45,11 @@ class ScheduledPostPreviewScreen extends StatelessWidget {
                       size: 50,
                     ),
                   )
+                : mediaUrls.length > 1
+                ? _buildCarousel(mediaUrls)
                 : isVideo
-                ? MediaDisplayWidget(videoUrl: mediaUrl, autoPlay: true)
-                : InteractiveViewer(
-                    minScale: 1.0,
-                    maxScale: 3.0,
-                    child: Image.network(
-                      mediaUrl,
-                      fit: BoxFit.contain,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              color: Colors.white,
-                              size: 50,
-                            ),
-                          ),
-                    ),
-                  ),
+                ? MediaDisplayWidget(videoUrl: mediaUrls[0], autoPlay: true)
+                : _buildSingleImage(mediaUrls[0]),
           ),
 
           // Top Bar (Back Button)
@@ -81,7 +77,9 @@ class ScheduledPostPreviewScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        post.contentType.toUpperCase(),
+                        mediaUrls.length > 1
+                            ? "CAROUSEL"
+                            : widget.post.contentType.toUpperCase(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -94,6 +92,30 @@ class ScheduledPostPreviewScreen extends StatelessWidget {
               ),
             ),
           ),
+
+          // Indicators for Carousel
+          if (mediaUrls.length > 1)
+            Positioned(
+              top: 100, // Below top bar
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: mediaUrls.asMap().entries.map((entry) {
+                  return Container(
+                    width: 8.0,
+                    height: 8.0,
+                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(
+                        _current == entry.key ? 0.9 : 0.3,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
 
           // Bottom Info (Caption & Tags)
           Positioned(
@@ -115,18 +137,18 @@ class ScheduledPostPreviewScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      post.title,
+                      widget.post.title,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (post.tags.isNotEmpty) ...[
+                    if (widget.post.tags.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
-                        children: post.tags
+                        children: widget.post.tags
                             .map(
                               (tag) => Text(
                                 '#${tag.replaceAll('#', '')}',
@@ -150,7 +172,7 @@ class ScheduledPostPreviewScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          post.scheduleTime,
+                          widget.post.scheduleTime,
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
@@ -164,18 +186,18 @@ class ScheduledPostPreviewScreen extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: _getStatusColor(
-                              post.status,
+                              widget.post.status,
                             ).withOpacity(0.2),
                             borderRadius: BorderRadius.circular(5),
                             border: Border.all(
-                              color: _getStatusColor(post.status),
+                              color: _getStatusColor(widget.post.status),
                               width: 1,
                             ),
                           ),
                           child: Text(
-                            post.status.toUpperCase(),
+                            widget.post.status.toUpperCase(),
                             style: TextStyle(
-                              color: _getStatusColor(post.status),
+                              color: _getStatusColor(widget.post.status),
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
@@ -189,6 +211,49 @@ class ScheduledPostPreviewScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSingleImage(String url) {
+    return Center(
+      child: InteractiveViewer(
+        minScale: 1.0,
+        maxScale: 4.0,
+        child: Image.network(
+          url,
+          fit: BoxFit
+              .fitWidth, // This ensures landscape images look landscape and portrait look portrait
+          width: double.infinity,
+          alignment: Alignment.center,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) => const Center(
+            child: Icon(Icons.broken_image, color: Colors.white, size: 50),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCarousel(List<String> urls) {
+    return CarouselSlider(
+      items: urls.map((url) => _buildSingleImage(url)).toList(),
+      carouselController: _carouselController,
+      options: CarouselOptions(
+        height: MediaQuery.of(context).size.height,
+        viewportFraction: 1.0,
+        enableInfiniteScroll: false,
+        scrollPhysics: const BouncingScrollPhysics(), // Smoother sliding
+        onPageChanged: (index, reason) {
+          setState(() {
+            _current = index;
+          });
+        },
       ),
     );
   }

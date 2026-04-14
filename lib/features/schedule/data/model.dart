@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 class SchedulePost {
   final String id;
   final String imageUrl;
+  final List<String> mediaUrls; // Added list for multiple images
   final String? thumbnailUrl;
   final String title;
   final List<String> tags;
@@ -15,6 +16,7 @@ class SchedulePost {
   SchedulePost({
     required this.id,
     required this.imageUrl,
+    this.mediaUrls = const [],
     this.thumbnailUrl,
     required this.title,
     required this.tags,
@@ -30,6 +32,7 @@ class SchedulePost {
       return SchedulePost(
         id: '',
         imageUrl: '',
+        mediaUrls: [],
         title: 'Unknown',
         tags: [],
         scheduleTime: '',
@@ -59,17 +62,25 @@ class SchedulePost {
 
     String formattedTime = _formatScheduleTime(rawTime, createdAt: createdAt);
 
+    List<String> urls = [];
+    if (json['mediaUrls'] is List) {
+      urls = List<String>.from(
+        (json['mediaUrls'] as List).map((e) => e.toString()),
+      );
+    } else if (json['imageUrl'] != null) {
+      urls = [json['imageUrl'].toString()];
+    }
+
     return SchedulePost(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
-      imageUrl:
-          (json['mediaUrls'] is List && (json['mediaUrls'] as List).isNotEmpty)
-          ? json['mediaUrls'][0].toString()
-          : json['imageUrl']?.toString() ??
-                json['media']?.toString() ??
+      imageUrl: urls.isNotEmpty
+          ? urls[0]
+          : (json['media']?.toString() ??
                 json['content']?.toString() ??
                 json['url']?.toString() ??
                 json['videoUrl']?.toString() ??
-                '',
+                ''),
+      mediaUrls: urls,
       thumbnailUrl:
           json['thumbnail']?.toString() ??
           json['cover']?.toString() ??

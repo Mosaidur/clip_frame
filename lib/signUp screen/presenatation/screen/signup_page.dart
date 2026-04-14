@@ -182,18 +182,42 @@ class signUpScreen extends GetView<SignUpController> {
                           ),
                         ),
                         IntlPhoneField(
-                          controller: signUpcontroller.phoneController,
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            counterText:
+                                "", // Hide the default counter if you want, or keep it
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Colors.black26,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF4983F6),
+                                width: 2,
+                              ),
+                            ),
                           ),
-                          initialCountryCode: 'ES',
+                          initialCountryCode:
+                              'BD', // Set to Bangladesh by default as per screenshot
+                          keyboardType: TextInputType.phone,
+                          style: const TextStyle(color: Colors.black),
+                          dropdownTextStyle: const TextStyle(
+                            color: Colors.black,
+                          ),
                           onChanged: (phone) {
-                            signUpcontroller.fullPhoneNumber.value = phone.completeNumber;
+                            signUpcontroller.fullPhoneNumber.value =
+                                phone.completeNumber;
                           },
                         ),
                         const SizedBox(height: 15),

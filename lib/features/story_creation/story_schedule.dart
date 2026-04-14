@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
+import 'package:clip_frame/core/utils/scheduling_utils.dart';
+import 'package:intl/intl.dart';
 
 class StorySchedulePage extends StatefulWidget {
   final List<File> files;
@@ -118,21 +120,27 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                         SizedBox(height: 25.h),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(20.r),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Image.file(
-                                widget.files[0],
-                                height: 180.h,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                              Icon(
-                                Icons.play_circle_fill_rounded,
-                                color: Colors.white70,
-                                size: 40.r,
-                              ),
-                            ],
+                          child: Container(
+                            height: 250.h,
+                            width: double.infinity,
+                            color: Colors.black,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Image.file(
+                                  widget.files[0],
+                                  height: 250.h,
+                                  width: double.infinity,
+                                  fit: BoxFit
+                                      .contain, // Show full image without cropping
+                                ),
+                                Icon(
+                                  Icons.play_circle_fill_rounded,
+                                  color: Colors.white70,
+                                  size: 40.r,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         SizedBox(height: 20.h),
@@ -339,6 +347,19 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   }
 
   Widget _buildSuggestedDialog() {
+    final suggestedDays = ["Tuesday", "Wednesday", "Thursday"];
+    final suggestedTime = "05:00 PM";
+
+    // Parse time "05:00 PM"
+    final timeFormat = DateFormat("hh:mm a");
+    final parsedTime = timeFormat.parse(suggestedTime);
+
+    final upcomingDates = SchedulingUtils.getUpcomingSequence(
+      suggestedDays,
+      suggestedHour: parsedTime.hour,
+      suggestedMinute: parsedTime.minute,
+    );
+
     return Container(
       color: Colors.black54,
       width: double.infinity,
@@ -387,20 +408,34 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                 ),
               ),
               SizedBox(height: 20.h),
-              _suggestionItem("Story 1", "Tuesday", "05:00 PM"),
+              _suggestionItem(
+                "Story 1",
+                SchedulingUtils.formatRecommendedDate(upcomingDates[0]),
+                suggestedTime,
+              ),
               SizedBox(height: 8.h),
-              _suggestionItem("Story 2", "Wednesday", "05:00 PM"),
+              _suggestionItem(
+                "Story 2",
+                SchedulingUtils.formatRecommendedDate(upcomingDates[1]),
+                suggestedTime,
+              ),
               SizedBox(height: 8.h),
-              _suggestionItem("Story 3", "Thursday", "05:00 PM"),
+              _suggestionItem(
+                "Story 3",
+                SchedulingUtils.formatRecommendedDate(upcomingDates[2]),
+                suggestedTime,
+              ),
               SizedBox(height: 25.h),
               Row(
                 children: [
                   Expanded(
-                    child: _dialogBtn(
-                      "Schedule",
-                      const Color(0xFFE91E63),
-                      () => setState(() => _showSuggestedDialog = false),
-                    ),
+                    child: _dialogBtn("Schedule", const Color(0xFFE91E63), () {
+                      setState(() {
+                        // Apply first suggested date to the overall selection
+                        _selectedDate = upcomingDates[0];
+                        _showSuggestedDialog = false;
+                      });
+                    }),
                   ),
                   SizedBox(width: 10.w),
                   Expanded(
@@ -570,34 +605,51 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
 
   Widget _buildStoryTabs() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(widget.files.length, (index) {
-            bool isSelected = _selectedStoryIndex == index;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedStoryIndex = index),
-              child: Column(
-                children: [
-                  Text(
-                    "Story ${index + 1}",
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w500,
-                      color: isSelected ? Colors.pink : Colors.black45,
+        Text(
+          "All Stories",
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        SizedBox(height: 12.h),
+        SizedBox(
+          height: 350.h, // Increased height for better visibility
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: widget.files.length,
+            itemBuilder: (context, index) {
+              bool isSelected = _selectedStoryIndex == index;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedStoryIndex = index),
+                child: Container(
+                  width: 250.w, // Dynamic width for story preview
+                  margin: EdgeInsets.only(right: 15.w),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(20.r),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFFF4081)
+                          : Colors.transparent,
+                      width: 2.5,
                     ),
                   ),
-                  SizedBox(height: 4.h),
-                  if (isSelected)
-                    Container(width: 40.w, height: 2.h, color: Colors.pink),
-                ],
-              ),
-            );
-          }),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18.r),
+                    child: Image.file(
+                      widget.files[index],
+                      fit: BoxFit.contain, // Show exact size without cropping
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
-        Divider(height: 1.h, color: Colors.black12),
       ],
     );
   }

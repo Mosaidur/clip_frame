@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:clip_frame/features/post/presenatation/Screen_2/schedule_post_screen.dart';
@@ -211,15 +212,44 @@ class SchedulePostWidget extends StatelessWidget {
   }
 
   Widget _buildMediaContent() {
-    // 1. Try to show server-provided thumbnail first (Best Quality/Correct Cover)
-    if (post.thumbnailUrl != null && post.thumbnailUrl!.isNotEmpty) {
-      return Image.network(
-        post.thumbnailUrl!,
-        width: double.infinity,
-        height: 230.h,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackMedia(),
+    final List<String> mediaUrls = post.mediaUrls.isNotEmpty
+        ? post.mediaUrls
+        : (post.imageUrl.isNotEmpty ? [post.imageUrl] : []);
+
+    if (mediaUrls.length > 1) {
+      return Stack(
+        children: [
+          CarouselSlider(
+            items: mediaUrls.map((url) => _buildImage(url)).toList(),
+            options: CarouselOptions(
+              aspectRatio:
+                  16 / 9, // Better default for landscape, but still flexible
+              viewportFraction: 1.0,
+              enableInfiniteScroll: false,
+            ),
+          ),
+          Positioned(
+            top: 10,
+            right: 10,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Text(
+                "1/${mediaUrls.length}",
+                style: const TextStyle(color: Colors.white, fontSize: 10),
+              ),
+            ),
+          ),
+        ],
       );
+    }
+
+    // 1. Try to show server-provided thumbnail first
+    if (post.thumbnailUrl != null && post.thumbnailUrl!.isNotEmpty) {
+      return _buildImage(post.thumbnailUrl!);
     }
 
     // 2. If no thumbnail, check if main URL is video and generate locally
@@ -235,18 +265,27 @@ class SchedulePostWidget extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Container(
               width: double.infinity,
-              height: 230.h,
+              height: 200.h,
               color: Colors.black12,
               child: const Center(child: CircularProgressIndicator()),
             );
           }
           if (snapshot.hasData && snapshot.data != null) {
-            return Image.memory(
-              snapshot.data!,
-              width: double.infinity,
-              height: 230.h,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildPlaceholder(),
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.memory(
+                  snapshot.data!,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                ),
+                Icon(
+                  Icons.play_circle_outline,
+                  color: Colors.white,
+                  size: 40.r,
+                ),
+              ],
             );
           }
           return _buildPlaceholder();
@@ -256,16 +295,19 @@ class SchedulePostWidget extends StatelessWidget {
 
     // 3. Last resort: Try treating imageUrl as an image
     if (post.imageUrl.isNotEmpty) {
-      return Image.network(
-        post.imageUrl,
-        width: double.infinity,
-        height: 230.h,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-      );
+      return _buildImage(post.imageUrl);
     }
 
     return _buildPlaceholder();
+  }
+
+  Widget _buildImage(String url) {
+    return Image.network(
+      url,
+      width: double.infinity,
+      fit: BoxFit.contain, // Maintain EXACT size and ratio
+      errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+    );
   }
 
   // Wrapper for fallback logic to avoid infinite loop or deep nesting

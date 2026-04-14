@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 
 import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
 import '../widgets/schedule_list.dart';
+import '../widgets/weekly_content_sheet.dart';
 import '../../../premium/presentation/widgets/premium_welcome_modal.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 import 'dart:typed_data';
@@ -448,7 +449,14 @@ class _DashBoardPageState extends State<DashBoardPage> {
               label: "Create Weekly Content",
               icon: Icons.add_box_rounded,
               color: const Color(0xFF007CFE),
-              onTap: () {},
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const WeeklyContentSheet(),
+                );
+              },
             ),
           ),
           SizedBox(width: 12.w),

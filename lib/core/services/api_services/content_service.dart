@@ -30,19 +30,33 @@ class ContentService {
         "tags": tags,
       };
 
-      final String fileKey = (contentType == "post" || contentType == "carousel") ? 'image' : 'media';
+      final String fileKey =
+          (contentType == "post" ||
+              contentType == "carousel" ||
+              contentType == "story")
+          ? 'image'
+          : 'media';
 
       debugPrint(
         "🚀 [ContentService] Creating content (Multipart) for template: $templateId using key: $fileKey, type: $contentType",
       );
 
       final NetworkResponse response;
-      if (contentType == 'carousel' && files != null && files.isNotEmpty) {
+      // If we have multiple files, use postMultipartRequestList regardless of contentType
+      if (files != null && files.length > 1) {
         response = await NetworkCaller.postMultipartRequestList(
           url: url,
           body: body,
           fileKey: fileKey,
           files: files,
+          token: token,
+        );
+      } else if (files != null && files.isNotEmpty) {
+        response = await NetworkCaller.postMultipartRequest(
+          url: url,
+          body: body,
+          fileKey: fileKey,
+          file: files[0],
           token: token,
         );
       } else if (mediaPath != null && mediaPath.isNotEmpty) {
@@ -104,6 +118,30 @@ class ContentService {
       return response;
     } catch (e) {
       debugPrint("⛔ [ContentService] Error updating content: $e");
+      return NetworkResponse(
+        isSuccess: false,
+        statusCode: -1,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  static Future<NetworkResponse> deleteContent(String id) async {
+    try {
+      final token = await AuthService.getToken();
+      final url = Urls.deleteContentUrl(id);
+
+      debugPrint(
+        "🚀 [ContentService] Deleting content for ID: $id at URL: $url",
+      );
+      final response = await NetworkCaller.deleteRequest(
+        url: url,
+        token: token,
+      );
+
+      return response;
+    } catch (e) {
+      debugPrint("⛔ [ContentService] Error deleting content: $e");
       return NetworkResponse(
         isSuccess: false,
         statusCode: -1,

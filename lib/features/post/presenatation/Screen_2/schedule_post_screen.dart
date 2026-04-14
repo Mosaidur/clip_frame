@@ -10,6 +10,7 @@ import 'package:clip_frame/features/post/presenatation/controller/content_creati
 import 'package:get/get.dart';
 import 'scheduling_success_screen.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
+import 'package:clip_frame/core/utils/scheduling_utils.dart';
 import 'dart:io';
 
 class SchedulePostScreen extends StatefulWidget {
@@ -146,6 +147,20 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   }
 
   void _showSuggestedDialog() {
+    final suggestedDay = "Tuesday";
+    final suggestedTime = "05:00 PM";
+
+    // Parse time "05:00 PM"
+    final timeFormat = DateFormat("hh:mm a");
+    final parsedTime = timeFormat.parse(suggestedTime);
+
+    final upcomingDate = SchedulingUtils.getNextUpcomingDate(
+      suggestedDay,
+      suggestedHour: parsedTime.hour,
+      suggestedMinute: parsedTime.minute,
+    );
+    final formattedDate = SchedulingUtils.formatRecommendedDate(upcomingDate);
+
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -197,17 +212,17 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Tuesday",
+                      formattedDate,
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF007AFF),
                       ),
                     ),
                     Text(
-                      "05:00 PM",
+                      suggestedTime,
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
@@ -220,7 +235,48 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        // Apply suggested schedule
+                        final controller =
+                            Get.find<ContentCreationController>();
+
+                        controller.scheduledDate.value = DateTime(
+                          upcomingDate.year,
+                          upcomingDate.month,
+                          upcomingDate.day,
+                          parsedTime.hour,
+                          parsedTime.minute,
+                        );
+
+                        // Update UI states to match
+                        setState(() {
+                          selectedHour = parsedTime.hour > 12
+                              ? parsedTime.hour - 12
+                              : (parsedTime.hour == 0 ? 12 : parsedTime.hour);
+                          selectedMinute = parsedTime.minute;
+                          period = parsedTime.hour >= 12 ? "PM" : "AM";
+                          focusedMonth = DateTime(
+                            upcomingDate.year,
+                            upcomingDate.month,
+                          );
+
+                          final firstDay = DateTime(
+                            upcomingDate.year,
+                            upcomingDate.month,
+                            1,
+                          );
+                          final offset = firstDay.weekday - 1;
+                          selectedDateIndex = upcomingDate.day + offset - 1;
+
+                          // Update controllers if needed
+                          hourController.jumpToItem(
+                            selectedHour == 12 ? 0 : selectedHour,
+                          );
+                          minuteController.jumpToItem(selectedMinute);
+                        });
+
+                        Navigator.pop(context);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF2D78),
                         shape: RoundedRectangleBorder(
@@ -255,12 +311,12 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                       ),
                       child: Text(
                         "Choose different date",
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 11.sp,
                           fontWeight: FontWeight.bold,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
@@ -837,7 +893,12 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       };
 
       final String contentType = controller.selectedContentType.value;
-      final List<File> selectedFiles = controller.selectedFiles;
+
+      // Use widget.imagePaths (edited) for multiple images, fallback to controller files
+      final List<File> filesToUpload =
+          widget.imagePaths != null && widget.imagePaths!.isNotEmpty
+          ? widget.imagePaths!.map((path) => File(path)).toList()
+          : controller.selectedFiles;
 
       final response = widget.postToEdit != null
           ? await ContentService.updateContent(
@@ -851,7 +912,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           : await ContentService.createContent(
               templateId: templateId,
               caption: caption,
-              files: selectedFiles.isNotEmpty ? selectedFiles : null,
+              files: filesToUpload.isNotEmpty ? filesToUpload : null,
               mediaPath: finalMediaPath,
               contentType: contentType,
               scheduledAt: scheduledAt,
@@ -861,12 +922,21 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
             );
 
       if (response.isSuccess) {
+        String? contentId;
+        if (response.responseBody != null &&
+            response.responseBody!['data'] != null) {
+          contentId =
+              response.responseBody!['data']['_id'] ??
+              response.responseBody!['data']['id'];
+        }
+
         if (mounted) {
           _showCongratulationsOverlay(
             caption: caption,
             hashtags: hashtags,
             finalMediaPath: finalMediaPath,
             scheduledDateTime: scheduledDateTime,
+            contentId: contentId,
           );
         }
       } else {
@@ -921,6 +991,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
     required List<String> hashtags,
     required String finalMediaPath,
     required DateTime scheduledDateTime,
+    String? contentId,
   }) {
     final controller = Get.find<ContentCreationController>();
     showDialog(
@@ -988,6 +1059,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                       MaterialPageRoute(
                         builder: (context) => SchedulingSuccessScreen(
                           mediaPath: finalMediaPath,
+                          imagePaths: widget.imagePaths,
                           imageUrl:
                               widget.postToEdit?.imageUrl ??
                               controller.mediaPath.value,
@@ -995,6 +1067,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                           caption: caption,
                           hashtags: hashtags,
                           scheduledDateTime: scheduledDateTime,
+                          contentId: contentId ?? widget.postToEdit?.id,
                         ),
                       ),
                     );
@@ -1043,10 +1116,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(13.r),
-              child: Image.file(
-                File(path),
-                fit: BoxFit.cover,
-              ),
+              child: Image.file(File(path), fit: BoxFit.cover),
             ),
           );
         }).toList(),

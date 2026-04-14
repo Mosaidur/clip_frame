@@ -1,0 +1,136 @@
+
+“Create Weekly Content” Button
+❌ Problem:
+👉 এখন এই button কাজ করছে না
+👉 আর যেটা design করা হয়েছে, সেটা অনেক বেশি step-by-step (complex)
+
+✅ তুমি আসলে কি চাও:
+👉 এই feature টা simple হোক, easy হোক
+
+🔥 তোমার idea (Main concept):
+👉 User যখন button এ click করবে, তখন কোনো complicated process না হয়ে—
+➡️ একটা simple tutorial / checklist show করবে
+
+📌 এর মানে কি?
+👉 App user কে বলবে:
+এই সপ্তাহে কি কি content বানাতে হবে
+খুব short এবং clear ভাবে
+
+🎯 Example:
+Create 1 Reel → কি করতে হবে ছোট explanation
+Create 1 Post → কি ধরনের post দিবে
+Create 3 Stories → কি story দিবে
+
+🧠 Main idea (সবচেয়ে important):
+👉 User কে guide করা, কিন্তু force না করা
+👉 যেন সে নিজে easily বুঝে কাজ করতে পারে
+
+🔥 এক লাইনে:
+👉 “Button এ click করলে simple weekly checklist show করবে — no complex flow”
+
+
+
+
+
+
+
+🔥 🎯 Goal (আগে clear করি)
+
+👉 Button click করলে:
+
+কোনো form / step-by-step wizard না
+শুধু একটা simple checklist / guide screen show করবে
+🔹 Step 1: Button Click → New Screen / Modal Open
+
+👉 User “Create Weekly Content” এ click করলে:
+
+✔️ তুমি ২ভাবে করতে পারো:
+
+Bottom Sheet (best UX)
+অথবা New Page
+
+📌 Recommendation:
+👉 Bottom Sheet use করো (modern + fast)
+
+🔹 Step 2: Simple UI Design (Important)
+
+👉 UI একদম clean রাখতে হবে
+
+📌 Structure:
+
+Title:
+👉 “Your Weekly Content Plan”
+
+Then list items:
+
+✔️ Create 1 Reel
+✔️ Create 1 Post
+✔️ Create 3 Stories
+
+🔹 Step 3: Each Item Expandable / Short Guide
+
+👉 প্রতিটা item এ click করলে ছোট explanation show করবে
+
+Example:
+
+👉 Create 1 Reel
+➡️ “Make a short engaging video about your product/service. Keep it under 30 seconds.”
+
+👉 Create 1 Post
+➡️ “Share a valuable or promotional post with image and caption.”
+
+👉 Create 3 Stories
+➡️ “Post behind-the-scenes, offers, or daily updates.”
+
+🔹 Step 4: Add Checkbox (Game Changer 💡)
+
+👉 প্রতিটা item এর পাশে checkbox দাও:
+
+☐ Create 1 Reel
+☐ Create 1 Post
+☐ Create 3 Stories
+
+👉 User complete করলে tick দিবে ✔️
+
+🎯 Benefit:
+User feel করবে progress
+Engagement বাড়বে
+🔹 Step 5: Optional “Mark as Done” Button
+
+👉 নিচে একটা button রাখতে পারো:
+
+👉 “Mark Week as Completed”
+
+🔹 Step 6: No Restriction Logic
+
+👉 খুব important:
+
+❌ User কে force করবা না
+❌ step follow করতেই হবে — এমন কিছু না
+
+✔️ শুধু guide দিবা
+✔️ user নিজের মতো করবে
+
+🔹 Step 7: Future Improvement (Advanced)
+
+👉 চাইলে add করতে পারো:
+
+Auto generate ideas (AI suggestion)
+Example templates
+Progress bar (3/5 completed)
+🔥 Final Best Approach (Short)
+
+👉 Button → Bottom Sheet open
+👉 Show checklist (Reel, Post, Stories)
+👉 Each item → short guide
+👉 Checkbox → track progress
+👉 No complex flow
+
+🧠 Developer POV (Flutter hint)
+
+👉 Use:
+
+showModalBottomSheet()
+ListView
+CheckboxListTile
+ExpansionTile (for explanation)

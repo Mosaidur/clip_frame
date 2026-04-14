@@ -174,6 +174,7 @@ class MyProfileController extends GetxController {
     required String phone,
     String? businessCategory,
     String? businessName,
+    String? businessDescription,
   }) async {
     isUpdating.value = true;
     Get.snackbar(
@@ -192,6 +193,7 @@ class MyProfileController extends GetxController {
         'phone': phone,
         if (businessCategory != null) 'businessCategory': businessCategory,
         if (businessName != null) 'businessName': businessName,
+        if (businessDescription != null) 'businessDescription': businessDescription,
       };
 
       NetworkResponse response;

@@ -70,7 +70,7 @@ class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
             _controller.value.isInitialized
                 ? SizedBox.expand(
                   child: FittedBox(
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain, // Changed from cover to contain for full frame
                               child: SizedBox(
                   width: _controller.value.size.width,
                   height: _controller.value.size.height,

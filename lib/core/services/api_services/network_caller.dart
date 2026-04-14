@@ -340,6 +340,7 @@ class NetworkCaller {
     required String fileKey,
     required List<File> files,
     String? token,
+    bool wrapInData = true,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -350,14 +351,24 @@ class NetworkCaller {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      // Wrap JSON body in 'data' field
-      request.fields['data'] = jsonEncode(body);
+      // Add body fields
+      if (wrapInData) {
+        request.fields['data'] = jsonEncode(body);
+      } else {
+        body.forEach((key, value) {
+          if (value is String) {
+            request.fields[key] = value;
+          } else {
+            request.fields[key] = jsonEncode(value);
+          }
+        });
+      }
 
       // Add multiple files
       for (var file in files) {
         final fileName = p.basename(file.path);
         final mimeType = fileName.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg';
-        
+
         request.files.add(
           await http.MultipartFile.fromPath(
             fileKey,
@@ -376,8 +387,8 @@ class NetworkCaller {
       );
 
       final streamedResponse = await request.send().timeout(
-            const Duration(seconds: 300),
-          );
+        const Duration(seconds: 300),
+      );
       final response = await http.Response.fromStream(streamedResponse);
 
       logResponse(url, response);
@@ -420,6 +431,7 @@ class NetworkCaller {
     required String fileKey,
     required File file,
     String? token,
+    bool wrapInData = true,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -430,9 +442,18 @@ class NetworkCaller {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      // Wrap the whole JSON body into a single 'data' field if the backend expects it
-      // Based on the "Data is required" error, this is highly likely.
-      request.fields['data'] = jsonEncode(body);
+      // Add body fields
+      if (wrapInData) {
+        request.fields['data'] = jsonEncode(body);
+      } else {
+        body.forEach((key, value) {
+          if (value is String) {
+            request.fields[key] = value;
+          } else {
+            request.fields[key] = jsonEncode(value);
+          }
+        });
+      }
 
       // Add the file
       final fileName = p.basename(file.path);

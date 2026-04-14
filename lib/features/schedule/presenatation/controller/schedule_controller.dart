@@ -6,11 +6,16 @@ import 'package:clip_frame/core/services/api_services/urls.dart';
 import 'package:clip_frame/core/services/auth_service.dart';
 import '../../data/model.dart';
 
+import 'package:clip_frame/core/services/database_service.dart';
+import 'package:clip_frame/core/services/notification_service.dart';
+import 'package:intl/intl.dart';
+
 class ScheduleController extends GetxController {
   var scheduledPosts = <SchedulePost>[].obs;
   var historyPosts = <HistoryPost>[].obs;
   var isLoading = false.obs;
   var errorMessage = ''.obs;
+  var lastSyncedAt = Rxn<DateTime>();
 
   // Add selected tab state
   var selectedTab = 0.obs;
@@ -20,7 +25,24 @@ class ScheduleController extends GetxController {
   void onInit() {
     super.onInit();
     print("🔥 [ScheduleController] onInit called");
+    _loadFromCache();
     _startPolling();
+  }
+
+  Future<void> _loadFromCache() async {
+    try {
+      final cachedScheduled = await DatabaseService.getPostsByStatus(
+        "scheduled",
+      );
+      final cachedDrafts = await DatabaseService.getPostsByStatus("draft");
+
+      scheduledPosts.assignAll([...cachedScheduled, ...cachedDrafts]);
+      print(
+        "📦 [ScheduleController] Loaded ${scheduledPosts.length} posts from cache",
+      );
+    } catch (e) {
+      print("⚠️ [ScheduleController] Error loading from cache: $e");
+    }
   }
 
   void _startPolling() {
@@ -94,6 +116,7 @@ class ScheduleController extends GetxController {
       );
 
       if (response.isSuccess) {
+        lastSyncedAt.value = DateTime.now();
         if (response.responseBody != null &&
             response.responseBody!['data'] != null) {
           var responseData = response.responseBody!['data'];
@@ -111,14 +134,18 @@ class ScheduleController extends GetxController {
           );
 
           if (status == "scheduled") {
-            scheduledPosts.assignAll(
-              listData.map((json) {
-                if (json is Map<String, dynamic>) {
-                  json['status'] = 'scheduled';
-                }
-                return SchedulePost.fromJson(json);
-              }).toList(),
-            );
+            final posts = listData.map((json) {
+              if (json is Map<String, dynamic>) {
+                json['status'] = 'scheduled';
+              }
+              return SchedulePost.fromJson(json);
+            }).toList();
+
+            scheduledPosts.assignAll(posts);
+            // Save to cache
+            await DatabaseService.savePosts(posts);
+            // Schedule notifications for newly fetched scheduled posts
+            _syncNotifications(posts);
           } else if (status == "draft") {
             // Append drafts to scheduled posts
             List<SchedulePost> drafts = listData.map((json) {
@@ -128,6 +155,8 @@ class ScheduleController extends GetxController {
               return SchedulePost.fromJson(json);
             }).toList();
             scheduledPosts.addAll(drafts);
+            // Save to cache
+            await DatabaseService.savePosts(drafts);
           } else if (status == "published") {
             historyPosts.assignAll(
               listData.map((json) {
@@ -158,6 +187,57 @@ class ScheduleController extends GetxController {
     if (!skipLoading) isLoading.value = false;
   }
 
+  void _syncNotifications(List<SchedulePost> posts) {
+    for (var post in posts) {
+      if (post.status == 'scheduled') {
+        try {
+          // Extract DateTime from rawScheduleTime or similar
+          // This depends on how _formatScheduleTime works, but let's try to parse
+          // In model.dart, it uses rawScheduleTime with 'date:' and 'time:'
+          DateTime? scheduledDate;
+          if (post.rawScheduleTime.contains('date:') &&
+              post.rawScheduleTime.contains('time:')) {
+            final datePart = post.rawScheduleTime
+                .split('date:')[1]
+                .split(',')[0]
+                .trim();
+            final timePart = post.rawScheduleTime
+                .split('time:')[1]
+                .split('}')[0]
+                .trim();
+            DateTime date = DateTime.parse(datePart);
+            final timeSplit = timePart.split(':');
+            scheduledDate = DateTime(
+              date.year,
+              date.month,
+              date.day,
+              int.parse(timeSplit[0]),
+              int.parse(timeSplit[1]),
+            );
+          } else {
+            scheduledDate = DateTime.tryParse(post.rawScheduleTime);
+          }
+
+          if (scheduledDate != null) {
+            // Use hash of ID as notification ID
+            int notificationId = post.id.hashCode.abs();
+            NotificationService.scheduleNotification(
+              id: notificationId,
+              title: "Time to post!",
+              body: "Your post '${post.title}' is scheduled for now.",
+              scheduledDate: scheduledDate,
+              payload: post.id,
+            );
+          }
+        } catch (e) {
+          print(
+            "⚠️ [ScheduleController] Could not schedule notification for post ${post.id}: $e",
+          );
+        }
+      }
+    }
+  }
+
   Future<void> deletePost(String id) async {
     print("🗑️ [ScheduleController] Prompting to delete post: $id");
 
@@ -186,6 +266,10 @@ class ScheduleController extends GetxController {
 
       if (response.isSuccess) {
         scheduledPosts.removeWhere((post) => post.id == id);
+        // Remove from DB and cancel notification
+        await DatabaseService.deletePost(id);
+        await NotificationService.cancelNotification(id.hashCode.abs());
+
         Get.snackbar(
           "Success",
           "Post deleted successfully",

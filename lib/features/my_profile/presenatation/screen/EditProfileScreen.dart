@@ -19,6 +19,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       TextEditingController();
   final TextEditingController _businessCategoryTEController =
       TextEditingController();
+  final TextEditingController _businessDescriptionTEController =
+      TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
@@ -30,6 +32,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _phoneTEController.text = user.phone;
       _businessNameTEController.text = user.businessName ?? "";
       _businessCategoryTEController.text = user.businessCategory ?? "";
+      _businessDescriptionTEController.text = user.businessDescription ?? "";
     }
     // Reset selected image after build to avoid setState during build error
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -43,6 +46,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneTEController.dispose();
     _businessNameTEController.dispose();
     _businessCategoryTEController.dispose();
+    _businessDescriptionTEController.dispose();
     super.dispose();
   }
 
@@ -218,6 +222,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             return null;
                           },
                         ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          "Business Description",
+                          _businessDescriptionTEController,
+                          maxLines: 3,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter business description';
+                            }
+                            return null;
+                          },
+                        ),
                         const SizedBox(height: 30),
 
                         // Save Button
@@ -238,6 +254,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                   .trim(),
                                           businessCategory:
                                               _businessCategoryTEController.text
+                                                  .trim(),
+                                          businessDescription:
+                                              _businessDescriptionTEController
+                                                  .text
                                                   .trim(),
                                         );
                                       }
@@ -285,6 +305,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     String label,
     TextEditingController controller, {
     String? Function(String?)? validator,
+    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,6 +322,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         TextFormField(
           controller: controller,
           validator: validator,
+          maxLines: maxLines,
           decoration: InputDecoration(
             hintText: "Enter $label",
             border: OutlineInputBorder(
