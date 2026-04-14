@@ -28,7 +28,7 @@ class HeaderWithBackAndLanguage extends StatelessWidget {
             return LanguageToggleButton(
               currentLanguage: controller.locale.value.languageCode == 'es' ? 'Es' : 'En',
               onLanguageChanged: (lang) {
-                controller.changeLanguage(
+                controller.changeLocale(
                   lang == 'Es' ? const Locale('es', 'ES') : const Locale('en', 'US'),
                 );
               },

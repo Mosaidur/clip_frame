@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
-import '../screen/MyProfileController.dart';
+import 'package:clip_frame/shared/routes/routes.dart';
+import 'package:clip_frame/core/model/user_model.dart';
+import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 
 class AboutMeWidget extends StatelessWidget {
   const AboutMeWidget({super.key});
@@ -28,28 +30,28 @@ class AboutMeWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildMockupRow(
-              "Membership",
-              user.membership,
+              "Membership".tr,
+              user.membership.tr,
               valueColor: const Color(0xFFFF277F),
             ),
             _buildDivider(),
-            _buildMockupRow("Business Name", user.businessName ?? "N/A"),
+            _buildMockupRow("Business Name".tr, user.businessName ?? "N/A".tr),
             _buildDivider(),
             _buildMockupRow(
-              "Description",
-              "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
+              "Description".tr,
+              user.businessDescription ?? "No description provided.".tr,
               isMultiline: true,
             ),
             _buildDivider(),
             _buildMockupRow(
-              "Business Category",
-              user.businessCategory ?? "N/A",
+              "Business Category".tr,
+              user.businessCategory ?? "N/A".tr,
               hasArrow: true,
             ),
             _buildDivider(),
             // Individual Platform Connection Rows
             _buildPlatformConnectionRow(
-              "Facebook",
+              "Facebook".tr,
               "assets/images/facebook.png",
               user.platforms.contains("facebook"),
               onTap: () {
@@ -62,7 +64,7 @@ class AboutMeWidget extends StatelessWidget {
             ),
             _buildDivider(),
             _buildPlatformConnectionRow(
-              "Instagram",
+              "Instagram".tr,
               "assets/images/instagram.png",
               user.platforms.contains("instagram"),
               onTap: () {
@@ -75,26 +77,27 @@ class AboutMeWidget extends StatelessWidget {
             ),
             _buildDivider(),
             _buildMockupRow(
-              "Preferred Language",
+              "Preferred Language".tr,
               user.preferredLanguages.isNotEmpty
-                  ? user.preferredLanguages.first
-                  : "English",
+                  ? user.preferredLanguages.first.tr
+                  : "English".tr,
               hasArrow: true,
             ),
             _buildDivider(),
-            _buildMockupRow("Timezone", user.timezone, hasArrow: true),
+            _buildMockupRow("Timezone".tr, user.timezone.tr, hasArrow: true),
             _buildDivider(),
             _buildMockupRow(
-              "Password",
-              "Change Password",
+              "Password".tr,
+              "Change Password".tr,
               valueColor: const Color(0xFF007CFE),
+              onTap: () => Get.toNamed(AppRoutes.forgotPassword),
             ),
             const SizedBox(height: 40),
             Center(
               child: TextButton(
                 onPressed: () => controller.logout(),
                 child: Text(
-                  "LOG OUT",
+                  "LOG OUT".tr,
                   style: GoogleFonts.poppins(
                     color: const Color(0xFFFF277F),
                     fontSize: 16,
@@ -116,54 +119,89 @@ class AboutMeWidget extends StatelessWidget {
     Color? valueColor,
     bool hasArrow = false,
     bool isMultiline = false,
+    VoidCallback? onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        crossAxisAlignment: isMultiline
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: Colors.black54,
-                fontWeight: FontWeight.w500,
+    if (isMultiline) {
+      return InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                textAlign: TextAlign.justify,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: valueColor ?? Colors.black.withOpacity(0.7),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Text(
-                    value,
-                    textAlign: TextAlign.end,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: valueColor ?? Colors.black.withOpacity(0.7),
-                      fontWeight: FontWeight.w600,
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Text(
+                      value,
+                      textAlign: TextAlign.end,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: valueColor ?? Colors.black.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-                if (hasArrow) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 20,
-                    color: Colors.black.withOpacity(0.5),
-                  ),
+                  if (hasArrow) ...[
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 18,
+                      color: Colors.black54,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:get/get_navigation/src/root/internacionalization.dart';
+
 class AppTranslations extends Translations {
   @override
   Map<String, Map<String, String>> get keys => {
@@ -6,12 +7,14 @@ class AppTranslations extends Translations {
       'welcomeTitle': 'Welcome to ClipFrame.',
       'welcomeSubtitle': 'Social Media Made Simple for Your Business.',
       'getStarted': 'Lets Get Started',
-      'disclaimer': 'By clicking “Lets get Started”, you acknowledge that you have read and understood, and agreed to ClipFrame Terms & Conditions and Privacy Policy.',
+      'disclaimer':
+          'By clicking “Lets get Started”, you acknowledge that you have read and understood, and agreed to ClipFrame Terms & Conditions and Privacy Policy.',
       'appTitle': 'Media Edit: Video & Photo (FFmpegKit)',
       'videoEdit': 'Video Edit',
       'photoEdit': 'Photo Edit',
       'welcomeTitleLoginScreen': 'Welcome to ClipFrame.',
-      'welcomeSubtitleLoginScreen': 'Social Media Made Simple for Your Business.',
+      'welcomeSubtitleLoginScreen':
+          'Social Media Made Simple for Your Business.',
       'getStartedLoginScreen': 'Get Started now',
       'disclaimerLoginScreen': 'Create an account to log in to explore our app',
       'signInGoogle': 'Sign in with Google',
@@ -31,19 +34,23 @@ class AppTranslations extends Translations {
       'pleaseEnterEmailPassword': 'Please enter email and password',
       'loggedInAs': 'Logged in as ',
       'goToSignupPage': 'Go to signup page',
+      'Preferred Language': 'Preferred Language',
     },
     'es': {
       'welcomeTitle': 'Bienvenido a ClipFrame.',
       'welcomeSubtitle': 'Redes sociales simplificadas para tu negocio.',
       'getStarted': 'Empecemos',
-      'disclaimer': 'Al hacer clic en “Empecemos”, reconoces que has leído y entendido, y aceptas los Términos y Condiciones de ClipFrame y la Política de Privacidad.',
+      'disclaimer':
+          'Al hacer clic en “Empecemos”, reconoces que has leído y entendido, y aceptas los Téর্মিনos y Condiciones de ClipFrame y la Política de Privacidad.',
       'appTitle': 'Edición de medios: Video y Foto (FFmpegKit)',
       'videoEdit': 'Editar Video',
       'photoEdit': 'Editar Foto',
       'welcomeTitleLoginScreen': 'Bienvenido a ClipFrame.',
-      'welcomeSubtitleLoginScreen': 'Redes sociales simplificadas para tu negocio.',
+      'welcomeSubtitleLoginScreen':
+          'Redes sociales simplificadas para tu negocio.',
       'getStartedLoginScreen': 'Comienza ahora',
-      'disclaimerLoginScreen': 'Crea una cuenta para iniciar sesión y explorar nuestra aplicación',
+      'disclaimerLoginScreen':
+          'Crea una cuenta para iniciar sesión y explorar nuestra aplicación',
       'signInGoogle': 'Iniciar sesión con Google',
       'signInFacebook': 'Iniciar sesión con Facebook',
       'or': 'O',
@@ -61,6 +68,41 @@ class AppTranslations extends Translations {
       'pleaseEnterEmailPassword': 'Por favor ingresa correo y contraseña',
       'loggedInAs': 'Conectado como ',
       'goToSignupPage': 'Ir a la página de registro',
+      'Preferred Language': 'Idioma preferido',
+    },
+    'hi': {
+      'welcomeTitle': 'ClipFrame में आपका स्वागत है।',
+      'welcomeSubtitle': 'आपके व्यवसाय के लिए सोशल मीडिया सरल बनाया गया।',
+      'getStarted': 'शुरू करें',
+      'disclaimer':
+          '“शुरू करें” पर क्लिक करके, आप स्वीकार करते हैं कि आपने ClipFrame की शर्तों और गोपनीयता नीति को पढ़ और समझ लिया है।',
+      'appTitle': 'मीडिया संपादन: वीडियो और फोटो (FFmpegKit)',
+      'videoEdit': 'वीडियो संपादित करें',
+      'photoEdit': 'फोटो संपादित करें',
+      'welcomeTitleLoginScreen': 'ClipFrame में आपका स्वागत है।',
+      'welcomeSubtitleLoginScreen':
+          'आपके व्यवसाय के लिए सोशल मीडिया सरल बनाया गया।',
+      'getStartedLoginScreen': 'अभी शुरू करें',
+      'disclaimerLoginScreen':
+          'हमारे ऐप को एक्सप्लोर करने के लिए लॉगिन करने हेतु एक खाता बनाएं',
+      'signInGoogle': 'Google के साथ साइन इन करें',
+      'signInFacebook': 'Facebook के साथ साइन इन करें',
+      'or': 'या',
+      'email': 'ईमेल',
+      'password': 'पासवर्ड',
+      'rememberMe': 'मुझे याद रखें',
+      'forgotPassword': 'पासवर्ड भूल गए?',
+      'login': 'लॉग इन करें',
+      'dontHaveAccount': 'क्या आपके पास खाता नहीं है? ',
+      'signUp': 'साइन अप करें',
+      'error': 'त्रुटि',
+      'success': 'सफलता',
+      'googleLogin': 'Google लॉगिन',
+      'facebookLogin': 'Facebook लॉगिन',
+      'pleaseEnterEmailPassword': 'कृपया ईमेल और पासवर्ड दर्ज करें',
+      'loggedInAs': 'के रूप में लॉग इन किया ',
+      'goToSignupPage': 'साइनअप पेज पर जाएं',
+      'Preferred Language': 'पसंदीदा भाषा',
     },
   };
 }

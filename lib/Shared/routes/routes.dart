@@ -4,6 +4,7 @@ import 'package:clip_frame/photo_edit.dart';
 import 'package:clip_frame/video_edit.dart';
 import '../../features/video_editor/presentation/native_editor_page.dart';
 
+import '../../features/my_profile/presenatation/screen/ChangePasswordScreen.dart';
 import '../../features/home/presentation/screen/HomeScreen.dart';
 import '../../login/bindings/login_binding.dart';
 import '../../login/presenatation/screen/login_page.dart';
@@ -37,6 +38,7 @@ class AppRoutes {
   static const String resetPassword = '/resetPassword';
   static const String RegistrationProcess = '/RegistrationProcess';
   static const String userOnboarding = '/userOnboarding';
+  static const String changePassword = '/changePassword';
 
   static final pages = [
     GetPage(name: SPLASH, page: () => const SplashScreen()),
@@ -82,5 +84,6 @@ class AppRoutes {
     // GetPage(name: login, page: () => LoginScreen()),
     GetPage(name: PHOTO_EDIT, page: () => PhotoEditorPage()),
     GetPage(name: VIDEO_EDIT, page: () => NativeEditorPage()),
+    GetPage(name: changePassword, page: () => const ChangePasswordScreen()),
   ];
 }

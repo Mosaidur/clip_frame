@@ -12,6 +12,9 @@ class Urls {
   static const String resendOTPUrl = "$baseUrl/api/v1/auth/resend-otp";
   static const String forgotPassword = "$baseUrl/api/v1/auth/forget-password";
   static const String resetPasswordUrl = "$baseUrl/api/v1/auth/reset-password";
+  static const String changePasswordUrl =
+      "$baseUrl/api/v1/auth/change-password";
+  static const String refreshTokenUrl = "$baseUrl/api/v1/auth/refresh-token";
 
   //useronboarding api
   static const String userOnboardingUrl =

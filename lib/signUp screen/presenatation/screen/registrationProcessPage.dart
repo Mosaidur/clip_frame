@@ -50,7 +50,7 @@ class RegistrationProcessPage extends StatelessWidget {
                       return LanguageToggleButton(
                         currentLanguage: controller.languageController.locale.value.languageCode == 'es' ? 'Es' : 'En',
                         onLanguageChanged: (lang) {
-                          controller.languageController.changeLanguage(
+                          controller.languageController.changeLocale(
                             lang == 'Es' ? const Locale('es', 'ES') : const Locale('en', 'US'),
                           );
                         },

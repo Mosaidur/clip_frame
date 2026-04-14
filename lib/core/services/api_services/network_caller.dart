@@ -30,6 +30,7 @@ class NetworkCaller {
     required String url,
     String? token,
     bool showDialog = false,
+    bool isRefreshCall = false,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -54,6 +55,10 @@ class NetworkCaller {
           responseBody: decodedJson,
         );
       } else if (response.statusCode == 401) {
+        // If it's already a refresh call, don't try again to avoid infinite loop
+        if (!isRefreshCall) {
+          print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
+        }
         final decodedJson = jsonDecode(response.body);
         return NetworkResponse(
           isSuccess: false,
@@ -107,6 +112,7 @@ class NetworkCaller {
     bool isFromLogin = false,
     String? token,
     bool showDialog = false,
+    bool isRefreshCall = false,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -137,8 +143,8 @@ class NetworkCaller {
           responseBody: decodedJson,
         );
       } else if (response.statusCode == 401) {
-        if (isFromLogin == false) {
-          // _onUnAuthorize();
+        if (!isRefreshCall && !isFromLogin) {
+          print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
         }
         final decodedJson = jsonDecode(response.body);
         return NetworkResponse(
@@ -190,6 +196,7 @@ class NetworkCaller {
     required String url,
     Map<String, dynamic>? body,
     String? token,
+    bool isRefreshCall = false,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -210,6 +217,16 @@ class NetworkCaller {
           statusCode: response.statusCode,
           isSuccess: true,
           responseBody: decodedJson,
+        );
+      } else if (response.statusCode == 401) {
+        if (!isRefreshCall) {
+          print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
+        }
+        final decodedJson = jsonDecode(response.body);
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          errorMessage: _unAuthorizeMessage,
         );
       } else {
         final decodedJson = jsonDecode(response.body);
@@ -285,6 +302,7 @@ class NetworkCaller {
   static Future<NetworkResponse> deleteRequest({
     required String url,
     String? token,
+    bool isRefreshCall = false,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -307,6 +325,19 @@ class NetworkCaller {
           statusCode: response.statusCode,
           isSuccess: true,
           responseBody: decodedJson,
+        );
+      } else if (response.statusCode == 401) {
+        if (!isRefreshCall) {
+          print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
+        }
+        final decodedJson = response.body.isNotEmpty
+            ? jsonDecode(response.body)
+            : null;
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseBody: decodedJson,
+          errorMessage: _unAuthorizeMessage,
         );
       } else {
         final decodedJson = response.body.isNotEmpty
@@ -532,13 +563,12 @@ class NetworkCaller {
       }
 
       // Add fields
-      // For PATCH, we might want to send fields individually rather than wrapped in 'data'
-      // But adhering to the pattern seen in postMultipartRequest, let's verify if 'data' wrapper is needed.
-      // Usually PATCH updates specific fields. If the backend follows the same pattern, we might need 'data'.
-      // However, typical PATCH requests send fields at the root.
-      // Let's iterate and add all body fields to request.fields
       body.forEach((key, value) {
-        request.fields[key] = value.toString();
+        if (value is String) {
+          request.fields[key] = value;
+        } else {
+          request.fields[key] = jsonEncode(value);
+        }
       });
 
       // Add the file if provided

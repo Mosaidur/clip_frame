@@ -1,5 +1,5 @@
 import 'package:clip_frame/core/model/user_model.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:clip_frame/splashScreen/controllers/language_controller.dart';
 import 'package:clip_frame/core/services/api_services/authentication/logout_controller.dart'
     as api;
 import 'package:clip_frame/core/services/api_services/network_caller.dart';
@@ -10,13 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../widgets/AboutMeWidget.dart';
-import '../widgets/MyCreationsWidget.dart';
 import 'package:clip_frame/core/model/my_content_model.dart';
 import 'package:clip_frame/core/services/api_services/my_content_service.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:clip_frame/features/my_profile/presenatation/screen/EditProfileScreen.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:clip_frame/core/services/api_services/social_auth_service.dart';
 
@@ -53,6 +50,54 @@ class MyProfileController extends GetxController {
   var myCreations = <ContentItem>[].obs;
   var isCreationsLoading = false.obs;
   var creationsErrorMessage = ''.obs;
+
+  // Language and Timezone Selection
+  final List<String> availableLanguages = ["English", "Hindi", "Spanish"];
+
+  final List<String> availableTimezones = [
+    "UTC (GMT+00:00)",
+    "Europe/London (GMT+01:00)",
+    "Europe/Paris (GMT+02:00)",
+    "Europe/Berlin (GMT+02:00)",
+    "America/New_York (GMT-04:00)",
+    "America/Chicago (GMT-05:00)",
+    "America/Denver (GMT-06:00)",
+    "America/Los_Angeles (GMT-07:00)",
+    "Asia/Dhaka (GMT+06:00)",
+    "Asia/Kolkata (GMT+05:30)",
+    "Asia/Dubai (GMT+04:00)",
+    "Asia/Tokyo (GMT+09:00)",
+    "Asia/Singapore (GMT+08:00)",
+    "Australia/Sydney (GMT+10:00)",
+  ];
+
+  // Selection UI state
+  var selectedLanguage = "English".obs; // Change to single selection
+  var selectedTimezone = "UTC (GMT+00:00)".obs;
+
+  // Helper to map code to display name
+  String _getLangName(String code) {
+    if (code == 'en') return 'English';
+    if (code == 'hi') return 'Hindi';
+    if (code == 'es') return 'Spanish';
+    return code;
+  }
+
+  // Helper to map display name to code
+  String _getLangCode(String name) {
+    if (name == 'English') return 'en';
+    if (name == 'Hindi') return 'hi';
+    if (name == 'Spanish') return 'es';
+    return name.toLowerCase();
+  }
+
+  void setLanguage(String lang) {
+    selectedLanguage.value = lang;
+  }
+
+  void setTimezone(String tz) {
+    selectedTimezone.value = tz;
+  }
 
   @override
   void onInit() {
@@ -94,6 +139,29 @@ class MyProfileController extends GetxController {
           print('🟣 Parsed success: ${userResponse.success}');
           if (userResponse.success && userResponse.data != null) {
             userModel.value = userResponse.data;
+            // Sync observables with model
+            if (userModel.value!.preferredLanguages.isNotEmpty) {
+              String langFromApi = userModel.value!.preferredLanguages.first;
+              print(
+                "🟣 MyProfileController: API returned preferred language: $langFromApi",
+              );
+              selectedLanguage.value = _getLangName(langFromApi);
+            }
+
+            // Handle timezone mapping (find match in list or use raw)
+            String rawTz = userModel.value!.timezone;
+            selectedTimezone.value = availableTimezones.firstWhere(
+              (tz) => tz.contains(rawTz),
+              orElse: () => rawTz,
+            );
+
+            // Sync App Locale with current preferred language
+            final langController = Get.find<LanguageController>();
+            print(
+              "🟣 MyProfileController: Syncing app language to: ${selectedLanguage.value}",
+            );
+            langController.changeLanguage(selectedLanguage.value);
+
             print('🟣 User model updated: ${userModel.value?.name}');
             print('🟣 User Image URL: ${userModel.value?.image}');
           } else {
@@ -175,11 +243,14 @@ class MyProfileController extends GetxController {
     String? businessCategory,
     String? businessName,
     String? businessDescription,
+    String? businessType,
+    String? timezone,
+    String? preferredLanguage, // Changed to single string
   }) async {
     isUpdating.value = true;
     Get.snackbar(
-      'Profile Update',
-      'Starting update process...',
+      'Profile Update'.tr,
+      'Starting update process...'.tr,
       backgroundColor: Colors.blue.withOpacity(0.7),
       colorText: Colors.white,
       duration: const Duration(seconds: 2),
@@ -188,13 +259,28 @@ class MyProfileController extends GetxController {
     );
     try {
       String? token = await AuthService.getToken();
+
+      // Clean up timezone to just use the key (e.g. "Asia/Dhaka")
+      String cleanTz = timezone ?? "UTC";
+      if (cleanTz.contains(" (")) {
+        cleanTz = cleanTz.split(" (").first;
+      }
+
       Map<String, dynamic> body = {
         'name': name,
         'phone': phone,
         if (businessCategory != null) 'businessCategory': businessCategory,
         if (businessName != null) 'businessName': businessName,
-        if (businessDescription != null) 'businessDescription': businessDescription,
+        if (businessDescription != null)
+          'description':
+              businessDescription, // Changed from businessDescription to description
+        if (businessType != null) 'businessType': businessType,
+        'timezone': cleanTz,
+        if (preferredLanguage != null)
+          'preferredLanguages': [_getLangCode(preferredLanguage)],
       };
+
+      print("📤 MyProfileController: Sending Update Request with body: $body");
 
       NetworkResponse response;
       if (selectedImage.value != null) {
@@ -237,25 +323,44 @@ class MyProfileController extends GetxController {
 
       if (response.isSuccess) {
         Get.closeAllSnackbars();
+
+        // Update App Locale if preferred language changed
+        if (preferredLanguage != null) {
+          print(
+            "🔄 MyProfileController: Preferred language updated, changing app language to: $preferredLanguage",
+          );
+          final langController = Get.find<LanguageController>();
+          langController.changeLanguage(preferredLanguage);
+        }
+
         Get.snackbar(
-          'Success ✅',
-          'Profile and Image updated successfully!',
+          'Success ✅'.tr,
+          'Profile and Image updated successfully!'.tr,
           backgroundColor: Colors.green,
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
           icon: const Icon(Icons.check_circle, color: Colors.white),
+          snackPosition: SnackPosition.TOP,
         );
-        Get.back(); // Close edit screen immediately
+
+        // Use a slight delay to ensure the user sees the success message before backing
+        Future.delayed(const Duration(seconds: 1), () {
+          if (Get.isOverlaysOpen) {
+            Get.back(); // Close snackbar
+          }
+          Get.back(); // Back to profile screen
+        });
+
         await getUserProfile(); // Refresh data
       } else {
         Get.closeAllSnackbars();
-        String msg = response.errorMessage ?? 'Update failed';
+        String msg = response.errorMessage ?? 'Update failed'.tr;
         if (msg.contains("delete file to S3")) {
           msg =
               "Critical Server Error: Failed to remove old S3 file. Please apply the try-catch fix on your Node.js backend (user.service.ts) to allow profile updates.";
         }
         Get.snackbar(
-          'Update Failed ❌',
+          'Update Failed ❌'.tr,
           msg,
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -264,10 +369,151 @@ class MyProfileController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Update failed: $e');
+      Get.snackbar('Error'.tr, 'Update failed: $e'.tr);
     } finally {
       isUpdating.value = false;
     }
+  }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    isUpdating.value = true;
+    try {
+      String? token = await AuthService.getToken();
+      Map<String, dynamic> body = {
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+      };
+
+      final response = await NetworkCaller.postRequest(
+        url: Urls.changePasswordUrl,
+        body: body,
+        token: token,
+      );
+
+      if (response.isSuccess) {
+        Get.back(); // Close dialog
+        Get.snackbar(
+          'Success ✅'.tr,
+          'Password changed successfully!'.tr,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          'Error ❌'.tr,
+          response.errorMessage ?? 'Failed to change password'.tr,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar('Error'.tr, 'Something went wrong'.tr);
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
+  void showChangePasswordDialog() {
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          "Change Password".tr,
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: oldPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Current Password".tr,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: newPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "New Password".tr,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                validator: (v) => v == null || v.length < 6
+                    ? "Minimum 6 characters".tr
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: confirmPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Confirm New Password".tr,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                validator: (v) => v != newPasswordController.text
+                    ? "Passwords do not match".tr
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text("Cancel".tr)),
+          Obx(
+            () => ElevatedButton(
+              onPressed: isUpdating.value
+                  ? null
+                  : () {
+                      if (formKey.currentState!.validate()) {
+                        changePassword(
+                          oldPassword: oldPasswordController.text,
+                          newPassword: newPasswordController.text,
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB38FFC),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: isUpdating.value
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      "Update".tr,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> updatePlatforms(List<String> platforms) async {
@@ -288,7 +534,13 @@ class MyProfileController extends GetxController {
           'Platforms updated successfully!',
           backgroundColor: Colors.green,
           colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
         );
+
+        // Auto back after successful update
+        Future.delayed(const Duration(seconds: 1), () {
+          Get.back();
+        });
         await getUserProfile();
       } else {
         Get.snackbar(
@@ -489,374 +741,5 @@ class MyProfileController extends GetxController {
     } finally {
       isUpdating.value = false;
     }
-  }
-}
-
-class MyProfilePage extends StatelessWidget {
-  const MyProfilePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<MyProfileController>();
-    final width = MediaQuery.of(context).size.width;
-    // final height = MediaQuery.of(context).size.height; // Unused
-
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFF3E7E9), // Light peach/pink
-            Color(0xFFE3EEFF), // Light blue/purple
-          ],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await controller.getUserProfile();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                // Top Row
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const SizedBox(width: 40), // Placeholder to keep title centered
-                      Text(
-                        "Profile",
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black.withOpacity(0.8),
-                        ),
-                      ),
-                      _roundIcon(Icons.edit, () {
-                        Get.to(() => const EditProfileScreen());
-                      }),
-                    ],
-                  ),
-                ),
-
-                // Profile Section
-                Obx(() {
-                  if (controller.isLoading.value) {
-                    return const SizedBox(
-                      height: 200,
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-
-                  if (controller.errorMessage.value.isNotEmpty) {
-                    return Container(
-                      height: 200,
-                      padding: const EdgeInsets.all(16),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              controller.errorMessage.value,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: controller.getUserProfile,
-                              child: const Text("Retry"),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                  return Obx(() {
-                    final user = controller.userModel.value;
-                    if (user == null || controller.isLoading.value) {
-                      return _buildHeaderShimmer();
-                    }
-                    return Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () async {
-                            if (controller.isUpdating.value) return;
-                            final ImagePicker picker = ImagePicker();
-                            final XFile? image = await picker.pickImage(
-                              source: ImageSource.gallery,
-                            );
-                            if (image != null) {
-                              controller.selectedImage.value = File(image.path);
-                              await controller.updateProfile(
-                                name: user.name,
-                                phone: user.phone,
-                              );
-                            }
-                          },
-                          child: Stack(
-                            children: [
-                              Container(
-                                height: 140,
-                                width: 140,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 4,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 10,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(3.0),
-                                  child: Container(
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.white,
-                                    ),
-                                    child: ClipOval(
-                                      child:
-                                          controller.selectedImage.value != null
-                                          ? Image.file(
-                                              controller.selectedImage.value!,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : (user.image != null &&
-                                                user.image!.isNotEmpty)
-                                          ? Image.network(
-                                              user.image!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (
-                                                    context,
-                                                    error,
-                                                    stackTrace,
-                                                  ) => Container(
-                                                    color: Colors.grey[200],
-                                                    child: const Icon(
-                                                      Icons.person,
-                                                      size: 80,
-                                                      color: Colors.grey,
-                                                    ),
-                                                  ),
-                                            )
-                                          : Container(
-                                              color: Colors.grey[200],
-                                              child: const Icon(
-                                                Icons.person,
-                                                size: 80,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  // Keep existing camera icon but position per mockup if needed
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          user.name,
-                          style: GoogleFonts.poppins(
-                            color: Colors.black,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          user.email,
-                          style: GoogleFonts.poppins(
-                            color: Colors.black54,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    );
-                  });
-                }),
-
-                const SizedBox(height: 20),
-
-                // Tabs + Content
-                Container(
-                  width: width,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topRight: Radius.circular(30),
-                      topLeft: Radius.circular(30),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      // Tabs
-                      Obx(() {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            color: Colors.white.withOpacity(0.5),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => controller.selectedTab.value = 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      gradient:
-                                          controller.selectedTab.value == 0
-                                          ? const LinearGradient(
-                                              colors: [
-                                                Color(0xFFFF277F),
-                                                Color(0xFF2870F3),
-                                              ],
-                                            )
-                                          : null,
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        "About me",
-                                        style: GoogleFonts.poppins(
-                                          color:
-                                              controller.selectedTab.value == 0
-                                              ? Colors.white
-                                              : Colors.black38,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    controller.selectedTab.value = 1;
-                                    controller.fetchMyCreations();
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      gradient:
-                                          controller.selectedTab.value == 1
-                                          ? const LinearGradient(
-                                              colors: [
-                                                Color(0xFFFF277F),
-                                                Color(0xFF2870F3),
-                                              ],
-                                            )
-                                          : null,
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        "My Creations",
-                                        style: GoogleFonts.poppins(
-                                          color:
-                                              controller.selectedTab.value == 1
-                                              ? Colors.white
-                                              : Colors.black38,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-
-                      const SizedBox(height: 20),
-
-                      // Tab Content
-                      Obx(() {
-                        return controller.selectedTab.value == 0
-                            ? const AboutMeWidget()
-                            : const MyCreationsWidget();
-                      }),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 100),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderShimmer() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[200]!,
-      highlightColor: Colors.grey[100]!,
-      child: Column(
-        children: [
-          Container(
-            height: 140,
-            width: 140,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(height: 24, width: 150, color: Colors.white),
-          const SizedBox(height: 8),
-          Container(height: 16, width: 200, color: Colors.white),
-        ],
-      ),
-    );
-  }
-
-  Widget _roundIcon(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.1),
-        ),
-        child: Icon(icon, color: Colors.black),
-      ),
-    );
   }
 }

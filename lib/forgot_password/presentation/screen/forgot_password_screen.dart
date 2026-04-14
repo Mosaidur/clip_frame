@@ -49,7 +49,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                         return LanguageToggleButton(
                           currentLanguage: langController.locale.value.languageCode == 'es' ? 'Es' : 'En',
                           onLanguageChanged: (lang) {
-                            langController.changeLanguage(
+                            langController.changeLocale(
                               lang == 'Es' ? const Locale('es', 'ES') : const Locale('en', 'US'),
                             );
                           },

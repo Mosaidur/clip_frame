@@ -100,7 +100,7 @@ class UserModel {
       image: json['profile'] ?? json['image'],
       businessName: json['businessName'],
       businessCategory: json['businessCategory'],
-      businessDescription: json['businessDescription'],
+      businessDescription: json['description'] ?? json['businessDescription'],
     );
   }
 

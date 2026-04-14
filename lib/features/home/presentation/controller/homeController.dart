@@ -16,6 +16,7 @@ import 'package:clip_frame/features/dashboard/presenatation/controller/dashboard
 import 'package:clip_frame/features/schedule/presenatation/controller/schedule_controller.dart';
 import 'package:clip_frame/features/dashboard/presenatation/widgets/schedule_list.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
+import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileScreen.dart';
 import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart'
     as tab_bar;
 

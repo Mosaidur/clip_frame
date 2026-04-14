@@ -84,7 +84,11 @@ class MyApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            supportedLocales: const [Locale('en', 'US'), Locale('es', 'ES')],
+            supportedLocales: const [
+              Locale('en', 'US'),
+              Locale('es', 'ES'),
+              Locale('hi', 'IN')
+            ],
             initialRoute: AppRoutes.SPLASH,
             getPages: AppRoutes.pages,
             debugShowCheckedModeBanner: false,

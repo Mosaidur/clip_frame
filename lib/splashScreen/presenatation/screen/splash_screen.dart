@@ -29,6 +29,19 @@ class _SplashScreenState extends State<SplashScreen> {
     // Check if user has a valid token
     String? token = await AuthService.getToken();
 
+    if (token != null && token.isNotEmpty) {
+      print("🔄 SplashScreen: Token found, attempting to refresh...");
+      bool refreshSuccess = await AuthService.refreshToken();
+      if (refreshSuccess) {
+        token = await AuthService.getToken(); // Get the new token
+      } else {
+        print(
+          "⚠️ SplashScreen: Token refresh failed, but keeping existing token for now.",
+        );
+        // token = null; // Don't nullify token here, let it proceed to check if it still works
+      }
+    }
+
     bool hasCompletedOnboarding = false;
     if (token != null && token.isNotEmpty) {
       // Decode email from token to check user-specific onboarding status

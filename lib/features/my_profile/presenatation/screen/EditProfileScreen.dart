@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'package:clip_frame/core/model/user_model.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
+import 'package:clip_frame/shared/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,6 +24,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       TextEditingController();
   final TextEditingController _businessDescriptionTEController =
       TextEditingController();
+  final TextEditingController _businessTypeTEController =
+      TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
@@ -33,6 +38,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _businessNameTEController.text = user.businessName ?? "";
       _businessCategoryTEController.text = user.businessCategory ?? "";
       _businessDescriptionTEController.text = user.businessDescription ?? "";
+      _businessTypeTEController.text = user.businessType;
     }
     // Reset selected image after build to avoid setState during build error
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -47,6 +53,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _businessNameTEController.dispose();
     _businessCategoryTEController.dispose();
     _businessDescriptionTEController.dispose();
+    _businessTypeTEController.dispose();
     super.dispose();
   }
 
@@ -56,7 +63,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          "Edit Profile",
+          "Edit Profile".tr,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -180,59 +187,202 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: Column(
                       children: [
                         _buildTextField(
-                          "Full Name",
+                          "Full Name".tr,
                           _nameTEController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your name';
+                              return 'Please enter your name'.tr;
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
-                          "Phone Number",
+                          "Phone Number".tr,
                           _phoneTEController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter phone number';
+                              return 'Please enter phone number'.tr;
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
-                          "Business Name",
+                          "Business Name".tr,
                           _businessNameTEController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter business name';
+                              return 'Please enter business name'.tr;
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
-                          "Business Category",
+                          "Business Category".tr,
                           _businessCategoryTEController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter business category';
+                              return 'Please enter business category'.tr;
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
-                          "Business Description",
+                          "Business Type".tr,
+                          _businessTypeTEController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter business type'.tr;
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          "Business Description".tr,
                           _businessDescriptionTEController,
                           maxLines: 3,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter business description';
+                              return 'Please enter business description'.tr;
                             }
                             return null;
                           },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Language Selection
+                        _buildLabel("Preferred Languages".tr),
+                        const SizedBox(height: 8),
+                        Obx(
+                          () => Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: controller.availableLanguages
+                                .map(
+                                  (lang) => ChoiceChip(
+                                    label: Text(
+                                      lang.tr,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color:
+                                            controller.selectedLanguage.value ==
+                                                lang
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                    selected:
+                                        controller.selectedLanguage.value ==
+                                        lang,
+                                    onSelected: (selected) {
+                                      if (selected) {
+                                        controller.setLanguage(lang);
+                                      }
+                                    },
+                                    selectedColor: const Color(0xFFB38FFC),
+                                    backgroundColor: Colors.grey[100],
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Timezone Selection
+                        _buildLabel("Timezone".tr),
+                        const SizedBox(height: 8),
+                        Obx(
+                          () => DropdownButtonFormField<String>(
+                            value:
+                                controller.availableTimezones.contains(
+                                  controller.selectedTimezone.value,
+                                )
+                                ? controller.selectedTimezone.value
+                                : controller.availableTimezones.first,
+                            items: controller.availableTimezones
+                                .map(
+                                  (tz) => DropdownMenuItem(
+                                    value: tz,
+                                    child: Text(
+                                      tz,
+                                      style: GoogleFonts.poppins(fontSize: 14),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                controller.setTimezone(val);
+                              }
+                            },
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(
+                                  color: Colors.grey[300]!,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+
+                        // Password and Subscription Section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Membership Plan:".tr,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFB38FFC).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                (controller.userModel.value?.membership ??
+                                        "Free Plan")
+                                    .tr,
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: const Color(0xFFB38FFC),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Get.toNamed(AppRoutes.forgotPassword);
+                          },
+                          icon: const Icon(Icons.lock_reset),
+                          label: Text("Change Password".tr),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 45),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 30),
 
@@ -249,16 +399,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         controller.updateProfile(
                                           name: _nameTEController.text.trim(),
                                           phone: _phoneTEController.text.trim(),
-                                          businessName:
-                                              _businessNameTEController.text
-                                                  .trim(),
                                           businessCategory:
                                               _businessCategoryTEController.text
+                                                  .trim(),
+                                          businessName:
+                                              _businessNameTEController.text
                                                   .trim(),
                                           businessDescription:
                                               _businessDescriptionTEController
                                                   .text
                                                   .trim(),
+                                          businessType:
+                                              _businessTypeTEController.text
+                                                  .trim(),
+                                          timezone:
+                                              controller.selectedTimezone.value,
+                                          preferredLanguage:
+                                              controller.selectedLanguage.value,
                                         );
                                       }
                                     },
@@ -280,7 +437,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                       ),
                                     )
                                   : Text(
-                                      "Save Changes",
+                                      "Save Changes".tr,
                                       style: GoogleFonts.poppins(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
@@ -297,6 +454,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String label) {
+    return Text(
+      label,
+      style: GoogleFonts.poppins(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: Colors.grey[700],
       ),
     );
   }

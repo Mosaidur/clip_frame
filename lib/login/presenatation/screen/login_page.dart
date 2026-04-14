@@ -65,7 +65,7 @@ class LoginScreen extends GetView<LoginController> {
                               ? 'Es'
                               : 'En',
                           onLanguageChanged: (lang) {
-                            langController.changeLanguage(
+                            langController.changeLocale(
                               lang == 'Es'
                                   ? const Locale('es', 'ES')
                                   : const Locale('en', 'US'),
