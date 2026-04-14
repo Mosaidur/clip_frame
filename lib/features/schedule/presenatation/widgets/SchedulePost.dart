@@ -222,8 +222,7 @@ class SchedulePostWidget extends StatelessWidget {
           CarouselSlider(
             items: mediaUrls.map((url) => _buildImage(url)).toList(),
             options: CarouselOptions(
-              aspectRatio:
-                  16 / 9, // Better default for landscape, but still flexible
+              height: 230.h, // Consistent height for the list view
               viewportFraction: 1.0,
               enableInfiniteScroll: false,
             ),

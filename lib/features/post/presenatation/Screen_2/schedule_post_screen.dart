@@ -892,13 +892,16 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
         "time": formattedTime,
       };
 
-      final String contentType = controller.selectedContentType.value;
-
-      // Use widget.imagePaths (edited) for multiple images, fallback to controller files
+      // Ensure contentType is 'carousel' if multiple images are selected
       final List<File> filesToUpload =
           widget.imagePaths != null && widget.imagePaths!.isNotEmpty
           ? widget.imagePaths!.map((path) => File(path)).toList()
           : controller.selectedFiles;
+
+      String contentType = controller.selectedContentType.value;
+      if (filesToUpload.length > 1) {
+        contentType = 'carousel';
+      }
 
       final response = widget.postToEdit != null
           ? await ContentService.updateContent(

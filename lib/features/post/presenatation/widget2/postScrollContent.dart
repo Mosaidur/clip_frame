@@ -34,13 +34,55 @@ class PostScrollContnet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black, // Background color for horizontal images
       body: Stack(
         children: [
-          /// Fullscreen Video
+          /// Fullscreen Image with containment
           Positioned.fill(
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover, // Ensures the image fills the space
+            child: Container(
+              color: Colors.black,
+              child: Center(
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit
+                      .contain, // Changed from cover to contain to show full horizontal image
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child: Icon(Icons.error, color: Colors.white, size: 50),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          /// Gradient overlay to ensure text readability on light images
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.4),
+                      Colors.transparent,
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                    stops: const [0.0, 0.2, 0.7, 1.0],
+                  ),
+                ),
+              ),
             ),
           ),
 

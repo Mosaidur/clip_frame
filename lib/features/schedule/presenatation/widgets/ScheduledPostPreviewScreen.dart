@@ -36,21 +36,24 @@ class _ScheduledPostPreviewScreenState
       body: Stack(
         children: [
           // Media Content
-          Positioned.fill(
-            child: mediaUrls.isEmpty
-                ? const Center(
-                    child: Icon(
-                      Icons.broken_image,
-                      color: Colors.white,
-                      size: 50,
-                    ),
-                  )
-                : mediaUrls.length > 1
-                ? _buildCarousel(mediaUrls)
-                : isVideo
-                ? MediaDisplayWidget(videoUrl: mediaUrls[0], autoPlay: true)
-                : _buildSingleImage(mediaUrls[0]),
-          ),
+          mediaUrls.isEmpty
+              ? const Center(
+                  child: Icon(
+                    Icons.broken_image,
+                    color: Colors.white,
+                    size: 50,
+                  ),
+                )
+              : Center(
+                  child: mediaUrls.length > 1
+                      ? _buildCarousel(mediaUrls)
+                      : isVideo
+                      ? MediaDisplayWidget(
+                          videoUrl: mediaUrls[0],
+                          autoPlay: true,
+                        )
+                      : _buildSingleImage(mediaUrls[0]),
+                ),
 
           // Top Bar (Back Button)
           Positioned(
@@ -222,9 +225,7 @@ class _ScheduledPostPreviewScreenState
         maxScale: 4.0,
         child: Image.network(
           url,
-          fit: BoxFit
-              .fitWidth, // This ensures landscape images look landscape and portrait look portrait
-          width: double.infinity,
+          fit: BoxFit.contain, // Maintain original aspect ratio
           alignment: Alignment.center,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
@@ -241,14 +242,15 @@ class _ScheduledPostPreviewScreenState
   }
 
   Widget _buildCarousel(List<String> urls) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return CarouselSlider(
       items: urls.map((url) => _buildSingleImage(url)).toList(),
       carouselController: _carouselController,
       options: CarouselOptions(
-        height: MediaQuery.of(context).size.height,
+        height: screenWidth, // Force a square container
         viewportFraction: 1.0,
         enableInfiniteScroll: false,
-        scrollPhysics: const BouncingScrollPhysics(), // Smoother sliding
+        scrollPhysics: const BouncingScrollPhysics(),
         onPageChanged: (index, reason) {
           setState(() {
             _current = index;

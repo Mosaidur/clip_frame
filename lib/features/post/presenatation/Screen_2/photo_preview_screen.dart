@@ -48,16 +48,15 @@ class PhotoEditSession {
   Size? imageSize;
   bool isError = false;
 
-  PhotoEditSession({
-    required this.imagePath,
-  }) : adjustValues = {
-          "Brightness": 0.0,
-          "Contrast": 1.0,
-          "Saturation": 1.0,
-          "Highlights": 0.0,
-          "Shadows": 0.0,
-          "Temperature": 0.0,
-        };
+  PhotoEditSession({required this.imagePath})
+    : adjustValues = {
+        "Brightness": 0.0,
+        "Contrast": 1.0,
+        "Saturation": 1.0,
+        "Highlights": 0.0,
+        "Shadows": 0.0,
+        "Temperature": 0.0,
+      };
 }
 
 class PhotoPreviewScreen extends StatefulWidget {
@@ -77,7 +76,6 @@ class PhotoPreviewScreen extends StatefulWidget {
 }
 
 class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
-  final GlobalKey _renderKey = GlobalKey();
   String? activeTool; // 'Filter', 'Adjust', 'Crop', 'BG', 'Split', 'Trim'
 
   // Sessions Logic
@@ -184,6 +182,11 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
 
     // Load initial session state into UI
     _syncFromSession();
+
+    // Pre-load dimensions for all images to make swiping smoother
+    for (int i = 0; i < _sessions.length; i++) {
+      _loadImageDimensionsForIndex(i);
+    }
   }
 
   void _syncToSession() {
@@ -215,7 +218,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     selectedTextId = null;
 
     if (_imageSize == null) {
-      _loadImageDimensions();
+      _loadImageDimensionsForIndex(_currentIndex);
     }
   }
 
@@ -247,17 +250,19 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     });
   }
 
-  void _loadImageDimensions() async {
-    final s = _sessions[_currentIndex];
+  void _loadImageDimensionsForIndex(int index) async {
+    final s = _sessions[index];
+    if (s.imageSize != null) return;
+
     try {
       final File file = File(s.imagePath);
       if (!file.existsSync()) {
-        debugPrint(
-            "PhotoPreviewScreen: Image file does not exist at ${s.imagePath}");
         if (mounted) {
           setState(() {
-            _isError = true;
             s.isError = true;
+            if (index == _currentIndex) {
+              _isError = true;
+            }
           });
         }
         return;
@@ -268,21 +273,22 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
 
       if (mounted) {
         setState(() {
-          _imageSize = Size(
-            image.width.toDouble(),
-            image.height.toDouble(),
-          );
-          s.imageSize = _imageSize;
-          _isError = false;
+          final size = Size(image.width.toDouble(), image.height.toDouble());
+          s.imageSize = size;
           s.isError = false;
+          if (index == _currentIndex) {
+            _imageSize = size;
+            _isError = false;
+          }
         });
       }
     } catch (e) {
-      debugPrint("PhotoPreviewScreen: Exception in _loadImageDimensions: $e");
       if (mounted) {
         setState(() {
-          _isError = true;
           s.isError = true;
+          if (index == _currentIndex) {
+            _isError = true;
+          }
         });
       }
     }
@@ -359,181 +365,200 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: const Color(0xFFF9F1E6),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leadingWidth: 66.w,
-        leading: Padding(
-          padding: EdgeInsets.only(left: 20.w),
-          child: Center(
-            child: CustomBackButton(
-              onPressed: () {
-                if (activeTool != null) {
-                  setState(() => activeTool = null);
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-            ),
-          ),
-        ),
-        title: Text(
-          widget.imagePaths.length > 1
-              ? "${_currentIndex + 1} / ${widget.imagePaths.length}"
-              : "Preview",
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20.sp,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: _isSaving ? null : _handleSaveAndContinue,
-            child: Text(
-              widget.isCarouselEdit ? "SAVE" : "DONE",
-              style: TextStyle(
-                color: const Color(0xFFFF4D8D),
-                fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _sessions.length,
-                onPageChanged: _onPageChanged,
-                physics: activeTool != null
-                    ? const NeverScrollableScrollPhysics()
-                    : const BouncingScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      if ((_imageSize == null || index != _currentIndex) && !_isSaving) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (_isSaving && _imageSize == null) {
-                        return const SizedBox.shrink(); // Hide background during saving
-                      }
-                      if (_isError) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.error_outline,
-                                  color: Colors.red, size: 48.sp),
-                              SizedBox(height: 16.h),
-                              Text(
-                                "Failed to load image",
-                                style: TextStyle(
-                                    color: Colors.black54, fontSize: 16.sp),
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                _sessions[index].imagePath,
-                                style: TextStyle(
-                                    color: Colors.black38, fontSize: 10.sp),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      // Actual image dimensions (swap if rotated 90° or 270°)
-                      double imgW = _imageSize!.width;
-                      double imgH = _imageSize!.height;
-                      if (_rotation % 2 != 0) {
-                        final t = imgW;
-                        imgW = imgH;
-                        imgH = t;
-                      }
-
-                      // Calculate canvas size that fits inside available space
-                      double maxW = constraints.maxWidth;
-                      double maxH = constraints.maxHeight;
-
-                      double canvasW = maxW;
-                      double canvasH = canvasW * (imgH / imgW);
-
-                      if (canvasH > maxH) {
-                        canvasH = maxH;
-                        canvasW = canvasH * (imgW / imgH);
-                      }
-
-                      final imageConstraints = BoxConstraints(
-                        maxWidth: _rotation % 2 == 0 ? canvasW : canvasH,
-                        maxHeight: _rotation % 2 == 0 ? canvasH : canvasW,
-                      );
-
-                      return Center(
-                        child: SizedBox(
-                          width: canvasW,
-                          height: canvasH,
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: RepaintBoundary(
-                                  key: _renderKey,
-                                  child: _buildPreviewImage(imageConstraints),
-                                ),
-                              ),
-                              if (activeTool == 'Crop')
-                                _buildCropOverlay(imageConstraints),
-                              if (activeTool == 'BG') _buildBGOverlay(),
-                              _buildTextOverlay(imageConstraints),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leadingWidth: 66.w,
+          leading: Padding(
+            padding: EdgeInsets.only(left: 20.w),
+            child: Center(
+              child: CustomBackButton(
+                onPressed: () {
+                  if (activeTool != null) {
+                    setState(() => activeTool = null);
+                  } else {
+                    Navigator.pop(context);
+                  }
                 },
               ),
             ),
-            _buildControlSection(),
+          ),
+          title: Text(
+            widget.imagePaths.length > 1
+                ? "${_currentIndex + 1} / ${widget.imagePaths.length}"
+                : "Preview",
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 20.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            TextButton(
+              onPressed: _isSaving ? null : _handleSaveAndContinue,
+              child: Text(
+                widget.isCarouselEdit ? "SAVE" : "DONE",
+                style: TextStyle(
+                  color: const Color(0xFFFF4D8D),
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ],
         ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _sessions.length,
+                  onPageChanged: _onPageChanged,
+                  physics: activeTool != null
+                      ? const NeverScrollableScrollPhysics()
+                      : const BouncingScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    final s = _sessions[index];
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (s.imageSize == null && !_isSaving) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (_isSaving && s.imageSize == null) {
+                          return const SizedBox.shrink(); // Hide background during saving
+                        }
+                        if (s.isError) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 48.sp,
+                                ),
+                                SizedBox(height: 16.h),
+                                Text(
+                                  "Failed to load image",
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 16.sp,
+                                  ),
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  s.imagePath,
+                                  style: TextStyle(
+                                    color: Colors.black38,
+                                    fontSize: 10.sp,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        // Actual image dimensions (swap if rotated 90° or 270°)
+                        double imgW = s.imageSize!.width;
+                        double imgH = s.imageSize!.height;
+                        if (s.rotation % 2 != 0) {
+                          final t = imgW;
+                          imgW = imgH;
+                          imgH = t;
+                        }
+
+                        // Calculate canvas size that fits inside available space
+                        double maxW = constraints.maxWidth;
+                        double maxH = constraints.maxHeight;
+
+                        double canvasW = maxW;
+                        double canvasH = canvasW * (imgH / imgW);
+
+                        if (canvasH > maxH) {
+                          canvasH = maxH;
+                          canvasW = canvasH * (imgW / imgH);
+                        }
+
+                        final imageConstraints = BoxConstraints(
+                          maxWidth: s.rotation % 2 == 0 ? canvasW : canvasH,
+                          maxHeight: s.rotation % 2 == 0 ? canvasH : canvasW,
+                        );
+
+                        return Center(
+                          child: SizedBox(
+                            width: canvasW,
+                            height: canvasH,
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: _buildPreviewImage(
+                                    imageConstraints,
+                                    index,
+                                  ),
+                                ),
+                                if (activeTool == 'Crop' &&
+                                    index == _currentIndex)
+                                  _buildCropOverlay(imageConstraints),
+                                if (activeTool == 'BG' &&
+                                    index == _currentIndex)
+                                  _buildBGOverlay(),
+                                if (index == _currentIndex)
+                                  _buildTextOverlay(imageConstraints),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              _buildControlSection(),
+            ],
+          ),
+        ),
       ),
-    ),
     );
   }
 
-  Widget _buildPreviewImage(BoxConstraints constraints) {
+  Widget _buildPreviewImage(BoxConstraints constraints, int index) {
+    final s = _sessions[index];
     // Match logic in _buildCropOverlay
     double availW = (constraints.maxWidth - 20.w).clamp(0.1, double.infinity);
     double availH = (constraints.maxHeight - 20.h).clamp(0.1, double.infinity);
-    final renderSize = _getRenderedImageSize(availW, availH);
-    _latestRenderSize =
-        renderSize; // Save to precisely map text coordinates later
+
+    // Use session-specific image size if available
+    final imgSizeToUse = s.imageSize ?? _imageSize ?? Size.zero;
+    final renderSize = _getRenderedImageSizeForSession(availW, availH, s);
+
+    if (index == _currentIndex) {
+      _latestRenderSize = renderSize;
+    }
 
     Widget imageWidget = ColorFiltered(
-      colorFilter: ui.ColorFilter.matrix(_getCombinedMatrix()),
-      child: Image.file(File(_sessions[_currentIndex].imagePath),
-          fit: BoxFit.contain),
+      colorFilter: ui.ColorFilter.matrix(_getCombinedMatrixForSession(s)),
+      child: Image.file(File(s.imagePath), fit: BoxFit.contain),
     );
 
     Widget content;
-    if (activeTool == 'Crop') {
+    if (activeTool == 'Crop' && index == _currentIndex) {
       content = imageWidget;
     } else {
       // Calculate translation to center the cropped area in the preview
       double translateX =
-          (0.5 - (cropRect.left + cropRect.width / 2)) * renderSize.width;
+          (0.5 - (s.cropRect.left + s.cropRect.width / 2)) * renderSize.width;
       double translateY =
-          (0.5 - (cropRect.top + cropRect.height / 2)) * renderSize.height;
+          (0.5 - (s.cropRect.top + s.cropRect.height / 2)) * renderSize.height;
 
       content = Center(
         child: Container(
-          width: cropRect.width * renderSize.width,
-          height: cropRect.height * renderSize.height,
+          width: s.cropRect.width * renderSize.width,
+          height: s.cropRect.height * renderSize.height,
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(8.r)),
           child: Stack(
@@ -542,11 +567,11 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
               Positioned(
                 left:
                     translateX +
-                    (cropRect.width * renderSize.width / 2) -
+                    (s.cropRect.width * renderSize.width / 2) -
                     (renderSize.width / 2),
                 top:
                     translateY +
-                    (cropRect.height * renderSize.height / 2) -
+                    (s.cropRect.height * renderSize.height / 2) -
                     (renderSize.height / 2),
                 width: renderSize.width,
                 height: renderSize.height,
@@ -571,8 +596,34 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
         ],
       ),
       clipBehavior: Clip.hardEdge,
-      child: RotatedBox(quarterTurns: _rotation, child: content),
+      child: RotatedBox(quarterTurns: s.rotation, child: content),
     );
+  }
+
+  Size _getRenderedImageSizeForSession(
+    double availW,
+    double availH,
+    PhotoEditSession s,
+  ) {
+    if (s.imageSize == null) return Size.zero;
+    double imgW = s.imageSize!.width;
+    double imgH = s.imageSize!.height;
+
+    // If rotated 90 or 270 degrees, swap dimensions for aspect ratio calc
+    if (s.rotation % 2 != 0) {
+      double temp = imgW;
+      imgW = imgH;
+      imgH = temp;
+    }
+
+    double imgAspect = imgW / imgH;
+    double areaAspect = availW / availH;
+
+    if (imgAspect > areaAspect) {
+      return Size(availW, availW / imgAspect);
+    } else {
+      return Size(availH * imgAspect, availH);
+    }
   }
 
   List<double> _getCombinedMatrix() {
@@ -3586,10 +3637,9 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     return frame.image;
   }
 
-  Future<String?> _saveEditedImage() async {
-    if (_imageSize == null) return null;
+  Future<String?> _saveEditedImage(PhotoEditSession s, int index) async {
     try {
-      final originalImage = await _getUiImage(File(_sessions[_currentIndex].imagePath));
+      final originalImage = await _getUiImage(File(s.imagePath));
       final double fullW = originalImage.width.toDouble();
       final double fullH = originalImage.height.toDouble();
 
@@ -3597,17 +3647,18 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       ui.PictureRecorder recorder = ui.PictureRecorder();
       ui.Canvas canvas = ui.Canvas(recorder);
 
-      double canvasW = _rotation % 2 == 0 ? fullW : fullH;
-      double canvasH = _rotation % 2 == 0 ? fullH : fullW;
+      int sessionRotation = s.rotation;
+      double canvasW = sessionRotation % 2 == 0 ? fullW : fullH;
+      double canvasH = sessionRotation % 2 == 0 ? fullH : fullW;
 
       canvas.save();
       // Center and rotate
       canvas.translate(canvasW / 2, canvasH / 2);
-      canvas.rotate(_rotation * 3.14159 / 2);
+      canvas.rotate(sessionRotation * 3.14159 / 2);
       canvas.translate(-fullW / 2, -fullH / 2);
 
       ui.Paint paint = ui.Paint()
-        ..colorFilter = ui.ColorFilter.matrix(_getCombinedMatrix());
+        ..colorFilter = ui.ColorFilter.matrix(_getCombinedMatrixForSession(s));
       canvas.drawImage(originalImage, Offset.zero, paint);
       canvas.restore();
 
@@ -3620,20 +3671,21 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       ui.PictureRecorder cropRecorder = ui.PictureRecorder();
       ui.Canvas cropCanvas = ui.Canvas(cropRecorder);
 
+      Rect sessionCropRect = s.cropRect;
       Rect srcRect = Rect.fromLTWH(
-        cropRect.left * canvasW,
-        cropRect.top * canvasH,
-        cropRect.width * canvasW,
-        cropRect.height * canvasH,
+        sessionCropRect.left * canvasW,
+        sessionCropRect.top * canvasH,
+        sessionCropRect.width * canvasW,
+        sessionCropRect.height * canvasH,
       );
 
       Rect dstRect = Rect.fromLTWH(0, 0, srcRect.width, srcRect.height);
       cropCanvas.drawImageRect(filteredFull, srcRect, dstRect, ui.Paint());
 
       // 3. Draw text items
-      for (var item in textItems) {
+      for (var item in s.textItems) {
         // Find the accurate scale mapping screen dimensions to canvas dimensions
-        final screenWToMatch = _latestRenderSize?.width ?? 1.sw;
+        final screenWToMatch = _latestRenderSize?.width ?? 360.w;
         final double scale = canvasW / screenWToMatch;
 
         final textStyle = ui.TextStyle(
@@ -3665,29 +3717,22 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
           ..pushStyle(textStyle)
           ..addText(item.text);
 
-        // Set constraint width to infinity so it wraps to its actual content like a Container without width bounds
         final paragraph = paragraphBuilder.build()
           ..layout(ui.ParagraphConstraints(width: double.infinity));
 
-        // Use the paragraph's actual sized width to correctly apply the UI offset
-        // In the UI, the Positioned is offset by 60.w, but we should center the drawing around exactly where it was taped/dragged
-        // The textX/textY logic already subtracts the scaled 60.w offset.
         double textX =
             (item.position.dx * canvasW) - srcRect.left - (60.w * scale);
         double textY =
             (item.position.dy * canvasH) - srcRect.top - (40.h * scale);
 
         cropCanvas.save();
-        // Move to the text position, rotate, then draw
         cropCanvas.translate(textX, textY);
         cropCanvas.rotate(item.rotation);
 
-        // Account for Opacity
         final paint = ui.Paint()
           ..color = Colors.white.withOpacity(item.opacity);
         cropCanvas.saveLayer(null, paint);
 
-        // Draw Background if needed
         if (item.backgroundStyle != 'none') {
           final bgPaint = ui.Paint()
             ..color = item.backgroundStyle == 'box'
@@ -3695,10 +3740,9 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
                 : item.color.withOpacity(0.4)
             ..style = ui.PaintingStyle.fill;
 
-          // Box size based on paragraph's actual intrinsic width
           final rect = Rect.fromLTWH(
-            -10 * scale, // matched horizontally padding 10.w in UI
-            -6 * scale, // matched vertically padding 6.h in UI
+            -10 * scale,
+            -6 * scale,
             paragraph.maxIntrinsicWidth + 20 * scale,
             paragraph.height + 12 * scale,
           );
@@ -3710,8 +3754,8 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
 
         cropCanvas.drawParagraph(paragraph, Offset.zero);
 
-        cropCanvas.restore(); // Restore layer
-        cropCanvas.restore(); // Restore rotate/translate
+        cropCanvas.restore();
+        cropCanvas.restore();
       }
 
       ui.Image finalImage = await cropRecorder.endRecording().toImage(
@@ -3725,8 +3769,10 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       Uint8List pngBytes = byteData!.buffer.asUint8List();
 
       final directory = await getTemporaryDirectory();
-      final path =
-          '${directory.path}/edited_photo_${DateTime.now().millisecondsSinceEpoch}.png';
+      final timestamp = DateTime.now().microsecondsSinceEpoch;
+      final random =
+          (1000 + (index * 100) + (DateTime.now().millisecond % 1000));
+      final path = '${directory.path}/img_${timestamp}_$random.png';
       File imgFile = File(path);
       await imgFile.writeAsBytes(pngBytes);
 
@@ -3742,12 +3788,158 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     }
   }
 
+  List<double> _getCombinedMatrixForSession(PhotoEditSession s) {
+    List<double> matrix = _getInterpolatedFilterMatrixForSession(s);
+
+    double b = s.adjustValues["Brightness"]!;
+    double c = s.adjustValues["Contrast"]!;
+    double sat = s.adjustValues["Saturation"]!;
+    double h = s.adjustValues["Highlights"]!;
+    double sh = s.adjustValues["Shadows"]!;
+    double t = s.adjustValues["Temperature"]!;
+
+    matrix[4] += b * 255;
+    matrix[9] += b * 255;
+    matrix[14] += b * 255;
+
+    for (int i in [0, 6, 12]) {
+      matrix[i] *= c;
+    }
+
+    double invSat = 1.0 - sat;
+    double R = 0.213 * invSat;
+    double G = 0.715 * invSat;
+    double B = 0.072 * invSat;
+
+    List<double> satMatrix = [
+      R + sat,
+      G,
+      B,
+      0,
+      0,
+      R,
+      G + sat,
+      B,
+      0,
+      0,
+      R,
+      G,
+      B + sat,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+    ];
+    matrix = _multiplyMatrices(matrix, satMatrix);
+
+    List<double> tempMatrix = [
+      1.0 + t * 0.1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1.0 + t * 0.05,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1.0 - t * 0.1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+    ];
+    matrix = _multiplyMatrices(matrix, tempMatrix);
+
+    if (h != 0 || sh != 0) {
+      double hGain = 1.0 + h * 0.2;
+      double sOffset = sh * 30;
+      List<double> lightMatrix = [
+        hGain,
+        0,
+        0,
+        0,
+        sOffset,
+        0,
+        hGain,
+        0,
+        0,
+        sOffset,
+        0,
+        0,
+        hGain,
+        0,
+        sOffset,
+        0,
+        0,
+        0,
+        1,
+        0,
+      ];
+      matrix = _multiplyMatrices(matrix, lightMatrix);
+    }
+
+    return matrix;
+  }
+
+  List<double> _getInterpolatedFilterMatrixForSession(PhotoEditSession s) {
+    final List<double> identity = [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+    ];
+
+    if (s.selectedFilterIndex == 0 && s.selectedFilterCategory == "Trending") {
+      return identity;
+    }
+
+    final currentFilters = filterCategories[s.selectedFilterCategory]!;
+    if (s.selectedFilterIndex < currentFilters.length &&
+        currentFilters[s.selectedFilterIndex]["name"] == "NONE") {
+      return identity;
+    }
+
+    final target = _getFilterMatrix(
+      s.selectedFilterIndex,
+      s.selectedFilterCategory,
+    );
+    final result = List<double>.filled(20, 0.0);
+    for (int i = 0; i < 20; i++) {
+      result[i] = identity[i] + (target[i] - identity[i]) * s.filterIntensity;
+    }
+    return result;
+  }
+
   void _handleSaveAndContinue() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
     _syncToSession();
 
-    // Show processing overlay
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -3770,21 +3962,12 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
 
     try {
       List<String> editedPaths = [];
-      final originalIndex = _currentIndex;
-
       for (int i = 0; i < _sessions.length; i++) {
-        _currentIndex = i;
-        await _syncFromSessionAsync();
-        
-        final path = await _saveEditedImage();
+        final path = await _saveEditedImage(_sessions[i], i);
         if (path != null) {
           editedPaths.add(path);
         }
       }
-
-      // Restore
-      _currentIndex = originalIndex;
-      _syncFromSession();
 
       if (mounted) Navigator.pop(context); // dismiss dialog
       setState(() => _isSaving = false);
@@ -3843,7 +4026,9 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Delete Image"),
-        content: const Text("Are you sure you want to remove this image from the carousel?"),
+        content: const Text(
+          "Are you sure you want to remove this image from the carousel?",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
