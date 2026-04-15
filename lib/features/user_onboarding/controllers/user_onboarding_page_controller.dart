@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -37,7 +38,7 @@ class UserOnboardingPageController extends GetxController {
   var selectedAudiences = <String>[].obs;
   final List<String> audienceOptions = ["local", "tourist", "online", "all"];
 
-  var selectedLanguage = 'en'.obs; // Language code for backend
+  var selectedLanguages = <String>['en'].obs;
   var languageOptions = [
     "en", // English
     "es", // Spanish
@@ -60,7 +61,9 @@ class UserOnboardingPageController extends GetxController {
   void addCustomLanguage(String language) {
     if (!languageOptions.contains(language)) {
       languageOptions.add(language);
-      selectedLanguage.value = language;
+      if (!selectedLanguages.contains(language)) {
+        selectedLanguages.add(language);
+      }
     }
   }
 
@@ -179,11 +182,17 @@ class UserOnboardingPageController extends GetxController {
     bool success = false;
 
     try {
+      final List<String> audienceList = selectedAudiences.toList();
+      final List<String> languageList = selectedLanguages.toList();
+
+      debugPrint("🚀 DEBUG: Selected Languages: $languageList");
+      debugPrint("🚀 DEBUG: Selected Audiences: $audienceList");
+
       Map<String, dynamic> data = {
         "businessType": selectedBusinessType.value,
         "businessDescription": businessDescriptionController.text,
-        "targetAudience": selectedAudiences,
-        "preferredLanguages": [selectedLanguage.value],
+        "targetAudience": audienceList,
+        "preferredLanguages": languageList,
         "autoTranslateCaptions": autoTranslateCaptions.value,
         "socialHandles": [
           if (isFacebookConnected.value)
@@ -210,6 +219,7 @@ class UserOnboardingPageController extends GetxController {
         },
       };
 
+      debugPrint("🚀 DEBUG: 📦 Onboarding Payload being sent: ${jsonEncode(data)}");
       print("📦 Onboarding Payload: $data");
 
       String? token = await AuthService.getToken();
@@ -237,6 +247,7 @@ class UserOnboardingPageController extends GetxController {
 
       if (success) {
         String? email = OnboardingStatusService.getEmailFromToken(token ?? "");
+        debugPrint("🚀 DEBUG: 📦 Onboarding Body being sent: ${jsonEncode(data)}");
         if (email != null) {
           await OnboardingStatusService.markOnboardingComplete(email);
         }
@@ -406,8 +417,14 @@ class UserOnboardingPageController extends GetxController {
     }
   }
 
-  void selectLanguage(String language) {
-    selectedLanguage.value = language;
+  void toggleLanguage(String language) {
+    if (selectedLanguages.contains(language)) {
+      if (selectedLanguages.length > 1) {
+        selectedLanguages.remove(language);
+      }
+    } else {
+      selectedLanguages.add(language);
+    }
   }
 
   void selectPlatform(String platform) {

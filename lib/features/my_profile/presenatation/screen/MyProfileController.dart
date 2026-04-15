@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:clip_frame/core/model/user_model.dart';
 import 'package:clip_frame/core/model/user_onboarding_model.dart';
 import 'package:clip_frame/core/services/api_services/user_onboarding/user_onboarding_service.dart';
@@ -61,7 +62,11 @@ class MyProfileController extends GetxController {
   var creationsErrorMessage = ''.obs;
 
   // Language and Timezone Selection
-  final List<String> availableLanguages = ["English", "Spanish"];
+  final List<String> availableLanguages = [
+    "English",
+    "Spanish",
+  ];
+
   final List<String> availableAudiences = [
     "General Audience",
     "Students",

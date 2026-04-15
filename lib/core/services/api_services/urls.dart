@@ -39,7 +39,7 @@ class Urls {
   static const String getMyContentsUrl = "$baseUrl/api/v1/content/my-contents";
 
   //plane api
-  static const String getPlaneUrl = "$baseUrl/api/v1/plan";
+  static const String getPlaneUrl = "$baseUrl/api/v1/subscription/plans";
 
   //social integration
 
