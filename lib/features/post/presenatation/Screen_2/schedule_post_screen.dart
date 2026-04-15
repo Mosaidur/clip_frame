@@ -925,9 +925,6 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           : controller.selectedFiles;
 
       String contentType = controller.selectedContentType.value;
-      if (filesToUpload.length > 1) {
-        contentType = 'carousel';
-      }
 
       final response = widget.postToEdit != null
           ? await ContentService.updateContent(

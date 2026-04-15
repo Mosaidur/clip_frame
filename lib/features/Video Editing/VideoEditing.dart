@@ -449,6 +449,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       await _controller.seekTo(actualSeek);
 
       if (play) _controller.play();
+      if (mounted) setState(() {});
     } catch (e) {
       debugPrint("Error setting current segment: $e");
       setState(() => initialized = false);
@@ -472,6 +473,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         } else {
           _controller.pause();
           _controller.seekTo(currentSegment!.startOffset);
+          if (mounted) setState(() {});
         }
       }
 

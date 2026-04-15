@@ -93,7 +93,7 @@ class _MultiImagePreviewScreenState extends State<MultiImagePreviewScreen> {
                 controller.selectedFiles.assignAll(
                   _currentPaths.map((e) => File(e)).toList(),
                 );
-                controller.selectedContentType.value = 'carousel';
+                controller.selectedContentType.value = 'post';
                 controller.templateId.value = widget.template?.id ?? "";
               }
               Navigator.push(
