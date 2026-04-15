@@ -1,4 +1,6 @@
 import 'package:clip_frame/core/model/user_model.dart';
+import 'package:clip_frame/core/model/user_onboarding_model.dart';
+import 'package:clip_frame/core/services/api_services/user_onboarding/user_onboarding_service.dart';
 import 'package:clip_frame/splashScreen/controllers/language_controller.dart';
 import 'package:clip_frame/core/services/api_services/authentication/logout_controller.dart'
     as api;
@@ -34,8 +36,15 @@ class MyProfileController extends GetxController {
 
   // Social Auth Service
   final SocialAuthService _socialAuthService = SocialAuthService();
+  final UserOnboardingService _onboardingService = UserOnboardingService();
 
   Rx<UserModel?> userModel = Rx<UserModel?>(null);
+  Rx<OnboardingData?> onboardingData = Rx<OnboardingData?>(null);
+
+  // Update Profile Branding
+  Rx<File?> selectedLogo = Rx<File?>(null);
+  Rx<Color> primaryColor = Rx<Color>(const Color(0xFF000000));
+  Rx<Color> secondaryColor = Rx<Color>(const Color(0xFF000000));
 
   // Platform Selection
   final List<Map<String, dynamic>> socialPlatformOptions = [
@@ -52,7 +61,14 @@ class MyProfileController extends GetxController {
   var creationsErrorMessage = ''.obs;
 
   // Language and Timezone Selection
-  final List<String> availableLanguages = ["English", "Hindi", "Spanish"];
+  final List<String> availableLanguages = ["English", "Spanish"];
+  final List<String> availableAudiences = [
+    "General Audience",
+    "Students",
+    "Professionals",
+    "Entrepreneurs",
+    "Content Creators",
+  ];
 
   final List<String> availableTimezones = [
     "UTC (GMT+00:00)",
@@ -72,31 +88,65 @@ class MyProfileController extends GetxController {
   ];
 
   // Selection UI state
-  var selectedLanguage = "English".obs; // Change to single selection
+  var selectedLanguages = <String>["English"].obs; // Multi-selection list
+  var selectedAudiences = <String>[].obs; // Multi-selection list
   var selectedTimezone = "UTC (GMT+00:00)".obs;
 
+  // Track items to remove
+  var targetAudienceToRemove = <String>[].obs;
+  var targetAudienceToAdd = <String>[].obs;
+
   // Helper to map code to display name
-  String _getLangName(String code) {
-    if (code == 'en') return 'English';
-    if (code == 'hi') return 'Hindi';
-    if (code == 'es') return 'Spanish';
-    return code;
+  String getLangName(String code) {
+    switch (code.toLowerCase()) {
+      case 'en':
+        return 'English';
+      case 'es':
+        return 'Spanish';
+      default:
+        // Default to English if not found in our restricted list
+        return 'English';
+    }
   }
 
   // Helper to map display name to code
-  String _getLangCode(String name) {
-    if (name == 'English') return 'en';
-    if (name == 'Hindi') return 'hi';
-    if (name == 'Spanish') return 'es';
-    return name.toLowerCase();
+  String getLangCode(String name) {
+    switch (name) {
+      case 'English':
+        return 'en';
+      case 'Spanish':
+        return 'es';
+      default:
+        return 'en';
+    }
   }
 
-  void setLanguage(String lang) {
-    selectedLanguage.value = lang;
+  void toggleLanguage(String lang) {
+    if (selectedLanguages.contains(lang)) {
+      if (selectedLanguages.length > 1) {
+        selectedLanguages.remove(lang);
+      }
+    } else {
+      selectedLanguages.add(lang);
+    }
+  }
+
+  void toggleAudience(String audience) {
+    if (selectedAudiences.contains(audience)) {
+      selectedAudiences.remove(audience);
+    } else {
+      selectedAudiences.add(audience);
+    }
   }
 
   void setTimezone(String tz) {
     selectedTimezone.value = tz;
+  }
+
+  void removeTargetAudience(String audience) {
+    if (!targetAudienceToRemove.contains(audience)) {
+      targetAudienceToRemove.add(audience);
+    }
   }
 
   @override
@@ -104,8 +154,94 @@ class MyProfileController extends GetxController {
     super.onInit();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       getUserProfile();
+      getUserOnboarding(); // Add this
       fetchMyCreations();
     });
+  }
+
+  Future<void> getUserOnboarding() async {
+    print('🟣 getUserOnboarding called');
+    final String? token = await AuthService.getToken();
+
+    final response = await NetworkCaller.getRequest(
+      url: Urls.getMyOnboardingUrl,
+      token: token,
+    );
+
+    if (response.isSuccess && response.responseBody != null) {
+      try {
+        UserOnboardingResponse onboardingResponse =
+            UserOnboardingResponse.fromJson(response.responseBody!);
+        if (onboardingResponse.success) {
+          onboardingData.value = onboardingResponse.data;
+
+          // Sync colors
+          if (onboardingData.value?.brandColors != null) {
+            for (var color in onboardingData.value!.brandColors) {
+              if (color.name == 'primary') {
+                primaryColor.value = _hexToColor(color.value);
+              } else if (color.name == 'secondary') {
+                secondaryColor.value = _hexToColor(color.value);
+              }
+            }
+          }
+
+          // Sync preferred languages from onboarding data
+          if (onboardingData.value?.preferredLanguages != null &&
+              onboardingData.value!.preferredLanguages.isNotEmpty) {
+            selectedLanguages.assignAll(
+              onboardingData.value!.preferredLanguages
+                  .map((code) => getLangName(code))
+                  .toSet()
+                  .toList(),
+            );
+
+            // Sync App Locale with first onboarding preferred language
+            final langController = Get.find<LanguageController>();
+            print(
+              "🟣 MyProfileController: Syncing app language to: ${selectedLanguages.first}",
+            );
+            langController.changeLanguage(selectedLanguages.first);
+          }
+
+          // Sync target audience from onboarding data
+          if (onboardingData.value?.targetAudience != null) {
+            selectedAudiences.assignAll(onboardingData.value!.targetAudience);
+          }
+
+          print('🟣 Onboarding data updated: ${onboardingData.value?.id}');
+        }
+      } catch (e) {
+        print('🟣 Onboarding parse exception: $e');
+      }
+    }
+  }
+
+  Color _hexToColor(String hex) {
+    try {
+      hex = hex.replaceAll("#", "");
+      if (hex.length == 6) {
+        hex = "FF$hex";
+      }
+      return Color(int.parse("0x$hex"));
+    } catch (e) {
+      return Colors.black;
+    }
+  }
+
+  String _colorToHex(Color color) {
+    return "#${color.value.toRadixString(16).substring(2).toUpperCase()}";
+  }
+
+  Future<void> pickLogo() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        selectedLogo.value = File(image.path);
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to pick logo: $e');
+    }
   }
 
   Future<void> getUserProfile() async {
@@ -139,14 +275,6 @@ class MyProfileController extends GetxController {
           print('🟣 Parsed success: ${userResponse.success}');
           if (userResponse.success && userResponse.data != null) {
             userModel.value = userResponse.data;
-            // Sync observables with model
-            if (userModel.value!.preferredLanguages.isNotEmpty) {
-              String langFromApi = userModel.value!.preferredLanguages.first;
-              print(
-                "🟣 MyProfileController: API returned preferred language: $langFromApi",
-              );
-              selectedLanguage.value = _getLangName(langFromApi);
-            }
 
             // Handle timezone mapping (find match in list or use raw)
             String rawTz = userModel.value!.timezone;
@@ -154,13 +282,6 @@ class MyProfileController extends GetxController {
               (tz) => tz.contains(rawTz),
               orElse: () => rawTz,
             );
-
-            // Sync App Locale with current preferred language
-            final langController = Get.find<LanguageController>();
-            print(
-              "🟣 MyProfileController: Syncing app language to: ${selectedLanguage.value}",
-            );
-            langController.changeLanguage(selectedLanguage.value);
 
             print('🟣 User model updated: ${userModel.value?.name}');
             print('🟣 User Image URL: ${userModel.value?.image}');
@@ -245,7 +366,6 @@ class MyProfileController extends GetxController {
     String? businessDescription,
     String? businessType,
     String? timezone,
-    String? preferredLanguage, // Changed to single string
   }) async {
     isUpdating.value = true;
     Get.snackbar(
@@ -266,92 +386,102 @@ class MyProfileController extends GetxController {
         cleanTz = cleanTz.split(" (").first;
       }
 
-      Map<String, dynamic> body = {
-        'name': name,
-        'phone': phone,
+      // 1. Prepare common data
+      final List<String> langCodes = selectedLanguages
+          .map((l) => getLangCode(l))
+          .toList();
+
+      // 2. Profile Update Body
+      final Map<String, dynamic> profileBody = {
+        if (name != null) 'name': name,
+        if (phone != null) 'phone': phone,
         if (businessCategory != null) 'businessCategory': businessCategory,
         if (businessName != null) 'businessName': businessName,
-        if (businessDescription != null)
-          'description':
-              businessDescription, // Changed from businessDescription to description
-        if (businessType != null) 'businessType': businessType,
-        'timezone': cleanTz,
-        if (preferredLanguage != null)
-          'preferredLanguages': [_getLangCode(preferredLanguage)],
+        if (businessDescription != null) 'description': businessDescription,
+        if (timezone != null) 'timezone': cleanTz,
+        'preferredLanguages': langCodes,
       };
 
-      print("📤 MyProfileController: Sending Update Request with body: $body");
+      // 3. Onboarding Update Body
+      final List<String> currentAudiences =
+          onboardingData.value?.targetAudience ?? [];
+      final List<String> toAdd = selectedAudiences
+          .where((a) => !currentAudiences.contains(a))
+          .toList();
+      final List<String> toRemove = currentAudiences
+          .where((a) => !selectedAudiences.contains(a))
+          .toList();
 
-      NetworkResponse response;
-      if (selectedImage.value != null) {
-        response =
-            await NetworkCaller.patchMultipartRequest(
-              url: Urls.updateUserProfileUrl,
-              body: body,
-              file: selectedImage.value!,
-              fileKey: 'image', // As per API documentation
-              token: token,
-            ).timeout(
-              const Duration(seconds: 30),
-              onTimeout: () {
-                return NetworkResponse(
-                  isSuccess: false,
-                  statusCode: 408,
-                  errorMessage: 'Request timed out',
-                );
-              },
-            );
-      } else {
-        response =
-            await NetworkCaller.patchRequest(
-              url: Urls.updateUserProfileUrl,
-              body: body,
-              token: token,
-            ).timeout(
-              const Duration(seconds: 30),
-              onTimeout: () {
-                return NetworkResponse(
-                  isSuccess: false,
-                  statusCode: 408,
-                  errorMessage: 'Request timed out',
-                );
-              },
-            );
+      final Map<String, dynamic> onboardingBody = {
+        if (businessType != null) "businessType": businessType,
+        if (businessDescription != null)
+          "businessDescription": businessDescription,
+        "preferredLanguages": langCodes,
+        if (toAdd.isNotEmpty) "addTargetAudience": toAdd,
+        if (toRemove.isNotEmpty) "removeTargetAudience": toRemove,
+      };
+
+      print("📤 [Update] Profile Payload: $profileBody");
+      print("📤 [Update] Onboarding Payload: $onboardingBody");
+
+      // 4. Update Branding (Logo and Colors)
+      List<Map<String, String>> brandColors = [
+        {"name": "primary", "value": _colorToHex(primaryColor.value)},
+        {"name": "secondary", "value": _colorToHex(secondaryColor.value)},
+      ];
+
+      try {
+        // Update branding & onboarding
+        await _onboardingService.updateBranding(
+          brandColors: brandColors,
+          logoFile: selectedLogo.value,
+          token: token,
+        );
+        await _onboardingService.updateOnboardingData(onboardingBody);
+      } catch (e) {
+        print("⚠️ Warning: Branding/Onboarding update failed: $e");
       }
 
-      debugPrint("📡 [UpdateProfile] Full Response: ${response.responseBody}");
+      // 5. Update Profile (with Image if selected)
+      NetworkResponse response;
+      if (selectedImage.value != null) {
+        response = await NetworkCaller.patchMultipartRequest(
+          url: Urls.updateUserProfileUrl,
+          body: profileBody,
+          file: selectedImage.value!,
+          fileKey: 'image',
+          token: token,
+        );
+      } else {
+        response = await NetworkCaller.patchRequest(
+          url: Urls.updateUserProfileUrl,
+          body: profileBody,
+          token: token,
+        );
+      }
 
       if (response.isSuccess) {
         Get.closeAllSnackbars();
+        targetAudienceToRemove.clear();
 
-        // Update App Locale if preferred language changed
-        if (preferredLanguage != null) {
-          print(
-            "🔄 MyProfileController: Preferred language updated, changing app language to: $preferredLanguage",
-          );
-          final langController = Get.find<LanguageController>();
-          langController.changeLanguage(preferredLanguage);
+        // Sync App Locale
+        final langController = Get.find<LanguageController>();
+        if (selectedLanguages.isNotEmpty) {
+          langController.changeLanguage(selectedLanguages.first);
         }
 
         Get.snackbar(
           'Success ✅'.tr,
-          'Profile and Image updated successfully!'.tr,
+          'Profile updated successfully!'.tr,
           backgroundColor: Colors.green,
           colorText: Colors.white,
-          duration: const Duration(seconds: 3),
-          icon: const Icon(Icons.check_circle, color: Colors.white),
-          snackPosition: SnackPosition.TOP,
         );
 
-        // Use a slight delay to ensure the user sees the success message before backing
-        Future.delayed(const Duration(seconds: 1), () {
-          if (Get.isOverlaysOpen) {
-            Get.back(); // Close snackbar
-          }
-          Get.back(); // Back to profile screen
-        });
+        // Refresh all data from server
+        await getUserProfile();
+        await getUserOnboarding();
 
-        await getUserProfile(); // Refresh data
+        Future.delayed(const Duration(seconds: 1), () => Get.back());
       } else {
         Get.closeAllSnackbars();
         String msg = response.errorMessage ?? 'Update failed'.tr;

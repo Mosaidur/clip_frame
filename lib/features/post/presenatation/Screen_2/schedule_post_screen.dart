@@ -934,6 +934,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               remindMe: remindMe,
               platform: selectedPlatforms.map((e) => e.toLowerCase()).toList(),
               tags: hashtags,
+              preferredLanguages: controller.preferredLanguages,
             )
           : await ContentService.createContent(
               templateId: templateId,
@@ -945,6 +946,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               remindMe: remindMe,
               platform: selectedPlatforms.map((e) => e.toLowerCase()).toList(),
               tags: hashtags,
+              preferredLanguages: controller.preferredLanguages,
             );
 
       if (response.isSuccess) {

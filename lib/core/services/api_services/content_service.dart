@@ -15,6 +15,7 @@ class ContentService {
     required bool remindMe,
     required List<String> platform,
     required List<String> tags,
+    List<String>? preferredLanguages,
   }) async {
     try {
       final token = await AuthService.getToken();
@@ -38,6 +39,7 @@ class ContentService {
         "status": "draft",
         "platform": platform,
         "tags": tags,
+        "preferredLanguages": preferredLanguages ?? ["en"],
       };
 
       final String fileKey = (isVideo)
@@ -107,6 +109,7 @@ class ContentService {
     required bool remindMe,
     required List<String> platform,
     required List<String> tags,
+    List<String>? preferredLanguages,
   }) async {
     try {
       final token = await AuthService.getToken();
@@ -118,6 +121,7 @@ class ContentService {
         "remindMe": remindMe,
         "platform": platform,
         "tags": tags,
+        "preferredLanguages": preferredLanguages ?? ["en"],
       };
 
       debugPrint(

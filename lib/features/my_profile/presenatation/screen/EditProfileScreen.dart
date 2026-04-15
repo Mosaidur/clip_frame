@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -43,6 +44,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     // Reset selected image after build to avoid setState during build error
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.selectedImage.value = null;
+      controller.selectedLogo.value = null;
     });
   }
 
@@ -252,48 +254,244 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
 
-                        // Language Selection
-                        _buildLabel("Preferred Languages".tr),
-                        const SizedBox(height: 8),
-                        Obx(
-                          () => Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: controller.availableLanguages
-                                .map(
-                                  (lang) => ChoiceChip(
-                                    label: Text(
-                                      lang.tr,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        color:
-                                            controller.selectedLanguage.value ==
-                                                lang
-                                            ? Colors.white
-                                            : Colors.black,
+                        // Branding Section (Logo & Colors)
+                        _buildLabel("Branding (Logo & Colors)".tr),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            // Logo Edit
+                            Column(
+                              children: [
+                                Text(
+                                  "Logo".tr,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Stack(
+                                  children: [
+                                    Obx(() {
+                                      return Container(
+                                        height: 80,
+                                        width: 80,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          color: Colors.grey[100],
+                                          border: Border.all(
+                                            color: Colors.grey[300]!,
+                                          ),
+                                        ),
+                                        clipBehavior: Clip.antiAlias,
+                                        child:
+                                            controller.selectedLogo.value !=
+                                                null
+                                            ? Image.file(
+                                                controller.selectedLogo.value!,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : (controller
+                                                          .onboardingData
+                                                          .value
+                                                          ?.logo !=
+                                                      null &&
+                                                  controller
+                                                      .onboardingData
+                                                      .value!
+                                                      .logo
+                                                      .isNotEmpty)
+                                            ? Image.network(
+                                                controller
+                                                    .onboardingData
+                                                    .value!
+                                                    .logo,
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) => const Icon(
+                                                      Icons.business,
+                                                      size: 30,
+                                                      color: Colors.grey,
+                                                    ),
+                                              )
+                                            : const Icon(
+                                                Icons.business,
+                                                size: 30,
+                                                color: Colors.grey,
+                                              ),
+                                      );
+                                    }),
+                                    Positioned(
+                                      bottom: 4,
+                                      right: 4,
+                                      child: InkWell(
+                                        onTap: controller.pickLogo,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFB38FFC),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.edit,
+                                            color: Colors.white,
+                                            size: 14,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                    selected:
-                                        controller.selectedLanguage.value ==
-                                        lang,
-                                    onSelected: (selected) {
-                                      if (selected) {
-                                        controller.setLanguage(lang);
-                                      }
-                                    },
-                                    selectedColor: const Color(0xFFB38FFC),
-                                    backgroundColor: Colors.grey[100],
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 30),
+                            // Colors Edit
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Brand Colors".tr,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
                                     ),
                                   ),
-                                )
-                                .toList(),
-                          ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      _buildColorPicker(
+                                        "Primary".tr,
+                                        controller.primaryColor,
+                                      ),
+                                      const SizedBox(width: 20),
+                                      _buildColorPicker(
+                                        "Secondary".tr,
+                                        controller.secondaryColor,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
+
+                        // Current Target Audience (with remove option)
+                        Obx(() {
+                          final audiences =
+                              controller.onboardingData.value?.targetAudience
+                                  .where(
+                                    (a) => !controller.targetAudienceToRemove
+                                        .contains(a),
+                                  )
+                                  .toList() ??
+                              [];
+                          if (audiences.isEmpty) return const SizedBox.shrink();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildLabel("Current Target Audience".tr),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                children: audiences.map((audience) {
+                                  return Chip(
+                                    label: Text(audience.tr),
+                                    onDeleted: () => controller
+                                        .removeTargetAudience(audience),
+                                    deleteIcon: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          );
+                        }),
+
+                        // Language Selection
+                        _buildLabel("Preferred Language".tr),
+                        const SizedBox(height: 12),
+                        Obx(() {
+                          return Wrap(
+                            spacing: 12,
+                            children: controller.availableLanguages.map((lang) {
+                              final isSelected = controller.selectedLanguages
+                                  .contains(lang);
+                              return GestureDetector(
+                                onTap: () => controller.toggleLanguage(lang),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFFB38FFC)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(25),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFFB38FFC)
+                                          : Colors.grey[300]!,
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(
+                                                0xFFB38FFC,
+                                              ).withOpacity(0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ]
+                                        : [],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (isSelected) ...[
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Text(
+                                        lang.tr,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Colors.grey[700],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        }),
+                        const SizedBox(height: 24),
 
                         // Timezone Selection
                         _buildLabel("Timezone".tr),
@@ -414,8 +612,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                   .trim(),
                                           timezone:
                                               controller.selectedTimezone.value,
-                                          preferredLanguage:
-                                              controller.selectedLanguage.value,
                                         );
                                       }
                                     },
@@ -463,8 +659,71 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       label,
       style: GoogleFonts.poppins(
         fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: Colors.grey[700],
+        fontWeight: FontWeight.w600,
+        color: Colors.black87,
+      ),
+    );
+  }
+
+  Widget _buildColorPicker(String label, Rx<Color> colorObs) {
+    return Column(
+      children: [
+        Obx(() {
+          return GestureDetector(
+            onTap: () {
+              _showColorPickerDialog(label, colorObs);
+            },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: colorObs.value,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black12, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorObs.value.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[600]),
+        ),
+      ],
+    );
+  }
+
+  void _showColorPickerDialog(String title, Rx<Color> colorObs) {
+    Color pickerColor = colorObs.value;
+    Get.dialog(
+      AlertDialog(
+        title: Text('Pick $title Color'.tr),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: pickerColor,
+            onColorChanged: (color) {
+              pickerColor = color;
+            },
+            pickerAreaHeightPercent: 0.8,
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(child: Text('Cancel'.tr), onPressed: () => Get.back()),
+          TextButton(
+            child: Text('Select'.tr),
+            onPressed: () {
+              colorObs.value = pickerColor;
+              Get.back();
+            },
+          ),
+        ],
       ),
     );
   }

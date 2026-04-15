@@ -174,6 +174,9 @@ class ContentCreationController extends GetxController {
   // Caption generated or edited
   final RxString caption = ''.obs;
 
+  // Preferred Languages (e.g., ["en", "es"])
+  final RxList<String> preferredLanguages = <String>["en", "es"].obs;
+
   // Hashtags selected or edited
   final RxList<String> hashtags = <String>[].obs;
 
@@ -195,6 +198,7 @@ class ContentCreationController extends GetxController {
     selectedFiles.clear();
     selectedContentType.value = 'post';
     caption.value = '';
+    preferredLanguages.assignAll(["en", "es"]);
     hashtags.clear();
     isImage.value = false;
     selectedPlatform.value = 'Facebook';

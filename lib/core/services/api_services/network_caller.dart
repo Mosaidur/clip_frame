@@ -48,7 +48,7 @@ class NetworkCaller {
       logResponse(url, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           isSuccess: true,
           statusCode: response.statusCode,
@@ -59,23 +59,56 @@ class NetworkCaller {
         if (!isRefreshCall) {
           print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
         }
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
           responseBody: decodedJson,
           errorMessage: _unAuthorizeMessage,
         );
+      } else if (response.statusCode >= 500) {
+        String msg =
+            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
+        if (showDialog) {
+          Get.snackbar(
+            "Under Maintenance".tr,
+            msg.tr,
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: const Color(0xFFB38FFC).withOpacity(0.9),
+            colorText: Colors.white,
+            icon: const Icon(
+              Icons.settings_suggest_outlined,
+              color: Colors.white,
+            ),
+            margin: const EdgeInsets.all(15),
+            borderRadius: 15,
+            duration: const Duration(seconds: 4),
+            boxShadows: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          );
+        }
+        return NetworkResponse(
+          isSuccess: false,
+          statusCode: response.statusCode,
+          errorMessage: msg,
+        );
       } else {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         // Try to extract error message from 'message' field first, then 'data' if it's a String
         String? errorMsg;
-        if (decodedJson['message'] != null &&
-            decodedJson['message'] is String) {
-          errorMsg = decodedJson['message'];
-        } else if (decodedJson['data'] != null &&
-            decodedJson['data'] is String) {
-          errorMsg = decodedJson['data'];
+        if (decodedJson != null) {
+          if (decodedJson['message'] != null &&
+              decodedJson['message'] is String) {
+            errorMsg = decodedJson['message'];
+          } else if (decodedJson['data'] != null &&
+              decodedJson['data'] is String) {
+            errorMsg = decodedJson['data'];
+          }
         }
 
         if (showDialog) {
@@ -98,11 +131,22 @@ class NetworkCaller {
         );
       }
     } catch (e) {
+      debugPrint("⛔ [NetworkCaller] GET error: $e");
       return NetworkResponse(
         isSuccess: false,
         statusCode: -1,
         errorMessage: e.toString(),
       );
+    }
+  }
+
+  static Map<String, dynamic>? _safeDecode(String body) {
+    try {
+      if (body.isEmpty) return null;
+      return jsonDecode(body);
+    } catch (e) {
+      debugPrint("⚠️ [NetworkCaller] JSON Decode failed: $e");
+      return null;
     }
   }
 
@@ -136,7 +180,7 @@ class NetworkCaller {
 
       logResponse(url, response);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
@@ -146,22 +190,55 @@ class NetworkCaller {
         if (!isRefreshCall && !isFromLogin) {
           print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
         }
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: false,
           errorMessage: _unAuthorizeMessage,
         );
+      } else if (response.statusCode >= 500) {
+        String msg =
+            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
+        if (showDialog) {
+          Get.snackbar(
+            "Under Maintenance".tr,
+            msg.tr,
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: const Color(0xFFB38FFC).withOpacity(0.9),
+            colorText: Colors.white,
+            icon: const Icon(
+              Icons.settings_suggest_outlined,
+              color: Colors.white,
+            ),
+            margin: const EdgeInsets.all(15),
+            borderRadius: 15,
+            duration: const Duration(seconds: 4),
+            boxShadows: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          );
+        }
+        return NetworkResponse(
+          isSuccess: false,
+          statusCode: response.statusCode,
+          errorMessage: msg,
+        );
       } else {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         // Try to extract error message from 'message' field first, then 'data' if it's a String
         String? errorMsg;
-        if (decodedJson['message'] != null &&
-            decodedJson['message'] is String) {
-          errorMsg = decodedJson['message'];
-        } else if (decodedJson['data'] != null &&
-            decodedJson['data'] is String) {
-          errorMsg = decodedJson['data'];
+        if (decodedJson != null) {
+          if (decodedJson['message'] != null &&
+              decodedJson['message'] is String) {
+            errorMsg = decodedJson['message'];
+          } else if (decodedJson['data'] != null &&
+              decodedJson['data'] is String) {
+            errorMsg = decodedJson['data'];
+          }
         }
 
         if (showDialog) {
@@ -184,6 +261,7 @@ class NetworkCaller {
         );
       }
     } catch (e) {
+      debugPrint("⛔ [NetworkCaller] POST error: $e");
       return NetworkResponse(
         statusCode: -1,
         isSuccess: false,
@@ -212,7 +290,7 @@ class NetworkCaller {
 
       logResponse(url, response);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
@@ -222,16 +300,25 @@ class NetworkCaller {
         if (!isRefreshCall) {
           print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
         }
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: false,
           errorMessage: _unAuthorizeMessage,
         );
+      } else if (response.statusCode >= 500) {
+        String msg =
+            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
+        return NetworkResponse(
+          isSuccess: false,
+          statusCode: response.statusCode,
+          errorMessage: msg,
+        );
       } else {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         String? errorMsg;
-        if (decodedJson['message'] != null &&
+        if (decodedJson != null &&
+            decodedJson['message'] != null &&
             decodedJson['message'] is String) {
           errorMsg = decodedJson['message'];
         }
@@ -243,6 +330,7 @@ class NetworkCaller {
         );
       }
     } catch (e) {
+      debugPrint("⛔ [NetworkCaller] PUT error: $e");
       return NetworkResponse(
         statusCode: -1,
         isSuccess: false,
@@ -270,16 +358,25 @@ class NetworkCaller {
 
       logResponse(url, response);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
           responseBody: decodedJson,
         );
+      } else if (response.statusCode >= 500) {
+        String msg =
+            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
+        return NetworkResponse(
+          isSuccess: false,
+          statusCode: response.statusCode,
+          errorMessage: msg,
+        );
       } else {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         String? errorMsg;
-        if (decodedJson['message'] != null &&
+        if (decodedJson != null &&
+            decodedJson['message'] != null &&
             decodedJson['message'] is String) {
           errorMsg = decodedJson['message'];
         }
@@ -291,6 +388,7 @@ class NetworkCaller {
         );
       }
     } catch (e) {
+      debugPrint("⛔ [NetworkCaller] PATCH error: $e");
       return NetworkResponse(
         statusCode: -1,
         isSuccess: false,
@@ -319,7 +417,7 @@ class NetworkCaller {
       logResponse(url, response);
       if (response.statusCode == 200 || response.statusCode == 204) {
         final decodedJson = response.body.isNotEmpty
-            ? jsonDecode(response.body)
+            ? _safeDecode(response.body)
             : null;
         return NetworkResponse(
           statusCode: response.statusCode,
@@ -331,7 +429,7 @@ class NetworkCaller {
           print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
         }
         final decodedJson = response.body.isNotEmpty
-            ? jsonDecode(response.body)
+            ? _safeDecode(response.body)
             : null;
         return NetworkResponse(
           statusCode: response.statusCode,
@@ -339,9 +437,17 @@ class NetworkCaller {
           responseBody: decodedJson,
           errorMessage: _unAuthorizeMessage,
         );
+      } else if (response.statusCode >= 500) {
+        String msg =
+            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
+        return NetworkResponse(
+          isSuccess: false,
+          statusCode: response.statusCode,
+          errorMessage: msg,
+        );
       } else {
         final decodedJson = response.body.isNotEmpty
-            ? jsonDecode(response.body)
+            ? _safeDecode(response.body)
             : null;
         String? errorMsg;
         if (decodedJson != null &&
@@ -357,6 +463,7 @@ class NetworkCaller {
         );
       }
     } catch (e) {
+      debugPrint("⛔ [NetworkCaller] DELETE error: $e");
       return NetworkResponse(
         statusCode: -1,
         isSuccess: false,
@@ -440,17 +547,26 @@ class NetworkCaller {
       logResponse(url, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
           responseBody: decodedJson,
         );
+      } else if (response.statusCode >= 500) {
+        String msg =
+            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
+        return NetworkResponse(
+          isSuccess: false,
+          statusCode: response.statusCode,
+          errorMessage: msg,
+        );
       } else {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         debugPrint("⛔ [NetworkCaller] Multipart List failed: $decodedJson");
         String? errorMsg;
-        if (decodedJson['message'] != null &&
+        if (decodedJson != null &&
+            decodedJson['message'] != null &&
             decodedJson['message'] is String) {
           errorMsg = decodedJson['message'];
         }
@@ -540,17 +656,25 @@ class NetworkCaller {
       logResponse(url, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
           responseBody: decodedJson,
         );
+      } else if (response.statusCode >= 500) {
+        return NetworkResponse(
+          isSuccess: false,
+          statusCode: response.statusCode,
+          errorMessage:
+              "Server is temporarily unavailable (Error ${response.statusCode}). Please try again later.",
+        );
       } else {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         debugPrint("⛔ [NetworkCaller] Multipart failed: $decodedJson");
         String? errorMsg;
-        if (decodedJson['message'] != null &&
+        if (decodedJson != null &&
+            decodedJson['message'] != null &&
             decodedJson['message'] is String) {
           errorMsg = decodedJson['message'];
         }
@@ -627,17 +751,25 @@ class NetworkCaller {
       logResponse(url, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final decodedJson = jsonDecode(response.body);
+        final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
           responseBody: decodedJson,
         );
+      } else if (response.statusCode >= 500) {
+        return NetworkResponse(
+          isSuccess: false,
+          statusCode: response.statusCode,
+          errorMessage:
+              "Server is temporarily unavailable (Error ${response.statusCode}). Please try again later.",
+        );
       } else {
-        final decodedJson = jsonDecode(response.body);
-        debugPrint("⛔ [NetworkCaller] Patch Multipart failed: $decodedJson");
+        final decodedJson = _safeDecode(response.body);
+        debugPrint("⛔ [NetworkCaller] PATCH Multipart failed: $decodedJson");
         String? errorMsg;
-        if (decodedJson['message'] != null &&
+        if (decodedJson != null &&
+            decodedJson['message'] != null &&
             decodedJson['message'] is String) {
           errorMsg = decodedJson['message'];
         }
@@ -649,7 +781,7 @@ class NetworkCaller {
         );
       }
     } catch (e) {
-      debugPrint("⛔ [NetworkCaller] Patch Multipart error: $e");
+      debugPrint("⛔ [NetworkCaller] PATCH Multipart error: $e");
       return NetworkResponse(
         statusCode: -1,
         isSuccess: false,

@@ -19,6 +19,8 @@ class Urls {
   //useronboarding api
   static const String userOnboardingUrl =
       "$baseUrl/api/v1/useronboarding/branding";
+  static const String getMyOnboardingUrl =
+      "$baseUrl/api/v1/useronboarding/my-onboarding";
 
   //user api
   static const String getUserProfileUrl = "$baseUrl/api/v1/user/profile";
