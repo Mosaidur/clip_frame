@@ -108,7 +108,7 @@ class AdvancedVideoEditorPage extends StatefulWidget {
 class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   // NON-DESTRUCTIVE CORE
   final List<ClipSegment> videoSegments = [];
-  
+
   // Music logic
   late final VideoMusicController musicController;
 
@@ -474,7 +474,6 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
           _controller.seekTo(currentSegment!.startOffset);
         }
       }
-
 
       // SYNC MUSIC
       musicController.syncWithVideo(pos, _controller.value.isPlaying);
@@ -2331,7 +2330,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       }
 
       final cmd =
-          '${inputs.toString()}-filter_complex "$filterChain" -map "$mapv" -map "$mapa" -c:v libx264 -preset superfast -b:v 2M -maxrate 2M -bufsize 4M -pix_fmt yuv420p -vsync cfr -c:a aac -b:a 128k -async 1 -y "$out"';
+          '${inputs.toString()} -filter_complex "$filterChain" -map "$mapv" -map "$mapa" -c:v libx264 -preset superfast -b:v 2M -maxrate 2M -bufsize 4M -pix_fmt yuv420p -vsync cfr -c:a aac -b:a 128k -async 1 -y "$out"';
 
       final res = await _runFFmpeg(cmd, out);
       if (res == null) throw Exception("Export failed at FFmpeg stage");
@@ -3122,7 +3121,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
           TextButton(
             onPressed: isExporting ? null : exportAndSaveVideo,
             child: Text(
-              "SAVE",
+              "CONTINUE",
               style: TextStyle(
                 color: const Color(0xFF5D5D5D),
                 fontWeight: FontWeight.bold,
@@ -3575,16 +3574,21 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                 SizedBox(height: 5.h),
                                 // Music Track
                                 Obx(() {
-                                  final track = musicController.currentTrack.value;
+                                  final track =
+                                      musicController.currentTrack.value;
                                   return Row(
                                     children: [
                                       SizedBox(width: startPadding),
                                       GestureDetector(
                                         onTap: () {
                                           if (track == null) {
-                                            Get.bottomSheet(const MusicSelectionSheet());
+                                            Get.bottomSheet(
+                                              const MusicSelectionSheet(),
+                                            );
                                           } else {
-                                            Get.bottomSheet(const AudioSettingsSheet());
+                                            Get.bottomSheet(
+                                              const AudioSettingsSheet(),
+                                            );
                                           }
                                         },
                                         child: Container(
@@ -3593,10 +3597,16 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                           decoration: BoxDecoration(
                                             color: track == null
                                                 ? Colors.purple.withOpacity(0.3)
-                                                : Colors.blueAccent.withOpacity(0.4),
-                                            borderRadius: BorderRadius.circular(5.r),
+                                                : Colors.blueAccent.withOpacity(
+                                                    0.4,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                              5.r,
+                                            ),
                                             border: track != null
-                                                ? Border.all(color: Colors.white30)
+                                                ? Border.all(
+                                                    color: Colors.white30,
+                                                  )
                                                 : null,
                                           ),
                                           child: Row(
@@ -3618,7 +3628,8 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                                     fontSize: 10.sp,
                                                     fontWeight: FontWeight.bold,
                                                   ),
-                                                  overflow: TextOverflow.ellipsis,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
                                               ),
                                             ],
@@ -3777,7 +3788,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
             elevation: 0,
           ),
           child: Text(
-            "Save",
+            "Continue",
             style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
           ),
         ),
@@ -4177,10 +4188,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               ),
               Text(
                 "Volume",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16.sp,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
               ),
               ElevatedButton(
                 onPressed: () {

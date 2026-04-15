@@ -25,9 +25,9 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   String _selectedTimeMode = "Time"; // "Any Time", "Time", "Range"
 
   final List<String> _platforms = ["Facebook", "Instagram"];
-  final List<IconData> _platformIcons = [
+  final List<dynamic> _platformIcons = [
     Icons.facebook_rounded,
-    Icons.camera_alt_rounded, // Placeholder for IG
+    'assets/images/instagram.png',
   ];
 
   @override
@@ -347,18 +347,19 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   }
 
   Widget _buildSuggestedDialog() {
-    final suggestedDays = ["Tuesday", "Wednesday", "Thursday"];
+    // Determine the next 3 upcoming dates dynamically
+    final now = DateTime.now();
+    final DateTime suggestedTimeToday = DateTime(now.year, now.month, now.day, 17, 0); // 5:00 PM today
+
+    DateTime startDate;
+    if (suggestedTimeToday.isBefore(now)) {
+      startDate = now.add(const Duration(days: 1));
+    } else {
+      startDate = now;
+    }
+
+    final upcomingDates = List.generate(3, (i) => startDate.add(Duration(days: i)));
     final suggestedTime = "05:00 PM";
-
-    // Parse time "05:00 PM"
-    final timeFormat = DateFormat("hh:mm a");
-    final parsedTime = timeFormat.parse(suggestedTime);
-
-    final upcomingDates = SchedulingUtils.getUpcomingSequence(
-      suggestedDays,
-      suggestedHour: parsedTime.hour,
-      suggestedMinute: parsedTime.minute,
-    );
 
     return Container(
       color: Colors.black54,
@@ -577,11 +578,18 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      _platformIcons[index],
-                      size: 16.r,
-                      color: isSelected ? Colors.blue : Colors.black45,
-                    ),
+                    _platformIcons[index] is IconData
+                        ? Icon(
+                            _platformIcons[index],
+                            size: 16.r,
+                            color: isSelected ? Colors.blue : Colors.black45,
+                          )
+                        : Image.asset(
+                            _platformIcons[index],
+                            width: 16.r,
+                            height: 16.r,
+                            color: isSelected ? null : Colors.black45,
+                          ),
                     SizedBox(width: 6.w),
                     Text(
                       _platforms[index],

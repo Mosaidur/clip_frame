@@ -396,11 +396,23 @@ class NetworkCaller {
       }
 
       // Add multiple files
-      debugPrint('📎 [NetworkCaller] Preparing to add ${files.length} files with key: $fileKey');
+      debugPrint(
+        '📎 [NetworkCaller] Preparing to add ${files.length} files with key: $fileKey',
+      );
       for (int i = 0; i < files.length; i++) {
         var file = files[i];
-        final fileName = p.basename(file.path);
-        final mimeType = fileName.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg';
+        final fileName = p.basename(file.path).toLowerCase();
+
+        String mimeType = 'image/jpeg'; // Default
+        if (fileName.endsWith('.mp4')) {
+          mimeType = 'video/mp4';
+        } else if (fileName.endsWith('.png')) {
+          mimeType = 'image/png';
+        } else if (fileName.endsWith('.gif')) {
+          mimeType = 'image/gif';
+        } else if (fileName.endsWith('.webp')) {
+          mimeType = 'image/webp';
+        }
 
         debugPrint('   👉 Adding file [$i]: $fileName (${mimeType})');
         request.files.add(
@@ -490,8 +502,18 @@ class NetworkCaller {
       }
 
       // Add the file
-      final fileName = p.basename(file.path);
-      final mimeType = fileName.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg';
+      final fileName = p.basename(file.path).toLowerCase();
+      String mimeType = 'image/jpeg'; // Default
+      if (fileName.endsWith('.mp4')) {
+        mimeType = 'video/mp4';
+      } else if (fileName.endsWith('.png')) {
+        mimeType = 'image/png';
+      } else if (fileName.endsWith('.gif')) {
+        mimeType = 'image/gif';
+      } else if (fileName.endsWith('.webp')) {
+        mimeType = 'image/webp';
+      }
+
       final fileSizeMB = (await file.length()) / (1024 * 1024);
 
       request.files.add(

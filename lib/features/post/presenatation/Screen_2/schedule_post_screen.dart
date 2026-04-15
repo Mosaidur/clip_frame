@@ -148,19 +148,33 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   }
 
   void _showSuggestedDialog() {
-    final suggestedDay = "Tuesday";
+    // Determine the next upcoming day/date dynamically (e.g., tomorrow at 5 PM)
+    final now = DateTime.now();
+    final DateTime suggestedDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      17,
+      0,
+    ); // 5:00 PM today
+
+    DateTime upcomingDate;
+    if (suggestedDateTime.isBefore(now)) {
+      // If 5:00 PM today has passed, suggest tomorrow
+      upcomingDate = now.add(const Duration(days: 1));
+    } else {
+      upcomingDate = now;
+    }
+
+    final suggestedDay = DateFormat('EEEE').format(upcomingDate);
     final suggestedTime = "05:00 PM";
 
-    // Parse time "05:00 PM"
+    // Format the date like "Tuesday, 21 Apr"
+    final formattedDate = DateFormat('EEEE, d MMM').format(upcomingDate);
+
+    // Parse time "05:00 PM" for calculations
     final timeFormat = DateFormat("hh:mm a");
     final parsedTime = timeFormat.parse(suggestedTime);
-
-    final upcomingDate = SchedulingUtils.getNextUpcomingDate(
-      suggestedDay,
-      suggestedHour: parsedTime.hour,
-      suggestedMinute: parsedTime.minute,
-    );
-    final formattedDate = SchedulingUtils.formatRecommendedDate(upcomingDate);
 
     showDialog(
       context: context,
@@ -584,19 +598,29 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                 dayNum = index - offset + 1;
               }
 
+              final DateTime cellDate = DateTime(
+                currentYear,
+                currentMonth,
+                dayNum,
+              );
+              final DateTime today = DateTime(
+                DateTime.now().year,
+                DateTime.now().month,
+                DateTime.now().day,
+              );
+              final bool isPast = cellDate.isBefore(today);
+
               bool isSelected = index == selectedDateIndex;
 
               return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedDateIndex = index;
-                    controller.scheduledDate.value = DateTime(
-                      currentYear,
-                      currentMonth,
-                      dayNum,
-                    );
-                  });
-                },
+                onTap: (isPast || isDimmed)
+                    ? null
+                    : () {
+                        setState(() {
+                          selectedDateIndex = index;
+                          controller.scheduledDate.value = cellDate;
+                        });
+                      },
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -616,8 +640,9 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                           fontSize: 13.sp,
                           color: isSelected
                               ? Colors.white
-                              : (isDimmed
-                                    ? Colors.black26
+                              : (isPast || isDimmed
+                                    ? Colors
+                                          .black12 // Dimmed or invisible for past dates
                                     : const Color(0xFF636D91)),
                           fontWeight: isSelected
                               ? FontWeight.bold
@@ -625,7 +650,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                         ),
                       ),
                     ),
-                    if (!isSelected && !isDimmed) ...[
+                    if (!isSelected && !isDimmed && !isPast) ...[
                       SizedBox(height: 2.h),
                       _buildDateDots(index),
                     ],
@@ -1122,10 +1147,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: Image.file(
-                    File(path),
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.file(File(path), fit: BoxFit.cover),
                 ),
                 Positioned.fill(
                   child: BackdropFilter(
@@ -1133,12 +1155,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
                     child: Container(color: Colors.black12),
                   ),
                 ),
-                Center(
-                  child: Image.file(
-                    File(path),
-                    fit: BoxFit.contain,
-                  ),
-                ),
+                Center(child: Image.file(File(path), fit: BoxFit.contain)),
               ],
             ),
           );
@@ -1241,10 +1258,10 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
           child: imageUrl != null && imageUrl.isNotEmpty
               ? Image.network(imageUrl, fit: BoxFit.cover)
               : (mediaPath.isNotEmpty && !mediaPath.startsWith('http')
-                  ? Image.file(File(mediaPath), fit: BoxFit.cover)
-                  : (mediaPath.startsWith('http')
-                      ? Image.network(mediaPath, fit: BoxFit.cover)
-                      : Container(color: Colors.black12))),
+                    ? Image.file(File(mediaPath), fit: BoxFit.cover)
+                    : (mediaPath.startsWith('http')
+                          ? Image.network(mediaPath, fit: BoxFit.cover)
+                          : Container(color: Colors.black12))),
         ),
         Positioned.fill(
           child: BackdropFilter(

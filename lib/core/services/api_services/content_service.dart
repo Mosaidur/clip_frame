@@ -20,9 +20,19 @@ class ContentService {
       final token = await AuthService.getToken();
       final url = Urls.createContentUrl(templateId);
 
+      // Check if any of the files are videos
+      bool isVideo = false;
+      if (files != null && files.isNotEmpty) {
+        isVideo = files.any((f) => f.path.toLowerCase().endsWith('.mp4'));
+      } else if (mediaPath != null && mediaPath.isNotEmpty) {
+        isVideo = mediaPath.toLowerCase().endsWith('.mp4');
+      }
+
       final Map<String, dynamic> body = {
         "caption": caption,
-        "contentType": contentType,
+        "contentType": (isVideo && contentType == "post")
+            ? "reel"
+            : contentType,
         "scheduledAt": scheduledAt,
         "remindMe": remindMe,
         "status": "draft",
@@ -30,9 +40,11 @@ class ContentService {
         "tags": tags,
       };
 
-      final String fileKey = (contentType == "post" ||
-              contentType == "carousel" ||
-              contentType == "story")
+      final String fileKey = (isVideo)
+          ? 'media'
+          : (contentType == "post" ||
+                contentType == "carousel" ||
+                contentType == "story")
           ? 'image'
           : 'media';
 
