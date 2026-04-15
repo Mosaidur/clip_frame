@@ -28,16 +28,16 @@ class PremiumPlanModel {
   factory PremiumPlanModel.fromJson(Map<String, dynamic> json) {
     return PremiumPlanModel(
       id: json['_id'] ?? '',
-      title: json['title'] ?? '',
+      title: json['name'] ?? '',
       description: json['description'] ?? '',
-      priceId: json['priceId'] ?? '',
+      priceId: json['stripePriceId'] ?? '',
       price: json['price'] ?? 0,
-      duration: json['duration'] ?? '',
-      paymentType: json['paymentType'] ?? '',
-      productId: json['productId'] ?? '',
+      duration: json['interval'] ?? '',
+      paymentType: json['tier'] ?? '',
+      productId: json['stripeProductId'] ?? '',
       paymentLink: json['paymentLink'] ?? '',
-      status: json['status'] ?? '',
-      limits: Limits.fromJson(json['limits'] ?? {}),
+      status: (json['isActive'] ?? false) ? 'active' : 'inactive',
+      limits: Limits.fromJson(json), // Passing the whole json since limits are top-level
     );
   }
 }
