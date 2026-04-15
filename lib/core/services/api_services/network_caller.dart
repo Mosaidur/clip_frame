@@ -396,10 +396,13 @@ class NetworkCaller {
       }
 
       // Add multiple files
-      for (var file in files) {
+      debugPrint('📎 [NetworkCaller] Preparing to add ${files.length} files with key: $fileKey');
+      for (int i = 0; i < files.length; i++) {
+        var file = files[i];
         final fileName = p.basename(file.path);
         final mimeType = fileName.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg';
 
+        debugPrint('   👉 Adding file [$i]: $fileName (${mimeType})');
         request.files.add(
           await http.MultipartFile.fromPath(
             fileKey,
@@ -413,7 +416,7 @@ class NetworkCaller {
         '🚀🚀🚀 [MULTIPART LIST REQUEST] 🚀🚀🚀\n'
         'URL: $url \n'
         'FIELDS: ${request.fields} \n'
-        'FILES: ${files.length} items as $fileKey\n'
+        'FILE KEY: $fileKey\n'
         '==================================================',
       );
 

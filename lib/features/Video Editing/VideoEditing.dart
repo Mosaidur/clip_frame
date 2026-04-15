@@ -17,6 +17,12 @@ import 'AiVideoEditPage.dart';
 import 'ProfessionalCamera.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
+// Music System Imports
+import 'controllers/video_music_controller.dart';
+import 'widgets/music_selection_sheet.dart';
+import 'widgets/audio_settings_sheet.dart';
+import 'models/audio_settings_model.dart';
+
 /// ---- Models for Video Segments ----
 class ClipSegment {
   File originalFile;
@@ -26,6 +32,7 @@ class ClipSegment {
   String? filter;
   double filterIntensity;
   int rotation; // 0, 90, 180, 270
+  double volume; // 0.0 to 1.0 (or 2.0)
 
   ClipSegment({
     required this.originalFile,
@@ -35,6 +42,7 @@ class ClipSegment {
     this.filter,
     this.filterIntensity = 0.5,
     this.rotation = 0,
+    this.volume = 1.0,
   });
 
   Duration get duration => Duration(
@@ -50,6 +58,7 @@ class ClipSegment {
     filter: filter,
     filterIntensity: filterIntensity,
     rotation: rotation,
+    volume: volume,
   );
 }
 
@@ -99,6 +108,9 @@ class AdvancedVideoEditorPage extends StatefulWidget {
 class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
   // NON-DESTRUCTIVE CORE
   final List<ClipSegment> videoSegments = [];
+  
+  // Music logic
+  late final VideoMusicController musicController;
 
   // Original resources mapping (Path -> Thumbnails/Filmstrips)
   final Map<String, File?> originalThumbnails = {};
@@ -212,13 +224,17 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       {"name": "BLUE", "image": "assets/images/1.jpg"},
       {"name": "LOW", "image": "assets/images/2.jpg"},
       {"name": "DEEP", "image": "assets/images/3.jpg"},
-      {"name": "SAD", "image": "assets/images/5.jpg"},
     ],
   };
+
+  // New: Volume Adjusting
+  bool _isVolumeAdjusting = false;
+  double _tempVolume = 1.0;
 
   @override
   void initState() {
     super.initState();
+    musicController = Get.put(VideoMusicController());
     // Initialize playhead at startPadding initially?
     // We need screen info. We'll set it in build or first frame post-build if needed.
     // Or just default to a safe value.
@@ -416,11 +432,17 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
           _controller.removeListener(_videoListener);
           await _controller.dispose();
         }
-        _controller = VideoPlayerController.file(seg.originalFile);
+        _controller = VideoPlayerController.file(
+          seg.originalFile,
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+        );
         await _controller.initialize();
         _controller.addListener(_videoListener);
         setState(() => initialized = true);
       }
+
+      // Apply Volume
+      _controller.setVolume(seg.volume);
 
       // Respect segment start point
       final Duration actualSeek = seekTo ?? seg.startOffset;
@@ -452,6 +474,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
           _controller.seekTo(currentSegment!.startOffset);
         }
       }
+
+
+      // SYNC MUSIC
+      musicController.syncWithVideo(pos, _controller.value.isPlaying);
 
       if (_controller.value.isPlaying) {
         final timeSinceScroll = DateTime.now()
@@ -496,7 +522,10 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       return _controller.value.duration.inSeconds;
     }
     // fallback: load a temporary controller
-    final tmp = VideoPlayerController.file(f);
+    final tmp = VideoPlayerController.file(
+      f,
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
     await tmp.initialize();
     final dur = tmp.value.duration.inSeconds;
     await tmp.dispose();
@@ -2255,7 +2284,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         // --- Audio Filter ---
         if (hasAudio) {
           filter.write(
-            '[$i:a]atrim=start=$start:end=$end,asetpts=PTS-STARTPTS',
+            '[$i:a]atrim=start=$start:end=$end,asetpts=PTS-STARTPTS,volume=${seg.volume}',
           );
           if (seg.speed != 1.0) {
             filter.write(',atempo=${seg.speed}');
@@ -2280,8 +2309,29 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         '${concatInput.toString()}concat=n=${videoSegments.length}:v=1:a=1[outv][outa]',
       );
 
+      final MusicTrack? music = musicController.currentTrack.value;
+      String filterChain = filter.toString();
+      String mapv = '[outv]';
+      String mapa = '[outa]';
+
+      if (music != null) {
+        final int musicIdx = videoSegments.length;
+        // If loop is enabled, we use -stream_loop -1 before the -i
+        final String loopFlag = music.loop ? '-stream_loop -1 ' : '';
+        inputs.write(' $loopFlag-i "${music.url}"');
+
+        final double mStart = music.trimStart.inMilliseconds / 1000.0;
+        final double mEnd = music.trimEnd.inMilliseconds / 1000.0;
+
+        // Add music processing to filter chain
+        // We trim the music, adjust its volume, and mix it with [outa]
+        filterChain +=
+            '; [$musicIdx:a]atrim=start=$mStart:end=$mEnd,asetpts=PTS-STARTPTS,volume=${music.volume}[music]; [outa][music]amix=inputs=2:duration=first:dropout_transition=2[finala]';
+        mapa = '[finala]';
+      }
+
       final cmd =
-          '${inputs.toString()}-filter_complex "${filter.toString()}" -map "[outv]" -map "[outa]" -c:v libx264 -preset superfast -b:v 2M -maxrate 2M -bufsize 4M -pix_fmt yuv420p -vsync cfr -c:a aac -b:a 128k -async 1 -y "$out"';
+          '${inputs.toString()}-filter_complex "$filterChain" -map "$mapv" -map "$mapa" -c:v libx264 -preset superfast -b:v 2M -maxrate 2M -bufsize 4M -pix_fmt yuv420p -vsync cfr -c:a aac -b:a 128k -async 1 -y "$out"';
 
       final res = await _runFFmpeg(cmd, out);
       if (res == null) throw Exception("Export failed at FFmpeg stage");
@@ -3524,43 +3574,61 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                 ),
                                 SizedBox(height: 5.h),
                                 // Music Track
-                                Row(
-                                  children: [
-                                    SizedBox(width: startPadding),
-                                    GestureDetector(
-                                      onTap: pickAndAddAudio,
-                                      child: Container(
-                                        width: (totalMs / 1000) * 50.w,
-                                        height: 25.h,
-                                        decoration: BoxDecoration(
-                                          color: Colors.purple.withOpacity(0.3),
-                                          borderRadius: BorderRadius.circular(
-                                            5.r,
+                                Obx(() {
+                                  final track = musicController.currentTrack.value;
+                                  return Row(
+                                    children: [
+                                      SizedBox(width: startPadding),
+                                      GestureDetector(
+                                        onTap: () {
+                                          if (track == null) {
+                                            Get.bottomSheet(const MusicSelectionSheet());
+                                          } else {
+                                            Get.bottomSheet(const AudioSettingsSheet());
+                                          }
+                                        },
+                                        child: Container(
+                                          width: (totalMs / 1000) * 50.w,
+                                          height: 30.h,
+                                          decoration: BoxDecoration(
+                                            color: track == null
+                                                ? Colors.purple.withOpacity(0.3)
+                                                : Colors.blueAccent.withOpacity(0.4),
+                                            borderRadius: BorderRadius.circular(5.r),
+                                            border: track != null
+                                                ? Border.all(color: Colors.white30)
+                                                : null,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              SizedBox(width: 8.w),
+                                              Icon(
+                                                track == null
+                                                    ? Icons.music_note
+                                                    : Icons.adjust,
+                                                size: 14.r,
+                                                color: Colors.white,
+                                              ),
+                                              SizedBox(width: 5.w),
+                                              Expanded(
+                                                child: Text(
+                                                  track?.title ?? "Add music",
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10.sp,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        child: Row(
-                                          children: [
-                                            SizedBox(width: 8.w),
-                                            Icon(
-                                              Icons.music_note,
-                                              size: 12.r,
-                                              color: Colors.white,
-                                            ),
-                                            SizedBox(width: 5.w),
-                                            Text(
-                                              "Add music",
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 9.sp,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
                                       ),
-                                    ),
-                                    SizedBox(width: endPadding),
-                                  ],
-                                ),
+                                      SizedBox(width: endPadding),
+                                    ],
+                                  );
+                                }),
                               ],
                             ),
                           ),
@@ -3800,6 +3868,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         if (_isSpeeding) _buildSpeedControlBar(),
 
         if (_isFiltering) _buildFilterBottomSheet(),
+        if (_isVolumeAdjusting) _buildVolumeSettingsBar(),
 
         Container(
           color: Colors.white,
@@ -3823,6 +3892,21 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                   Icons.layers_clear_rounded,
                   "BG",
                   onTap: () => removeBackground(),
+                ),
+                _actionIcon(
+                  Icons.volume_up_rounded,
+                  "Volume",
+                  onTap: () {
+                    if (currentSegment != null) {
+                      setState(() {
+                        _tempVolume = currentSegment!.volume;
+                        _isVolumeAdjusting = true;
+                        _isSpeeding = false;
+                        _isCropping = false;
+                        _isFiltering = false;
+                      });
+                    }
+                  },
                 ),
                 _actionIcon(
                   Icons.content_cut_rounded,
@@ -4070,6 +4154,103 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVolumeSettingsBar() {
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () => setState(() => _isVolumeAdjusting = false),
+                child: Text(
+                  "Cancel",
+                  style: TextStyle(color: Colors.black54, fontSize: 16.sp),
+                ),
+              ),
+              Text(
+                "Volume",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16.sp,
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (currentSegment != null) {
+                    setState(() {
+                      currentSegment!.volume = _tempVolume;
+                      _isVolumeAdjusting = false;
+                      _controller.setVolume(_tempVolume);
+                    });
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("Done"),
+              ),
+            ],
+          ),
+          SizedBox(height: 15.h),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(
+                  _tempVolume == 0 ? Icons.volume_off : Icons.volume_up,
+                  color: Colors.black87,
+                ),
+                onPressed: () {
+                  setState(() {
+                    if (_tempVolume > 0) {
+                      _tempVolume = 0;
+                    } else {
+                      _tempVolume = 1.0;
+                    }
+                    _controller.setVolume(_tempVolume);
+                  });
+                },
+              ),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 4.h,
+                    thumbShape: _CustomSliderThumbShape(color: Colors.blue),
+                    activeTrackColor: Colors.blue,
+                    inactiveTrackColor: Colors.grey.withOpacity(0.2),
+                  ),
+                  child: Slider(
+                    value: _tempVolume,
+                    min: 0.0,
+                    max: 2.0, // CapCut style 200%
+                    onChanged: (val) {
+                      setState(() {
+                        _tempVolume = val;
+                        _controller.setVolume(val);
+                      });
+                    },
+                  ),
+                ),
+              ),
+              Text(
+                "${(_tempVolume * 100).toInt()}%",
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
         ],
       ),
     );

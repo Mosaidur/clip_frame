@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -333,12 +334,28 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
         borderRadius: BorderRadius.circular(15.r),
         border: Border.all(color: Colors.white, width: 2),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(13.r),
-        child: Image.file(
-          File(widget.imagePath),
-          fit: BoxFit.cover,
-        ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.file(
+              File(widget.imagePath),
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(color: Colors.black26),
+            ),
+          ),
+          Center(
+            child: Image.file(
+              File(widget.imagePath),
+              fit: BoxFit.contain,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -357,12 +374,28 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
             borderRadius: BorderRadius.circular(15.r),
             border: Border.all(color: Colors.white, width: 2),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(13.r),
-            child: Image.file(
-              File(path),
-              fit: BoxFit.cover,
-            ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.file(
+                  File(path),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  child: Container(color: Colors.black12),
+                ),
+              ),
+              Center(
+                child: Image.file(
+                  File(path),
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ],
           ),
         );
       }).toList(),

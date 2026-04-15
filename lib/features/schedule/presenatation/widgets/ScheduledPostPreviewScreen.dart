@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:clip_frame/features/post/presenatation/widget2/MediaDisplayWidget.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
@@ -219,24 +220,46 @@ class _ScheduledPostPreviewScreenState
   }
 
   Widget _buildSingleImage(String url) {
-    return Center(
-      child: InteractiveViewer(
-        minScale: 1.0,
-        maxScale: 4.0,
-        child: Image.network(
-          url,
-          fit: BoxFit.contain, // Maintain original aspect ratio
-          alignment: Alignment.center,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) => const Center(
-            child: Icon(Icons.broken_image, color: Colors.white, size: 50),
+    return Container(
+      color: Colors.black,
+      child: Stack(
+        children: [
+          // Blurred background
+          Positioned.fill(
+            child: Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(color: Colors.black),
+            ),
           ),
-        ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(color: Colors.black.withOpacity(0.3)),
+            ),
+          ),
+          // Main image
+          Center(
+            child: InteractiveViewer(
+              minScale: 1.0,
+              maxScale: 4.0,
+              child: Image.network(
+                url,
+                fit: BoxFit.contain, // Maintain original aspect ratio
+                alignment: Alignment.center,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => const Center(
+                  child: Icon(Icons.broken_image, color: Colors.white, size: 50),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -249,6 +272,7 @@ class _ScheduledPostPreviewScreenState
       options: CarouselOptions(
         height: screenWidth, // Force a square container
         viewportFraction: 1.0,
+        clipBehavior: Clip.hardEdge, // Prevent bleeding of adjacent images
         enableInfiniteScroll: false,
         scrollPhysics: const BouncingScrollPhysics(),
         onPageChanged: (index, reason) {

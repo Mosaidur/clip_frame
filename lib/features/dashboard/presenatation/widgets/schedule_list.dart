@@ -1,6 +1,7 @@
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/services/api_services/schedule_service.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
@@ -583,20 +584,19 @@ class _SchedulePageState extends State<SchedulePage> {
   }
 
   Widget _buildMediaContent(SchedulePost post) {
-    // 1. Try server thumbnail
+    bool isCarousel = post.mediaUrls.length > 1;
+    bool isVideo = _isVideo(post);
+
+    String? displayUrl;
     if (post.thumbnailUrl != null && post.thumbnailUrl!.isNotEmpty) {
-      return Image.network(
-        post.thumbnailUrl!,
-        height: 80.h,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-      );
+      displayUrl = post.thumbnailUrl;
+    } else if (post.imageUrl.isNotEmpty) {
+      displayUrl = post.imageUrl;
     }
 
-    // 2. Local video thumbnail
-    if (_isVideo(post)) {
-      return FutureBuilder<Uint8List?>(
+    Widget content;
+    if (isVideo && (post.thumbnailUrl == null || post.thumbnailUrl!.isEmpty)) {
+      content = FutureBuilder<Uint8List?>(
         future: VideoThumbnail.thumbnailData(
           video: post.imageUrl,
           imageFormat: ImageFormat.JPEG,
@@ -605,48 +605,109 @@ class _SchedulePageState extends State<SchedulePage> {
         ),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                Image.memory(
-                  snapshot.data!,
-                  height: 80.h,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-                Icon(
-                  Icons.play_circle_outline,
-                  color: Colors.white,
-                  size: 24.r,
-                ),
-              ],
+            return Image.memory(
+              snapshot.data!,
+              height: 80.h,
+              width: double.infinity,
+              fit: BoxFit.contain,
             );
           }
           return _buildPlaceholder();
         },
       );
-    }
-
-    // 3. Fallback to image
-    if (post.imageUrl.isNotEmpty) {
-      return Image.network(
-        post.imageUrl,
+    } else if (displayUrl != null) {
+      content = Image.network(
+        displayUrl,
         height: 80.h,
         width: double.infinity,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
       );
+    } else {
+      content = _buildPlaceholder();
     }
 
-    return _buildPlaceholder();
+    return Container(
+      height: 80.h,
+      width: double.infinity,
+      color: Colors.black,
+      child: Stack(
+        children: [
+          // Blurred background for premium look
+          if (displayUrl != null)
+            Positioned.fill(
+              child: Image.network(
+                displayUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: Colors.black),
+              ),
+            ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: Container(color: Colors.black.withOpacity(0.2)),
+            ),
+          ),
+          
+          // Main content
+          Center(child: content),
+
+          // Multiple Image Indicator
+          if (isCarousel)
+            Positioned(
+              top: 5.r,
+              right: 5.r,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.collections_rounded, color: Colors.white, size: 10.r),
+                    SizedBox(width: 4.w),
+                    Text(
+                      "${post.mediaUrls.length}",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Play Icon for Videos
+          if (isVideo)
+            Center(
+              child: Container(
+                padding: EdgeInsets.all(4.r),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 20.r,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildPlaceholder() {
     return Container(
       height: 80.h,
       width: double.infinity,
-      color: Colors.grey[100],
-      child: Icon(Icons.image, color: Colors.grey[400], size: 30.r),
+      color: const Color(0xFFF1F5F9),
+      child: Icon(Icons.image_outlined, color: const Color(0xFFCBD5E1), size: 30.r),
     );
   }
 

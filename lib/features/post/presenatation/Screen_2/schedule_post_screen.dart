@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:intl/intl.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -1117,9 +1118,28 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
               borderRadius: BorderRadius.circular(15.r),
               border: Border.all(color: Colors.white, width: 2),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(13.r),
-              child: Image.file(File(path), fit: BoxFit.cover),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.file(
+                    File(path),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: Container(color: Colors.black12),
+                  ),
+                ),
+                Center(
+                  child: Image.file(
+                    File(path),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
             ),
           );
         }).toList(),
@@ -1163,50 +1183,78 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
       if (_isVideoUrl(mediaPath)) isVideo = true;
     }
 
+    Widget content;
+
     // If it's a network image from edit mode
     if (imageUrl != null && imageUrl.isNotEmpty) {
       if (isVideo) {
-        return _buildVideoThumbnail(imageUrl);
+        content = _buildVideoThumbnail(imageUrl);
+      } else {
+        content = Image.network(
+          imageUrl,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
+        );
       }
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
-      );
-    }
-
-    // If it's a local file
-    if (mediaPath.isNotEmpty && !mediaPath.startsWith('http')) {
+    } else if (mediaPath.isNotEmpty && !mediaPath.startsWith('http')) {
+      // If it's a local file
       try {
         final file = File(mediaPath);
         if (file.existsSync()) {
           if (isVideo) {
-            return _buildVideoThumbnail(mediaPath);
+            content = _buildVideoThumbnail(mediaPath);
+          } else {
+            content = Image.file(
+              file,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
+            );
           }
-          return Image.file(
-            file,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
-          );
+        } else {
+          content = _buildErrorIcon();
         }
       } catch (e) {
         debugPrint("Error loading preview: $e");
+        content = _buildErrorIcon();
       }
-    }
-
-    // Fallback if mediaPath is a URL (some edge cases)
-    if (mediaPath.startsWith('http')) {
+    } else if (mediaPath.startsWith('http')) {
+      // Fallback if mediaPath is a URL (some edge cases)
       if (isVideo) {
-        return _buildVideoThumbnail(mediaPath);
+        content = _buildVideoThumbnail(mediaPath);
+      } else {
+        content = Image.network(
+          mediaPath,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
+        );
       }
-      return Image.network(
-        mediaPath,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
-      );
+    } else {
+      content = _buildErrorIcon();
     }
 
-    return _buildErrorIcon();
+    if (isVideo) return content;
+
+    // Wrap image with blurred background
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: imageUrl != null && imageUrl.isNotEmpty
+              ? Image.network(imageUrl, fit: BoxFit.cover)
+              : (mediaPath.isNotEmpty && !mediaPath.startsWith('http')
+                  ? Image.file(File(mediaPath), fit: BoxFit.cover)
+                  : (mediaPath.startsWith('http')
+                      ? Image.network(mediaPath, fit: BoxFit.cover)
+                      : Container(color: Colors.black12))),
+        ),
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.black26),
+          ),
+        ),
+        Center(child: content),
+      ],
+    );
   }
 
   bool _isVideoUrl(String url) {

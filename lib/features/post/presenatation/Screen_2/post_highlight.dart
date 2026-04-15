@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
@@ -265,20 +266,34 @@ class PostHighlight extends StatelessWidget {
                   Container(
                     height: 400,
                     decoration: BoxDecoration(
+                      color: Colors.black,
                       border: Border.all(color: Colors.blueAccent, width: 2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     clipBehavior: Clip.hardEdge,
-                    child: Image.network(
-                      url,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        // Fallback image if network fails
-                        return Image.asset(
-                          url, // replace with your local image path
-                          fit: BoxFit.cover,
-                        );
-                      },
+                    child: Stack(
+                      children: [
+                        // Blurred background
+                        Positioned.fill(
+                          child: _MediaWidget(
+                            url: url,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Container(color: Colors.black.withOpacity(0.3)),
+                          ),
+                        ),
+                        // Main image
+                        Center(
+                          child: _MediaWidget(
+                            url: url,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -473,5 +488,34 @@ class PostHighlight extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _MediaWidget extends StatelessWidget {
+  final String url;
+  final BoxFit fit;
+
+  const _MediaWidget({required this.url, required this.fit});
+
+  @override
+  Widget build(BuildContext context) {
+    if (url.startsWith('http') || url.startsWith('https')) {
+      return Image.network(
+        url,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          'assets/images/1.jpg', // Fallback local image
+          fit: fit,
+        ),
+      );
+    } else {
+      return Image.asset(
+        url,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => const Center(
+          child: Icon(Icons.broken_image, color: Colors.white38),
+        ),
+      );
+    }
   }
 }

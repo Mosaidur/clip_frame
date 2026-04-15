@@ -67,6 +67,8 @@ dependencies:
   flutter_local_notifications: ^21.0.0
   sqflite: ^2.4.1
   workmanager: ^0.9.0
+  just_audio: ^0.10.5
+  audio_session: ^0.2.3
 
 dev_dependencies:
   flutter_test:

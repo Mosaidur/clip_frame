@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:clip_frame/features/post/presenatation/widget2/MediaDisplayWidget.dart';
 import 'package:clip_frame/features/post/presenatation/widget2/customTabBar.dart';
 import 'package:flutter/material.dart';
@@ -37,31 +38,45 @@ class PostScrollContnet extends StatelessWidget {
       backgroundColor: Colors.black, // Background color for horizontal images
       body: Stack(
         children: [
-          /// Fullscreen Image with containment
+          /// Fullscreen Image with containment and blurred background
           Positioned.fill(
-            child: Container(
-              color: Colors.black,
-              child: Center(
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit
-                      .contain, // Changed from cover to contain to show full horizontal image
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Icon(Icons.error, color: Colors.white, size: 50),
+            child: Stack(
+              children: [
+                // Blurred Background
+                Positioned.fill(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
                   ),
                 ),
-              ),
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(color: Colors.black.withOpacity(0.4)),
+                  ),
+                ),
+                // Main Content
+                Center(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain, // Show full horizontal image
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => const Center(
+                      child: Icon(Icons.error, color: Colors.white, size: 50),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 

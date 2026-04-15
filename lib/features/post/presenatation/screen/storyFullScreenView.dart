@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:clip_frame/core/model/content_template_model.dart';
@@ -110,49 +111,62 @@ class _StoryCardState extends State<_StoryCard> {
         children: [
           // Background image full-screen
           Positioned.fill(
-            child: widget.imageUrl.isNotEmpty && widget.imageUrl.startsWith('http')
-                ? Image.network(
-                    widget.imageUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                        child: CircularProgressIndicator(color: Color(0xFFFF4D8D)),
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFF1A1A2E),
-                      child: const Center(
-                        child: Icon(Icons.broken_image_outlined,
-                            color: Colors.white38, size: 64),
+            child: widget.imageUrl.isNotEmpty
+                ? Stack(
+                    children: [
+                      // Blurred Background
+                      Positioned.fill(
+                        child: widget.imageUrl.startsWith('http')
+                            ? Image.network(widget.imageUrl, fit: BoxFit.cover)
+                            : Image.asset(widget.imageUrl, fit: BoxFit.cover),
+                      ),
+                      Positioned.fill(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(color: Colors.black.withOpacity(0.4)),
+                        ),
+                      ),
+                      // Main Content
+                      Center(
+                        child: widget.imageUrl.startsWith('http')
+                            ? Image.network(
+                                widget.imageUrl,
+                                fit: BoxFit.contain,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(color: Color(0xFFFF4D8D)),
+                                  );
+                                },
+                                errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(Icons.broken_image_outlined,
+                                      color: Colors.white38, size: 64),
+                                ),
+                              )
+                            : Image.asset(
+                                widget.imageUrl,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(Icons.broken_image_outlined,
+                                      color: Colors.white38, size: 64),
+                                ),
+                              ),
+                      ),
+                    ],
+                  )
+                : Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
                       ),
                     ),
-                  )
-                : widget.imageUrl.isNotEmpty
-                    ? Image.asset(
-                        widget.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: const Color(0xFF1A1A2E),
-                          child: const Center(
-                            child: Icon(Icons.broken_image_outlined,
-                                color: Colors.white38, size: 64),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-                          ),
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported_outlined,
-                              color: Colors.white38, size: 64),
-                        ),
-                      ),
+                    child: const Center(
+                      child: Icon(Icons.image_not_supported_outlined,
+                          color: Colors.white38, size: 64),
+                    ),
+                  ),
           ),
 
           // Dark gradient overlay at bottom

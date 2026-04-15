@@ -30,8 +30,7 @@ class ContentService {
         "tags": tags,
       };
 
-      final String fileKey =
-          (contentType == "post" ||
+      final String fileKey = (contentType == "post" ||
               contentType == "carousel" ||
               contentType == "story")
           ? 'image'
@@ -50,6 +49,7 @@ class ContentService {
           fileKey: fileKey,
           files: files,
           token: token,
+          wrapInData: true,
         );
       } else if (files != null && files.isNotEmpty) {
         response = await NetworkCaller.postMultipartRequest(
@@ -58,6 +58,7 @@ class ContentService {
           fileKey: fileKey,
           file: files[0],
           token: token,
+          wrapInData: true,
         );
       } else if (mediaPath != null && mediaPath.isNotEmpty) {
         response = await NetworkCaller.postMultipartRequest(
@@ -66,6 +67,7 @@ class ContentService {
           fileKey: fileKey,
           file: File(mediaPath),
           token: token,
+          wrapInData: true,
         );
       } else {
         return NetworkResponse(

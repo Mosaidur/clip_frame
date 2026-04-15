@@ -37,6 +37,7 @@ class PostContent extends StatelessWidget {
     return Container(
       width: width,
       decoration: BoxDecoration(
+        color: Colors.black, // Background for non-matching aspect ratios
         borderRadius: BorderRadius.circular(15),
         image: DecorationImage(
           image: image.isEmpty
@@ -44,7 +45,7 @@ class PostContent extends StatelessWidget {
               : (image.startsWith('http')
                   ? NetworkImage(image)
                   : AssetImage(image)) as ImageProvider,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain, // Show full image without cropping
         ),
       ),
       child: Stack(

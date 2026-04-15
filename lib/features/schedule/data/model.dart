@@ -66,7 +66,7 @@ class SchedulePost {
     if (json['mediaUrls'] is List) {
       urls = List<String>.from(
         (json['mediaUrls'] as List).map((e) => e.toString()),
-      );
+      ).toSet().toList(); // Ensure unique URLs
     } else if (json['imageUrl'] != null) {
       urls = [json['imageUrl'].toString()];
     }
