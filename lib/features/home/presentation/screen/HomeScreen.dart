@@ -141,14 +141,14 @@ class HomePage extends StatelessWidget {
                             child: navItem(
                               Icons.grid_view_rounded,
                               0,
-                              "Dashboard",
+                              "dashboard_nav".tr,
                             ),
                           ),
                           Expanded(
                             child: navItem(
                               Icons.video_library_rounded,
                               1,
-                              "Posts",
+                              "posts_nav".tr,
                             ),
                           ),
                           SizedBox(width: 75.w), // Space for FAB
@@ -156,14 +156,14 @@ class HomePage extends StatelessWidget {
                             child: navItem(
                               Icons.access_time_filled_rounded,
                               2,
-                              "Schedules",
+                              "schedules_nav".tr,
                             ),
                           ),
                           Expanded(
                             child: navItem(
                               Icons.person_rounded,
                               3,
-                              "Profile",
+                              "profile_nav".tr,
                             ),
                           ),
                         ],
@@ -260,7 +260,7 @@ class HomePage extends StatelessWidget {
                               debugPrint("REEL tapped");
                               controller.navigateToReels();
                             },
-                            child: floatingButton("REEL", Icons.movie_outlined),
+                            child: floatingButton("reel_fab".tr, Icons.movie_outlined),
                           ),
                         ),
                       ),
@@ -280,7 +280,7 @@ class HomePage extends StatelessWidget {
                               controller.navigateToPosts();
                             },
                             child: floatingButton(
-                              "POST",
+                              "post_fab".tr,
                               Icons.dashboard_customize_outlined,
                             ),
                           ),
@@ -302,7 +302,7 @@ class HomePage extends StatelessWidget {
                               controller.navigateToStories();
                             },
                             child: floatingButton(
-                              "STORY",
+                              "story_fab".tr,
                               Icons.amp_stories_outlined,
                             ),
                           ),

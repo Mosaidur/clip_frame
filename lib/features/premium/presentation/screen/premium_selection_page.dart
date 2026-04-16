@@ -47,7 +47,7 @@ class PremiumSelectionPage extends StatelessWidget {
                           ),
                           TextButton(
                             onPressed: () => controller.fetchPlans(),
-                            child: const Text("Retry"),
+                            child: Text("retry".tr),
                           ),
                         ],
                       ),
@@ -156,14 +156,14 @@ class PremiumSelectionPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildFeatureItem(Icons.bolt, "Lorem Ipsum is simply dummy text."),
+          _buildFeatureItem(Icons.bolt, "feature_dummy".tr),
           _buildFeatureItem(
             Icons.sentiment_satisfied,
-            "Lorem Ipsum is simply dummy text.",
+            "feature_dummy".tr,
           ),
-          _buildFeatureItem(Icons.timer, "Faster image processing"),
-          _buildFeatureItem(Icons.visibility_off, "No watermarks!"),
-          _buildFeatureItem(Icons.ads_click, "Remove ads"),
+          _buildFeatureItem(Icons.timer, "faster_processing".tr),
+          _buildFeatureItem(Icons.visibility_off, "no_watermarks".tr),
+          _buildFeatureItem(Icons.ads_click, "remove_ads".tr),
         ],
       ),
     );
@@ -235,7 +235,7 @@ class PremiumSelectionPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4.r),
                   ),
                   child: Text(
-                    "Recommended",
+                    "recommended".tr,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 8.sp,
@@ -286,7 +286,7 @@ class PremiumSelectionPage extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          "Business Manageable",
+                          "business_manageable".tr,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.6),
                             fontSize: 10.sp,
@@ -305,9 +305,9 @@ class PremiumSelectionPage extends StatelessWidget {
                     if (reels != null)
                       Row(
                         children: [
-                          _buildCountItem(reels, "reel"),
-                          _buildCountItem(posts!, "post"),
-                          _buildCountItem(stories!, "story"),
+                          _buildCountItem(reels, "reel_label".tr),
+                          _buildCountItem(posts!, "post_label".tr),
+                          _buildCountItem(stories!, "story_label".tr),
                           Text(
                             period ?? "/month",
                             style: TextStyle(
@@ -394,7 +394,7 @@ class PremiumSelectionPage extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  "Get Access Now",
+                  "get_access_now".tr,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16.sp,
@@ -408,11 +408,11 @@ class PremiumSelectionPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildFooterLink("Terms"),
+              _buildFooterLink("terms".tr),
               _buildVerticalDivider(),
-              _buildFooterLink("Privacy"),
+              _buildFooterLink("privacy".tr),
               _buildVerticalDivider(),
-              _buildFooterLink("Restore"),
+              _buildFooterLink("restore".tr),
             ],
           ),
         ],

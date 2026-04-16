@@ -89,7 +89,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
               }),
               _buildActionButtons(context),
               _buildSection(
-                title: "Most Recent",
+                title: "most_recent".tr,
                 onSeeAll: () => Get.find<HomeController>().navigateToPosts(),
               ),
               Obx(() {
@@ -102,7 +102,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
               }),
               SizedBox(height: 20.h),
               _buildSection(
-                title: "For you",
+                title: "for_you".tr,
                 onSeeAll: () => Get.find<HomeController>().navigateToPosts(),
               ),
               Obx(() {
@@ -358,7 +358,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
                   child: GestureDetector(
                     onTap: () => homeController.navigateToPosts(),
                     child: _SummaryCard(
-                      label: "Post\nPublished",
+                      label: "post_published".tr,
                       value: publishedPosts.toString(),
                       icon: Icons.article_outlined,
                       color: Colors.blue,
@@ -370,7 +370,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
                   child: GestureDetector(
                     onTap: () => homeController.navigateToReels(),
                     child: _SummaryCard(
-                      label: "Reels\nPublished",
+                      label: "reels_published".tr,
                       value: publishedReels.toString(),
                       icon: Icons.movie_outlined,
                       color: Colors.orange,
@@ -386,7 +386,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
                   child: GestureDetector(
                     onTap: () => homeController.navigateToStories(),
                     child: _SummaryCard(
-                      label: "Story\nCreated",
+                      label: "story_created".tr,
                       value: createdStories.toString(),
                       icon: Icons.history_edu_outlined,
                       color: Colors.pink,
@@ -396,7 +396,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
                 SizedBox(width: 12.w),
                 Expanded(
                   child: _SummaryCard(
-                    label: "Weekly\nViews",
+                    label: "weekly_views".tr,
                     value: totalViews.toString(),
                     icon: Icons.remove_red_eye_outlined,
                     color: Colors.green,
@@ -406,7 +406,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
             ),
             SizedBox(height: 12.h),
             _SummaryCard(
-              label: "Average Engagement",
+              label: "average_engagement".tr,
               value: "${displayEngagement.toStringAsFixed(1)}%",
               icon: Icons.query_stats,
               color: Colors.purple,
@@ -446,7 +446,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
           Expanded(
             flex: 6,
             child: _ActionButton(
-              label: "Create Weekly Content",
+              label: "create_weekly_content".tr,
               icon: Icons.add_box_rounded,
               color: const Color(0xFF007CFE),
               onTap: () {
@@ -463,7 +463,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
           Expanded(
             flex: 4,
             child: _ActionButton(
-              label: "Calendar",
+              label: "calendar".tr,
               icon: Icons.calendar_month,
               color: const Color(0xFFFF277F),
               onTap: () {
@@ -687,7 +687,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Upgrade to PRO",
+                            "upgrade_to_pro".tr,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 22.sp,
@@ -696,7 +696,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
                           ),
                           SizedBox(height: 4.h),
                           Text(
-                            "Enjoy all features & benefits\nwithout any restrictions",
+                            "enjoy_features".tr,
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: 12.sp,

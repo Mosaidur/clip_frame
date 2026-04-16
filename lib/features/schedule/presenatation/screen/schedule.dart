@@ -54,7 +54,7 @@ class ScheduleScreenPage extends StatelessWidget {
                           return Padding(
                             padding: EdgeInsets.only(top: 8.h),
                             child: Text(
-                              "Last synced: $time",
+                              "last_synced".tr + "$time",
                               style: GoogleFonts.poppins(
                                 fontSize: 10.sp,
                                 color: Colors.grey[600],
@@ -106,7 +106,7 @@ class ScheduleScreenPage extends StatelessWidget {
             // Menu action
           }),
           Text(
-            "Posts",
+            "posts_title".tr,
             style: GoogleFonts.poppins(
               fontSize: 18.sp,
               fontWeight: FontWeight.bold,
@@ -166,8 +166,8 @@ class ScheduleScreenPage extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Expanded(child: _buildTabItem("Scheduled Posts", 0, controller)),
-            Expanded(child: _buildTabItem("History", 1, controller)),
+            Expanded(child: _buildTabItem("scheduled_posts_tab".tr, 0, controller)),
+            Expanded(child: _buildTabItem("history_tab".tr, 1, controller)),
           ],
         ),
       );
@@ -209,8 +209,8 @@ class ScheduleScreenPage extends StatelessWidget {
     if (controller.scheduledPosts.isEmpty) {
       return _buildEmptyState(
         icon: Icons.calendar_today_outlined,
-        title: "No Scheduled Posts",
-        subtitle: "Your scheduled posts will appear here.",
+        title: "no_scheduled_posts".tr,
+        subtitle: "no_scheduled_posts_sub".tr,
       );
     }
     return RefreshIndicator(
@@ -230,8 +230,8 @@ class ScheduleScreenPage extends StatelessWidget {
     if (controller.historyPosts.isEmpty) {
       return _buildEmptyState(
         icon: Icons.history_rounded,
-        title: "No Post History",
-        subtitle: "Your published content will appear here.",
+        title: "no_post_history".tr,
+        subtitle: "no_post_history_sub".tr,
       );
     }
     return RefreshIndicator(
@@ -315,7 +315,7 @@ class ScheduleScreenPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => controller.loadAllData(),
-            child: const Text("Retry"),
+            child: Text("retry".tr),
           ),
         ],
       ),

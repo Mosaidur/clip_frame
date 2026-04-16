@@ -77,6 +77,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         leading: CustomBackButton(
           onPressed: () => Get.back(),
           iconColor: Colors.white,
+          size: 52.0,
         ),
       ),
       body: Container(
@@ -421,77 +422,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           );
                         }),
 
-                        // Language Selection
-                        _buildLabel("Preferred Language".tr),
-                        const SizedBox(height: 12),
-                        Obx(() {
-                          return Wrap(
-                            spacing: 12,
-                            children: controller.availableLanguages.map((lang) {
-                              final isSelected = controller.selectedLanguages
-                                  .contains(lang);
-                              return GestureDetector(
-                                onTap: () => controller.toggleLanguage(lang),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFFB38FFC)
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(25),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? const Color(0xFFB38FFC)
-                                          : Colors.grey[300]!,
-                                      width: 1.5,
-                                    ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: const Color(
-                                                0xFFB38FFC,
-                                              ).withOpacity(0.3),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ]
-                                        : [],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (isSelected) ...[
-                                        const Icon(
-                                          Icons.check_circle,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                                        const SizedBox(width: 8),
-                                      ],
-                                      Text(
-                                        lang.tr,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w600
-                                              : FontWeight.w500,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : Colors.grey[700],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          );
-                        }),
-                        const SizedBox(height: 24),
 
                         // Timezone Selection
                         _buildLabel("Timezone".tr),

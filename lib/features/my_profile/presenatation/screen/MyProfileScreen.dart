@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:clip_frame/splashScreen/controllers/language_controller.dart';
+import 'package:clip_frame/Shared/widgets/language_toggle_button.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 
 class MyProfilePage extends StatelessWidget {
@@ -49,11 +51,20 @@ class MyProfilePage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(
-                        width: 40,
-                      ), // Placeholder to keep title centered
+                      Obx(() {
+                        final langController = Get.find<LanguageController>();
+                        return LanguageToggleButton(
+                          currentLanguage: langController.locale.value.languageCode == 'es' ? 'Es' : 'En',
+                          onLanguageChanged: (lang) {
+                            langController.changeLocale(
+                              lang == 'Es' ? const Locale('es', 'ES') : const Locale('en', 'US'),
+                            );
+                            // Also update the backend preferred language implicitly if needed, or stick to app-wide change
+                          },
+                        );
+                      }),
                       Text(
-                        "Profile",
+                        "profile".tr,
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -264,7 +275,7 @@ class MyProfilePage extends StatelessWidget {
                                     ),
                                     child: Center(
                                       child: Text(
-                                        "About me",
+                                        "about_me".tr,
                                         style: GoogleFonts.poppins(
                                           color:
                                               controller.selectedTab.value == 0
@@ -302,7 +313,7 @@ class MyProfilePage extends StatelessWidget {
                                     ),
                                     child: Center(
                                       child: Text(
-                                        "My Creations",
+                                        "my_creations".tr,
                                         style: GoogleFonts.poppins(
                                           color:
                                               controller.selectedTab.value == 1
