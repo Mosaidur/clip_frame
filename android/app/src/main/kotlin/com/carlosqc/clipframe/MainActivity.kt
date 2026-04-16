@@ -1,15 +1,15 @@
 package com.carlosqc.clipframe
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity: FlutterActivity() {
+class MainActivity: FlutterFragmentActivity() {
     private val CHANNEL = "com.carlosqc.clipframe/video_engine"
     private lateinit var videoEngine: VideoEngine
 
     override fun configureFlutterEngine(flutterEngine: io.flutter.embedding.engine.FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
-        videoEngine = VideoEngine(context)
+        videoEngine = VideoEngine(this)
 
         io.flutter.plugin.common.MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {

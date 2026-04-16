@@ -498,19 +498,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         const SizedBox(height: 8),
                         Obx(
                           () => DropdownButtonFormField<String>(
-                            value:
-                                controller.availableTimezones.contains(
-                                  controller.selectedTimezone.value,
-                                )
+                            isExpanded: true,
+                            value: controller.availableTimezones.contains(
+                                    controller.selectedTimezone.value)
                                 ? controller.selectedTimezone.value
                                 : controller.availableTimezones.first,
                             items: controller.availableTimezones
                                 .map(
                                   (tz) => DropdownMenuItem(
                                     value: tz,
-                                    child: Text(
-                                      tz,
-                                      style: GoogleFonts.poppins(fontSize: 14),
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: Text(
+                                        tz,
+                                        style:
+                                            GoogleFonts.poppins(fontSize: 14),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   ),
                                 )

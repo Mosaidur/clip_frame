@@ -84,11 +84,6 @@ class MyProfileController extends GetxController {
     "America/Chicago (GMT-05:00)",
     "America/Denver (GMT-06:00)",
     "America/Los_Angeles (GMT-07:00)",
-    "Asia/Dhaka (GMT+06:00)",
-    "Asia/Kolkata (GMT+05:30)",
-    "Asia/Dubai (GMT+04:00)",
-    "Asia/Tokyo (GMT+09:00)",
-    "Asia/Singapore (GMT+08:00)",
     "Australia/Sydney (GMT+10:00)",
   ];
 

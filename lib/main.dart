@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:clip_frame/core/services/notification_service.dart';
 import 'package:clip_frame/core/services/database_service.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -26,6 +27,11 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Stripe (Placeholder Key - REPLACE THIS)
+  Stripe.publishableKey =
+      'pk_test_51RcvK8GdOsJASBMC9aDK1onP8kTVwAxve4385Mr09r2Edd1fxcbSWD1y5DCclahZ7MHa0hf1eBnsnq16bWavPRY400W2WfumAa';
+  await Stripe.instance.applySettings();
 
   // Initialize services
   await NotificationService.init();

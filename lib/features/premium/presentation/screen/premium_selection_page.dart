@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../controller/premium_selection_controller.dart';
 
 class PremiumSelectionPage extends StatelessWidget {
@@ -61,44 +62,52 @@ class PremiumSelectionPage extends StatelessWidget {
                         _buildFeaturesCard(),
                         SizedBox(height: 20.h),
                         ...controller.plans.map((plan) {
+                          final bool isSelected =
+                              controller.selectedPlan.value?.id == plan.id;
                           final bool isRecommended = plan.title
                               .toLowerCase()
                               .contains('starter');
                           final String period =
-                              plan.paymentType.toLowerCase().contains('month')
-                              ? '/month'
-                              : '/week';
+                              plan.duration.toLowerCase().contains('month')
+                                  ? '/month'
+                                  : '/week';
+
                           return Padding(
                             padding: EdgeInsets.only(bottom: 12.h),
-                            child: _buildPlanOption(
-                              title: plan.title,
-                              price:
-                                  "€${plan.price} / ${plan.paymentType.toLowerCase().replaceAll('ly', '')}",
-                              reels: plan.limits.reelsPerWeek.toString(),
-                              posts: plan.limits.postsPerWeek.toString(),
-                              stories: plan.limits.storiesPerWeek.toString(),
-                              period: period,
-                              isRecommended: isRecommended,
-                              gradient: isRecommended
-                                  ? [
-                                      const Color(0xFF8E2DE2),
-                                      const Color(0xFF4A00E0),
-                                    ]
-                                  : null,
-                              businessManageable: plan
-                                  .limits
-                                  .businessesManageable
-                                  .toString(),
+                            child: GestureDetector(
+                              onTap: () => controller.selectPlan(plan),
+                              child: _buildPlanOption(
+                                title: plan.title,
+                                price:
+                                    "€${plan.price} / ${plan.duration.toLowerCase()}",
+                                reels: plan.limits.reelsPerWeek.toString(),
+                                posts: plan.limits.postsPerWeek.toString(),
+                                stories: plan.limits.storiesPerWeek.toString(),
+                                period: period,
+                                isRecommended: isRecommended,
+                                isSelected: isSelected,
+                                gradient: isRecommended
+                                    ? [
+                                        const Color(0xFF8E2DE2),
+                                        const Color(0xFF4A00E0),
+                                      ]
+                                    : null,
+                                businessManageable: plan
+                                    .limits
+                                    .businessesManageable
+                                    .toString(),
+                              ),
                             ),
                           );
                         }).toList(),
+
                         SizedBox(height: 30.h),
                       ],
                     ),
                   );
                 }),
               ),
-              _buildFooter(),
+              _buildFooter(controller),
             ],
           ),
         ),
@@ -191,6 +200,7 @@ class PremiumSelectionPage extends StatelessWidget {
     String? businessManageable,
     String? tag,
     bool isRecommended = false,
+    bool isSelected = false,
     List<Color>? gradient,
   }) {
     return Container(
@@ -201,10 +211,12 @@ class PremiumSelectionPage extends StatelessWidget {
         gradient: gradient != null ? LinearGradient(colors: gradient) : null,
         borderRadius: BorderRadius.circular(15.r),
         border: Border.all(
-          color: isRecommended
-              ? Colors.pinkAccent
-              : Colors.white.withOpacity(0.05),
-          width: isRecommended ? 2 : 1,
+          color: isSelected
+              ? Colors.blueAccent
+              : isRecommended
+                  ? Colors.pinkAccent
+                  : Colors.white.withOpacity(0.05),
+          width: (isSelected || isRecommended) ? 2 : 1,
         ),
       ),
       child: Stack(
@@ -358,7 +370,7 @@ class PremiumSelectionPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooter(PremiumSelectionController controller) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 20.h),
       child: Column(
@@ -366,23 +378,31 @@ class PremiumSelectionPage extends StatelessWidget {
           SizedBox(
             width: 320.w,
             height: 50.h,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF007AFF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.r),
+            child: Obx(() {
+              final selectedPlan = controller.selectedPlan.value;
+              return ElevatedButton(
+                onPressed: selectedPlan == null
+                    ? null
+                    : () async {
+                        await controller.subscribe();
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF007AFF),
+                  disabledBackgroundColor: Colors.grey,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
                 ),
-              ),
-              child: Text(
-                "Get Access Now",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
+                child: Text(
+                  "Get Access Now",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ),
+              );
+            }),
           ),
           SizedBox(height: 15.h),
           Row(

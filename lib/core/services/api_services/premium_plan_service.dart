@@ -11,4 +11,14 @@ class PremiumPlanService {
     );
     return response;
   }
+
+  Future<NetworkResponse> createSubscription(String planId) async {
+    final String? token = await AuthService.getToken();
+    final NetworkResponse response = await NetworkCaller.postRequest(
+      url: Urls.createSubscriptionUrl,
+      token: token,
+      body: {'planId': planId},
+    );
+    return response;
+  }
 }
