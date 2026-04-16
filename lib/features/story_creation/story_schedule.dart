@@ -4,6 +4,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'package:clip_frame/core/utils/scheduling_utils.dart';
 import 'package:intl/intl.dart';
+import 'package:get/get.dart';
+import 'package:clip_frame/core/services/api_services/content_service.dart';
+import 'package:clip_frame/core/services/api_services/content_template_service.dart';
+import 'package:clip_frame/Shared/routes/routes.dart';
 
 class StorySchedulePage extends StatefulWidget {
   final List<File> files;
@@ -15,20 +19,46 @@ class StorySchedulePage extends StatefulWidget {
 }
 
 class _StorySchedulePageState extends State<StorySchedulePage> {
-  int _selectedPlatformIndex = 1; // 0: FB, 1: IG, 2: TikTok
+  int _selectedPlatformIndex = 1; // 0: FB, 1: IG
   int _selectedStoryIndex = 0;
   bool _remindMe = true;
   bool _showSuggestedDialog = true;
   bool _scheduledSuccess = false;
   bool _showCongratulation = false;
+  bool _isApiLoading = false;
   DateTime _selectedDate = DateTime.now();
-  String _selectedTimeMode = "Time"; // "Any Time", "Time", "Range"
+  DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  String _selectedTimeMode = "Time";
+  int _selectedHour = 5;
+  int _selectedMinute = 0;
+  String _period = "PM";
+  String _storyTemplateId = ""; // Fetched from API on init
 
   final List<String> _platforms = ["Facebook", "Instagram"];
   final List<dynamic> _platformIcons = [
     Icons.facebook_rounded,
     'assets/images/instagram.png',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStoryTemplateId();
+  }
+
+  Future<void> _fetchStoryTemplateId() async {
+    try {
+      final templates = await ContentTemplateService.fetchTemplatesByType('story');
+      if (templates.isNotEmpty && mounted) {
+        setState(() => _storyTemplateId = templates.first.id ?? "");
+        debugPrint("✅ [StorySchedule] Got story templateId: $_storyTemplateId");
+      } else {
+        debugPrint("⚠️ [StorySchedule] No story templates found from API");
+      }
+    } catch (e) {
+      debugPrint("⛔ [StorySchedule] Failed to fetch story template: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,138 +108,131 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
     );
   }
 
+  bool _isVideoFile(File file) {
+    final path = file.path.toLowerCase();
+    return path.endsWith('.mp4') || path.endsWith('.mov') || path.endsWith('.avi');
+  }
+
   Widget _buildSuccessView() {
+    final String formattedTime = "${_selectedHour.toString().padLeft(2, '0')}:${_selectedMinute.toString().padLeft(2, '0')} $_period";
+    final bool isVideo = _isVideoFile(widget.files[0]);
+    final String selectedPlatform = _platforms[_selectedPlatformIndex];
+
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(color: Color(0xFFE8EAF6)),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: Center(
-                  child: Container(
-                    width: 320.w,
-                    padding: EdgeInsets.all(24.r),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(30.r),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "Successfully Scheduled!",
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.indigo,
-                          ),
+      backgroundColor: const Color(0xFFE8EAF6),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(22.r),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(14.r),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEEF2FF),
+                          shape: BoxShape.circle,
                         ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          "You have successfully scheduled 3 stories content.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.black54,
-                          ),
-                        ),
-                        SizedBox(height: 25.h),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20.r),
-                          child: Container(
-                            height: 250.h,
-                            width: double.infinity,
-                            color: Colors.black,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Image.file(
-                                  widget.files[0],
-                                  height: 250.h,
-                                  width: double.infinity,
-                                  fit: BoxFit
-                                      .contain, // Show full image without cropping
-                                ),
-                                Icon(
-                                  Icons.play_circle_fill_rounded,
-                                  color: Colors.white70,
-                                  size: 40.r,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 20.h),
-                        _successDetailRow(
-                          "Platform:",
-                          Icons.facebook_rounded,
-                          "FB, IG",
-                        ),
-                        SizedBox(height: 12.h),
-                        _successDetailRow(
-                          "Scheduled for:",
-                          Icons.calendar_today_rounded,
-                          "Tue, Wed, Thu\n05:00 PM, 05:00 PM, 05:00 PM",
-                        ),
-                        SizedBox(height: 25.h),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        child: Icon(Icons.check_circle_rounded, color: Colors.indigo, size: 36.r),
+                      ),
+                      SizedBox(height: 12.h),
+                      Text(
+                        "Successfully Scheduled!",
+                        style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900, color: Colors.indigo),
+                      ),
+                      SizedBox(height: 6.h),
+                      Text(
+                        "You have successfully scheduled ${widget.files.length} ${widget.files.length > 1 ? 'stories' : 'story'} content.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12.sp, color: Colors.black54),
+                      ),
+                      SizedBox(height: 18.h),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16.r),
+                        child: Stack(
+                          alignment: Alignment.center,
                           children: [
-                            _actionBtnVertical(
-                              Icons.edit_rounded,
-                              "Edit",
-                              Colors.orange,
+                            Image.file(
+                              widget.files[0],
+                              height: 180.h,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
                             ),
-                            _actionBtnVertical(
-                              Icons.copy_rounded,
-                              "Duplicate",
-                              Colors.indigo,
-                            ),
-                            _actionBtnVertical(
-                              Icons.delete_outline_rounded,
-                              "Delete",
-                              Colors.pink,
-                            ),
+                            // Only show play icon for video files
+                            if (isVideo)
+                              Container(
+                                padding: EdgeInsets.all(8.r),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black45,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 36.r),
+                              ),
                           ],
                         ),
-                        SizedBox(height: 30.h),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50.h,
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2196F3),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15.r),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: Text(
-                              "Back to Dashboard",
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                      ),
+                      SizedBox(height: 18.h),
+                      _successDetailRow("Platform:", Icons.devices_rounded, selectedPlatform),
+                      SizedBox(height: 10.h),
+                      _successDetailRow(
+                        "Scheduled for:",
+                        Icons.calendar_today_rounded,
+                        "${DateFormat('EEE, MMM d').format(_selectedDate)}\n$formattedTime",
+                      ),
+                      SizedBox(height: 20.h),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _actionBtnVertical(Icons.edit_rounded, "Edit", Colors.orange),
+                          _actionBtnVertical(Icons.copy_rounded, "Duplicate", Colors.indigo),
+                          _actionBtnVertical(Icons.delete_outline_rounded, "Delete", Colors.pink),
+                        ],
+                      ),
+                      SizedBox(height: 20.h),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50.h,
+                        child: ElevatedButton(
+                          onPressed: () => Get.offAllNamed(AppRoutes.HOME),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2196F3),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            "Back to Dashboard",
+                            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+
 
   Widget _successDetailRow(String label, IconData icon, String val) {
     return Row(
@@ -358,7 +381,7 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
       startDate = now;
     }
 
-    final upcomingDates = List.generate(3, (i) => startDate.add(Duration(days: i)));
+    final upcomingDates = List.generate(widget.files.length, (i) => startDate.add(Duration(days: i)));
     final suggestedTime = "05:00 PM";
 
     return Container(
@@ -409,24 +432,17 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                 ),
               ),
               SizedBox(height: 20.h),
-              _suggestionItem(
-                "Story 1",
-                SchedulingUtils.formatRecommendedDate(upcomingDates[0]),
-                suggestedTime,
-              ),
-              SizedBox(height: 8.h),
-              _suggestionItem(
-                "Story 2",
-                SchedulingUtils.formatRecommendedDate(upcomingDates[1]),
-                suggestedTime,
-              ),
-              SizedBox(height: 8.h),
-              _suggestionItem(
-                "Story 3",
-                SchedulingUtils.formatRecommendedDate(upcomingDates[2]),
-                suggestedTime,
-              ),
-              SizedBox(height: 25.h),
+              ...List.generate(widget.files.length, (index) {
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 8.h),
+                  child: _suggestionItem(
+                    "Story ${index + 1}",
+                    SchedulingUtils.formatRecommendedDate(upcomingDates[index]),
+                    suggestedTime,
+                  ),
+                );
+              }),
+              SizedBox(height: 17.h),
               Row(
                 children: [
                   Expanded(
@@ -444,6 +460,7 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                       "Choose different date",
                       const Color(0xFF2196F3),
                       () => setState(() => _showSuggestedDialog = false),
+                      isOutlined: true,
                     ),
                   ),
                 ],
@@ -499,23 +516,31 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
     );
   }
 
-  Widget _dialogBtn(String label, Color color, VoidCallback onTap) {
+  Widget _dialogBtn(String label, Color color, VoidCallback onTap, {bool isOutlined = false}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 40.h,
+        height: 48.h,
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(10.r),
+          color: isOutlined ? Colors.transparent : color,
+          borderRadius: BorderRadius.circular(14.r),
+          border: isOutlined ? Border.all(color: color, width: 2.w) : null,
+          boxShadow: isOutlined ? null : [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
         child: Center(
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: 12.sp,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: isOutlined ? color : Colors.white,
             ),
           ),
         ),
@@ -663,11 +688,21 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   }
 
   Widget _buildCalendarSection() {
+    final daysInMonth = DateUtils.getDaysInMonth(_focusedMonth.year, _focusedMonth.month);
+    final firstDayOffset = DateTime(_focusedMonth.year, _focusedMonth.month, 1).weekday - 1; // 0-based
+
     return Container(
       padding: EdgeInsets.all(15.r),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Column(
         children: [
@@ -675,65 +710,75 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "January 2026",
-                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+                DateFormat('MMMM yyyy').format(_focusedMonth),
+                style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
               ),
               Row(
                 children: [
-                  Icon(
-                    Icons.chevron_left_rounded,
-                    size: 20.r,
-                    color: Colors.black45,
+                  IconButton(
+                    onPressed: () => setState(() {
+                      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1);
+                    }),
+                    icon: Icon(Icons.chevron_left_rounded, size: 24.r, color: Colors.blueAccent),
                   ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 20.r,
-                    color: Colors.black45,
+                  IconButton(
+                    onPressed: () => setState(() {
+                      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1);
+                    }),
+                    icon: Icon(Icons.chevron_right_rounded, size: 24.r, color: Colors.blueAccent),
                   ),
                 ],
               ),
             ],
           ),
-          SizedBox(height: 15.h),
+          SizedBox(height: 10.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-                .map(
-                  (d) => Text(
-                    d,
-                    style: TextStyle(fontSize: 10.sp, color: Colors.black38),
-                  ),
-                )
+                .map((d) => SizedBox(
+                      width: 35.w,
+                      child: Center(
+                        child: Text(
+                          d,
+                          style: TextStyle(fontSize: 11.sp, color: Colors.black38, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ))
                 .toList(),
           ),
-          SizedBox(height: 15.h),
-          // Simplified calendar grid for now
+          SizedBox(height: 10.h),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
+              mainAxisSpacing: 5,
+              crossAxisSpacing: 5,
             ),
-            itemCount: 31,
+            itemCount: daysInMonth + firstDayOffset,
             itemBuilder: (context, index) {
-              int day = index + 1;
-              bool isSelected = day == 2; // Demo selection
-              return Container(
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.pink : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    "$day",
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isSelected ? Colors.white : Colors.black87,
+              if (index < firstDayOffset) return const SizedBox.shrink();
+              
+              int day = index - firstDayOffset + 1;
+              DateTime date = DateTime(_focusedMonth.year, _focusedMonth.month, day);
+              bool isSelected = DateUtils.isSameDay(_selectedDate, date);
+              bool isToday = DateUtils.isSameDay(DateTime.now(), date);
+
+              return GestureDetector(
+                onTap: () => setState(() => _selectedDate = date),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.pink : (isToday ? Colors.pink.withOpacity(0.1) : Colors.transparent),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      "$day",
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? Colors.white : (isToday ? Colors.pink : Colors.black87),
+                      ),
                     ),
                   ),
                 ),
@@ -810,18 +855,18 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _timeBox("00"),
+              _timeBox("00", true),
               Text(
                 " : ",
                 style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold),
               ),
-              _timeBox("00"),
+              _timeBox("00", false),
               SizedBox(width: 20.w),
               Column(
                 children: [
-                  _amPmBox("AM", true),
+                  _amPmBox("AM", _period == "AM"),
                   SizedBox(height: 4.h),
-                  _amPmBox("PM", false),
+                  _amPmBox("PM", _period == "PM"),
                 ],
               ),
             ],
@@ -831,39 +876,69 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
     );
   }
 
-  Widget _timeBox(String val) {
-    return Container(
-      width: 60.r,
-      height: 45.r,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F1F1),
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Center(
-        child: Text(
-          val,
-          style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900),
+  Widget _timeBox(String val, bool isHour) {
+    int displayVal = isHour ? _selectedHour : _selectedMinute;
+    String textVal = displayVal.toString().padLeft(2, '0');
+
+    return GestureDetector(
+      onTap: () async {
+        TimeOfDay? picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay(
+            hour: _period == "PM" && _selectedHour != 12 
+                ? _selectedHour + 12 
+                : (_period == "AM" && _selectedHour == 12 ? 0 : _selectedHour),
+            minute: _selectedMinute,
+          ),
+        );
+        if (picked != null && mounted) {
+           setState(() {
+             _selectedHour = picked.hour > 12 ? picked.hour - 12 : (picked.hour == 0 ? 12 : picked.hour);
+             _selectedMinute = picked.minute;
+             _period = picked.period == DayPeriod.pm ? "PM" : "AM";
+           });
+        }
+      },
+      child: Container(
+        width: 60.r,
+        height: 45.r,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F1F1),
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Center(
+          child: Text(
+            textVal,
+            style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900),
+          ),
         ),
       ),
     );
   }
 
   Widget _amPmBox(String val, bool selected) {
-    return Container(
-      width: 35.w,
-      padding: EdgeInsets.symmetric(vertical: 2.h),
-      decoration: BoxDecoration(
-        color: selected ? Colors.blue : Colors.transparent,
-        borderRadius: BorderRadius.circular(10.r),
-        border: selected ? null : Border.all(color: Colors.black12),
-      ),
-      child: Center(
-        child: Text(
-          val,
-          style: TextStyle(
-            fontSize: 10.sp,
-            fontWeight: FontWeight.bold,
-            color: selected ? Colors.white : Colors.black38,
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _period = val;
+        });
+      },
+      child: Container(
+        width: 35.w,
+        padding: EdgeInsets.symmetric(vertical: 2.h),
+        decoration: BoxDecoration(
+          color: selected ? Colors.blue : Colors.transparent,
+          borderRadius: BorderRadius.circular(10.r),
+          border: selected ? null : Border.all(color: Colors.black12),
+        ),
+        child: Center(
+          child: Text(
+            val,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.bold,
+              color: selected ? Colors.white : Colors.black38,
+            ),
           ),
         ),
       ),
@@ -887,14 +962,105 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
     );
   }
 
+  Future<void> _handleSchedulePost() async {
+    setState(() => _isApiLoading = true);
+
+    try {
+      int hour24;
+      int processMinute;
+
+      if (_selectedTimeMode == "Any Time") {
+        final now = DateTime.now();
+        hour24 = now.hour;
+        processMinute = now.minute;
+      } else {
+        hour24 = _selectedHour;
+        processMinute = _selectedMinute;
+        if (_period == "PM" && hour24 < 12) hour24 += 12;
+        if (_period == "AM" && hour24 == 12) hour24 = 0;
+      }
+
+      final DateTime scheduledDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        hour24,
+        processMinute,
+      );
+
+      final String formattedDate =
+          "${scheduledDateTime.year}-${scheduledDateTime.month.toString().padLeft(2, '0')}-${scheduledDateTime.day.toString().padLeft(2, '0')}";
+      final String formattedTime =
+          "${scheduledDateTime.hour.toString().padLeft(2, '0')}:${scheduledDateTime.minute.toString().padLeft(2, '0')}";
+
+      final Map<String, dynamic> scheduledAt = {
+        "type": "single",
+        "date": formattedDate,
+        "time": formattedTime,
+      };
+
+      final List<String> selectedPlatformsList = [_platforms[_selectedPlatformIndex].toLowerCase()];
+
+      // Get a valid story template ID
+      final String templateId = _storyTemplateId;
+
+      if (templateId.isEmpty) {
+        Get.snackbar(
+          "Error",
+          "No story template found. Please try again later.",
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      // Call API for Story creation
+      final response = await ContentService.createContent(
+        templateId: templateId,
+        caption: "Story ${DateFormat('MMM dd, hh:mm a').format(DateTime.now())}",
+        files: widget.files,
+        contentType: "story",
+        scheduledAt: scheduledAt,
+        remindMe: _remindMe,
+        platform: selectedPlatformsList,
+        tags: [],
+        preferredLanguages: ["en"],
+      );
+
+      if (response.isSuccess) {
+        if (mounted) {
+          setState(() {
+            _showCongratulation = true;
+          });
+        }
+      } else {
+        Get.snackbar(
+          "Export Failed",
+          response.errorMessage ?? "Failed to upload story",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        "Error",
+        e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isApiLoading = false);
+      }
+    }
+  }
+
   Widget _buildScheduleButton() {
     return SizedBox(
       width: double.infinity,
       height: 50.h,
       child: ElevatedButton(
-        onPressed: () {
-          setState(() => _showCongratulation = true);
-        },
+        onPressed: _isApiLoading ? null : _handleSchedulePost,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF0080FF),
           elevation: 0,
@@ -902,14 +1068,23 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
             borderRadius: BorderRadius.circular(15.r),
           ),
         ),
-        child: Text(
-          "Schedule Post",
-          style: TextStyle(
-            fontSize: 15.sp,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-          ),
-        ),
+        child: _isApiLoading
+            ? SizedBox(
+                width: 24.r,
+                height: 24.r,
+                child: const CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                "Schedule Post",
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
       ),
     );
   }

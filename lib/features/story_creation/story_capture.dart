@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
+import 'package:image_picker/image_picker.dart';
 import 'story_preview.dart';
 
 class StoryCapturePage extends StatefulWidget {
@@ -16,6 +17,7 @@ class StoryCapturePage extends StatefulWidget {
 class _StoryCapturePageState extends State<StoryCapturePage> {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
+  int _currentCameraIndex = 0;
   bool _isReady = false;
   bool _isRecording = false;
   bool _hasError = false; // Added to handle error state
@@ -38,7 +40,7 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
       _cameras = await availableCameras();
       if (_cameras != null && _cameras!.isNotEmpty) {
         _controller = CameraController(
-          _cameras![0], 
+          _cameras![_currentCameraIndex], 
           ResolutionPreset.max, 
           enableAudio: true,
           imageFormatGroup: ImageFormatGroup.jpeg,
@@ -58,6 +60,15 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
       debugPrint("Camera Error: $e");
       if (mounted) setState(() => _hasError = true);
     }
+  }
+
+  Future<void> _switchCamera() async {
+    if (_cameras == null || _cameras!.length < 2) return;
+    setState(() {
+      _isReady = false;
+      _currentCameraIndex = (_currentCameraIndex + 1) % _cameras!.length;
+    });
+    await _initCamera();
   }
 
   @override
@@ -89,6 +100,34 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
         ),
       );
       
+      if (widget.isAddingMore && result != null && mounted) {
+        Navigator.pop(context, result);
+      }
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
+    if (picked == null) return;
+
+    final bool isVideo = picked.path.toLowerCase().endsWith('.mp4') ||
+        picked.path.toLowerCase().endsWith('.mov');
+
+    if (mounted) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => StoryPreviewPage(
+            file: File(picked.path),
+            isVideo: isVideo,
+            isAddingMore: widget.isAddingMore,
+          ),
+        ),
+      );
       if (widget.isAddingMore && result != null && mounted) {
         Navigator.pop(context, result);
       }
@@ -160,23 +199,8 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
                       backgroundColor: Colors.black26,
                       iconColor: Colors.white,
                     ),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text("Take Picture", style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 10.h),
-                          Text("Capture Footage", style: TextStyle(color: const Color(0xFFEBC894), fontSize: 18.sp, fontWeight: FontWeight.w900)),
-                          Text("Try to keep the phone steady. Landscape orientation works best for reels.", 
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white70, fontSize: 10.sp)),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.help_outline, color: Colors.white, size: 24.r),
-                      onPressed: () {},
-                    ),
+                    Text("Story", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold)),
+                    SizedBox(width: 48.w),
                   ],
                 ),
               ),
@@ -192,25 +216,44 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Functional Icons Row
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 30.w),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _iconButton(Icons.flash_off_rounded),
-                        _iconButton(Icons.exposure_rounded),
-                        _iconButton(Icons.timer_off_outlined),
-                        _iconButton(Icons.blur_on_rounded), // Placeholder for BG tool in capture?
-                        _iconButton(Icons.aspect_ratio_rounded, label: "4:3"),
-                        _iconButton(Icons.grid_on_rounded),
-                        _iconButton(Icons.cameraswitch_rounded),
-                      ],
-                    ),
+                  SizedBox(height: 10.h),
+                  // Gallery | Capture | Switch Camera
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Gallery Picker Button
+                      GestureDetector(
+                        onTap: _pickFromGallery,
+                        child: Container(
+                          width: 50.r,
+                          height: 50.r,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white54, width: 1.5),
+                          ),
+                          child: Icon(Icons.photo_library_rounded, color: Colors.white, size: 22.r),
+                        ),
+                      ),
+                      SizedBox(width: 20.w),
+                      // Capture Button (center)
+                      _buildCaptureButton(),
+                      SizedBox(width: 20.w),
+                      // Camera Switch Button
+                      GestureDetector(
+                        onTap: _switchCamera,
+                        child: Container(
+                          width: 50.r,
+                          height: 50.r,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.cameraswitch_rounded, color: Colors.white, size: 24.r),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 30.h),
-                  // Capture Button
-                  _buildCaptureButton(),
                   SizedBox(height: 20.h),
                 ],
               ),
@@ -221,14 +264,7 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
     );
   }
 
-  Widget _iconButton(IconData icon, {String? label}) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white, size: 22.r),
-        if (label != null) Text(label, style: TextStyle(color: Colors.white, fontSize: 8.sp)),
-      ],
-    );
-  }
+
 
   Widget _buildCaptureButton() {
     return GestureDetector(
