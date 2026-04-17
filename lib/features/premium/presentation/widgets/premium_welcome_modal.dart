@@ -57,7 +57,7 @@ class PremiumWelcomeModal extends StatelessWidget {
                 ),
               ),
               child: Text(
-                "View all benefits",
+                "view_all_benefits".tr,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16.sp,

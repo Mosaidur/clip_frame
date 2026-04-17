@@ -37,30 +37,27 @@ class _DashBoardPageState extends State<DashBoardPage> {
   @override
   void initState() {
     super.initState();
-    _initializeData();
-  }
-
-  Future<void> _initializeData() async {
-    final now = DateTime.now();
-    date = DateFormat('MMMM d, y').format(now);
-
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-
-    if (now.difference(today).inDays == 0) {
-      day = "Today";
-    } else if (now.difference(tomorrow).inDays == 0) {
-      day = "Tomorrow";
-    } else {
-      day = DateFormat('EEEE').format(now);
-    }
-
-    // UI local initialization
     isLoading = false;
   }
 
   @override
   Widget build(BuildContext context) {
+    // Calculate date and day dynamically to support language switching
+    final now = DateTime.now();
+    final String currentLocale = Get.locale?.toString() ?? 'en_US';
+
+    date = DateFormat('MMMM d, y', currentLocale).format(now);
+
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    if (now.difference(today).inDays == 0) {
+      day = "today".tr;
+    } else if (now.difference(tomorrow).inDays == 0) {
+      day = "tomorrow".tr;
+    } else {
+      day = DateFormat('EEEE', currentLocale).format(now);
+    }
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -501,7 +498,7 @@ class _DashBoardPageState extends State<DashBoardPage> {
             child: Row(
               children: [
                 Text(
-                  "See All",
+                  "see_all".tr,
                   style: TextStyle(
                     color: Colors.blue,
                     fontSize: 13.sp,
@@ -521,9 +518,9 @@ class _DashBoardPageState extends State<DashBoardPage> {
     if (templates.isEmpty) {
       return SizedBox(
         height: 200.h,
-        child: const Center(
+        child: Center(
           child: Text(
-            "No templates available",
+            "no_templates".tr,
             style: TextStyle(color: Colors.grey),
           ),
         ),

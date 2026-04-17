@@ -25,15 +25,13 @@ class _PostCreationPageState extends State<PostCreationPage> {
     ContentCreationController(),
   );
   String? imageUrl;
-  String? pageTitle = "Let’s Create your Next Post";
-  String? pageSubTitle =
-      "Explore the perfect content ideas tailored for your business";
+  // pageTitle and pageSubTitle moved to build for localization
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   int currentIndex = 0;
   int selectedIndex = 0; // Track selected tab
-  final List<String> tabs = ["Reels", "Posts", "Stories"]; // tabs
+  // tabs moved to build for localization
 
   final List<String> images = [
     "assets/images/1.jpg",
@@ -125,7 +123,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 const SizedBox(height: 30),
                 Center(
                   child: Text(
-                    pageTitle!,
+                    "lets_create_post".tr,
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 20,
@@ -141,7 +139,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                       vertical: 8,
                     ),
                     child: Text(
-                      pageSubTitle!,
+                      "explore_content_ideas".tr,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontFamily: 'Inter',
@@ -230,7 +228,12 @@ class _PostCreationPageState extends State<PostCreationPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
-                      children: List.generate(tabs.length, (index) {
+                      children: List.generate([
+                        "reels".tr,
+                        "posts".tr,
+                        "stories".tr
+                      ].length, (index) {
+                        final localizedTabs = ["reels".tr, "posts".tr, "stories".tr];
                         bool isSelected =
                             index == homeController.postTabIndex.value;
                         return GestureDetector(
@@ -256,7 +259,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                               ),
                             ),
                             child: Text(
-                              tabs[index],
+                              localizedTabs[index],
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: isSelected
