@@ -564,7 +564,13 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (_scheduledSuccess) {
+                Get.offAllNamed(AppRoutes.HOME);
+              } else {
+                Navigator.pop(context);
+              }
+            },
             child: Text(
               "DONE",
               style: TextStyle(

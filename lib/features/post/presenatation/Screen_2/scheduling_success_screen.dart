@@ -1,3 +1,4 @@
+import 'package:clip_frame/Shared/routes/routes.dart';
 import 'package:clip_frame/core/services/api_services/content_service.dart';
 import 'package:clip_frame/features/post/presenatation/Screen_2/schedule_post_screen.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
@@ -490,7 +491,7 @@ class _SchedulingSuccessScreenState extends State<SchedulingSuccessScreen> {
           colorText: Colors.white,
         );
         // Go back to dashboard
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        Get.offAllNamed(AppRoutes.HOME);
       } else {
         Get.snackbar(
           "Error",
@@ -550,8 +551,7 @@ class _SchedulingSuccessScreenState extends State<SchedulingSuccessScreen> {
       height: 55.h,
       child: ElevatedButton(
         onPressed: () {
-          // Navigate to some main screen if needed or pop until root
-          Navigator.of(context).popUntil((route) => route.isFirst);
+          Get.offAllNamed(AppRoutes.HOME);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF007AFF),
