@@ -6,11 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 import '../controllers/video_music_controller.dart';
 
 class MusicSelectionSheet extends StatelessWidget {
-  const MusicSelectionSheet({super.key});
+  final String? controllerTag;
+  const MusicSelectionSheet({super.key, this.controllerTag});
 
   @override
   Widget build(BuildContext context) {
-    final VideoMusicController controller = Get.find<VideoMusicController>();
+    final VideoMusicController controller = controllerTag != null
+        ? Get.find<VideoMusicController>(tag: controllerTag)
+        : Get.find<VideoMusicController>();
 
     final List<Map<String, String>> demoTracks = [
       {"title": "Upbeat Corporate", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"},

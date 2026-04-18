@@ -23,36 +23,61 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthStatus() async {
-    // Show splash screen for 2 seconds
+    try {
+      // Set a global timeout for the entire check process to prevent hanging on black screen
+      await Future.any([
+        _performAuthCheck(),
+        Future.delayed(const Duration(seconds: 10)).then((_) {
+          print("⏰ SplashScreen: Auth check timed out after 10s. Forcing navigation.");
+          throw TimeoutException("Auth check timed out");
+        }),
+      ]);
+    } catch (e) {
+      print("❌ SplashScreen: Error or timeout during auth check: $e");
+      // Fallback: Safe navigation to Welcome if anything fails
+      if (mounted) {
+        Get.offAllNamed(AppRoutes.WELCOME);
+      }
+    }
+  }
+
+  Future<void> _performAuthCheck() async {
+    // Show splash screen for at least 2 seconds
     await Future.delayed(const Duration(seconds: 2));
 
     // Check if user has a valid token
-    String? token = await AuthService.getToken();
+    String? token;
+    try {
+      token = await AuthService.getToken();
+    } catch (e) {
+      print("⚠️ SplashScreen: Error getting token: $e");
+    }
 
     if (token != null && token.isNotEmpty) {
       print("🔄 SplashScreen: Token found, attempting to refresh...");
-      bool refreshSuccess = await AuthService.refreshToken();
-      if (refreshSuccess) {
-        token = await AuthService.getToken(); // Get the new token
-      } else {
-        print(
-          "⚠️ SplashScreen: Token refresh failed, but keeping existing token for now.",
-        );
-        // token = null; // Don't nullify token here, let it proceed to check if it still works
+      try {
+        bool refreshSuccess = await AuthService.refreshToken();
+        if (refreshSuccess) {
+          token = await AuthService.getToken(); // Get the new token
+        } else {
+          print("⚠️ SplashScreen: Token refresh failed.");
+        }
+      } catch (e) {
+        print("⚠️ SplashScreen: Token refresh error: $e");
       }
     }
 
     bool hasCompletedOnboarding = false;
     if (token != null && token.isNotEmpty) {
       // Decode email from token to check user-specific onboarding status
-      String? email = OnboardingStatusService.getEmailFromToken(token);
-      if (email != null) {
-        hasCompletedOnboarding =
-            await OnboardingStatusService.isOnboardingComplete(email);
+      try {
+        String? email = OnboardingStatusService.getEmailFromToken(token);
+        if (email != null) {
+          hasCompletedOnboarding =
+              await OnboardingStatusService.isOnboardingComplete(email);
 
-        // If local status is false, try to verify with backend
-        if (!hasCompletedOnboarding) {
-          try {
+          // If local status is false, try to verify with backend
+          if (!hasCompletedOnboarding) {
             print("🔍 Local onboarding status false, checking backend...");
             final response = await NetworkCaller.getRequest(
               url: Urls.getUserProfileUrl,
@@ -62,46 +87,33 @@ class _SplashScreenState extends State<SplashScreen> {
               UserResponse userResponse = UserResponse.fromJson(
                 response.responseBody!,
               );
-              // CRITICAL FIX: Only sync if explicitly successful AND data is present
               if (userResponse.success && userResponse.data != null) {
                 final userData = userResponse.data;
-                print(
-                  "👤 User Profile from backend: ${userData is Map ? userData : 'Object'}",
-                );
-
-                // Check strictly if businessType is valid content (not just present)
                 bool backendSaysOnboarded =
                     OnboardingStatusService.isProfileOnboarded(userData);
-                print(
-                  "🧐 Backend analysis - Is Onboarded: $backendSaysOnboarded",
-                );
-
                 if (backendSaysOnboarded) {
                   await OnboardingStatusService.markOnboardingComplete(email);
                   hasCompletedOnboarding = true;
                 }
               }
             }
-          } catch (e) {
-            print("Error syncing onboarding status in Splash: $e");
           }
         }
+      } catch (e) {
+        print("⚠️ SplashScreen: Onboarding check error: $e");
       }
     }
 
+    if (!mounted) return;
+
     if (token != null && token.isNotEmpty && hasCompletedOnboarding) {
-      // User has token AND completed onboarding, navigate to home
       print("🔑 Token found and onboarding complete, navigating to HOME");
       Get.offAllNamed(AppRoutes.HOME);
     } else {
-      // In all other cases (no token, or incomplete onboarding), go to welcome screen
-      // This ensures that onboarding MUST happen immediately after a login session
       if (token != null && !hasCompletedOnboarding) {
-        print(
-          "⚠️ Token exists but onboarding incomplete for user. Forcing fresh start from WELCOME.",
-        );
+        print("⚠️ Token exists but onboarding incomplete. Forcing WELCOME.");
       } else {
-        print("⚠️ No token found, navigating to WELCOME");
+        print("⚠️ No valid session, navigating to WELCOME");
       }
       Get.offAllNamed(AppRoutes.WELCOME);
     }

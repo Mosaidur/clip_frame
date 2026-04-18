@@ -2,6 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
+import 'package:get/get.dart';
+import 'package:clip_frame/features/Video%20Editing/controllers/video_music_controller.dart';
+import 'package:clip_frame/features/Video%20Editing/widgets/music_selection_sheet.dart';
+import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
 
 enum StoryEditTool { bg, adjust, crop, filter, frame }
 
@@ -188,15 +192,32 @@ class _StoryEditPageState extends State<StoryEditPage> {
     ],
   };
 
+  // Music controller (scoped to story editor)
+  late final VideoMusicController _musicController;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    // Register a scoped music controller for story editor
+    _musicController = Get.put(VideoMusicController(), tag: 'story_music');
+    // Auto-play default background track
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _musicController.downloadAndSetMusic(
+        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        "Default Story Music",
+      ).then((_) {
+        _musicController.resumeSync();
+      });
+    });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    // Stop music and remove controller when editor is closed
+    _musicController.removeMusic();
+    Get.delete<VideoMusicController>(tag: 'story_music');
     super.dispose();
   }
 
@@ -630,15 +651,126 @@ class _StoryEditPageState extends State<StoryEditPage> {
                           },
                         ),
                       ),
+                  // ─── Logo Overlay ────────────────────────────────────────
+                  _buildLogoOverlay(),
                   ],
                 ),
               );
             },
           ),
         ),
-        SizedBox(height: 30.h),
+        // ─── Music Bar ────────────────────────────────────────────────
+        _buildMusicBar(),
+        SizedBox(height: 8.h),
       ],
     );
+  }
+
+  /// Positioned logo overlay shown at the bottom-center of the story preview.
+  Widget _buildLogoOverlay() {
+    // Try to get the logo URL from profile controller
+    String? logoUrl;
+    try {
+      final profileController = Get.find<MyProfileController>();
+      logoUrl = profileController.onboardingData.value?.logo;
+      if (logoUrl != null && logoUrl.isEmpty) logoUrl = null;
+    } catch (_) {}
+
+    return Positioned(
+      bottom: 16.h,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Container(
+          width: 64.r,
+          height: 64.r,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: logoUrl != null
+              ? Image.network(
+                  logoUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.business,
+                    color: Colors.grey,
+                  ),
+                )
+              : const Icon(Icons.business, color: Colors.grey),
+        ),
+      ),
+    );
+  }
+
+  /// Music control bar shown between the preview and the main toolbar.
+  Widget _buildMusicBar() {
+    return Obx(() {
+      final track = _musicController.currentTrack.value;
+      return Container(
+        margin: EdgeInsets.symmetric(horizontal: 20.w),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C2E),
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.music_note_rounded, color: const Color(0xFFE91E63), size: 20.r),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                track != null ? track.title : "Default Story Music",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // Play/Pause
+            GestureDetector(
+              onTap: () {
+                if (_musicController.isPlaying.value) {
+                  _musicController.pauseSync();
+                } else {
+                  _musicController.resumeSync();
+                }
+              },
+              child: Icon(
+                _musicController.isPlaying.value
+                    ? Icons.pause_circle_filled_rounded
+                    : Icons.play_circle_filled_rounded,
+                color: Colors.white,
+                size: 26.r,
+              ),
+            ),
+            SizedBox(width: 10.w),
+            // Change music
+            GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const MusicSelectionSheet(controllerTag: 'story_music'),
+                );
+              },
+              child: Icon(Icons.swap_horiz_rounded, color: Colors.white70, size: 22.r),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildProgressBar(bool active) {
@@ -694,16 +826,28 @@ class _StoryEditPageState extends State<StoryEditPage> {
             _toolIcon(Icons.compare_arrows_rounded, "Split", null),
             _toolIcon(Icons.content_cut_rounded, "Trim", null),
             _toolIcon(Icons.crop_free_rounded, "Frame", StoryEditTool.frame),
+            _toolIcon(Icons.music_note_rounded, "Music", null, onTapOverride: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const MusicSelectionSheet(),
+              );
+            }),
           ],
         ),
       ),
     );
   }
 
-  Widget _toolIcon(IconData icon, String label, StoryEditTool? tool) {
+  Widget _toolIcon(IconData icon, String label, StoryEditTool? tool, {VoidCallback? onTapOverride}) {
     bool isActive = _activeTool == tool && tool != null;
     return GestureDetector(
       onTap: () {
+        if (onTapOverride != null) {
+          onTapOverride();
+          return;
+        }
         if (tool != null) {
           setState(() {
             if (_activeTool == tool) {
