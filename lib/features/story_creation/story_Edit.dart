@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
@@ -6,6 +9,9 @@ import 'package:get/get.dart';
 import 'package:clip_frame/features/Video%20Editing/controllers/video_music_controller.dart';
 import 'package:clip_frame/features/Video%20Editing/widgets/music_selection_sheet.dart';
 import 'package:clip_frame/features/my_profile/presenatation/screen/MyProfileController.dart';
+import 'package:clip_frame/core/services/rendering_service.dart';
+
+import 'package:clip_frame/features/story_creation/story_final_preview.dart';
 
 enum StoryEditTool { bg, adjust, crop, filter, frame }
 
@@ -39,7 +45,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
   String _selectedFilterCategory = "Trending";
 
   // Crop states
-  Rect _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
+  Rect _cropRect = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0); // Default to full image
   int _rotation = 0;
   String _cropMode = "Format"; // "Format" or "Rotate"
   String _selectedAspectRatio =
@@ -192,6 +198,11 @@ class _StoryEditPageState extends State<StoryEditPage> {
     ],
   };
 
+  // Logo state
+  Offset _logoPosition = Offset.zero;
+  bool _isRendering = false;
+  final GlobalKey _previewAreaKey = GlobalKey();
+
   // Music controller (scoped to story editor)
   late final VideoMusicController _musicController;
 
@@ -199,17 +210,12 @@ class _StoryEditPageState extends State<StoryEditPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    
+    // Initial logo position (near bottom center)
+    _logoPosition = Offset(150.w, 400.h); 
+    
     // Register a scoped music controller for story editor
     _musicController = Get.put(VideoMusicController(), tag: 'story_music');
-    // Auto-play default background track
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _musicController.downloadAndSetMusic(
-        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        "Default Story Music",
-      ).then((_) {
-        _musicController.resumeSync();
-      });
-    });
   }
 
   @override
@@ -277,9 +283,9 @@ class _StoryEditPageState extends State<StoryEditPage> {
           ),
           // Done Button
           TextButton(
-            onPressed: () => Navigator.pop(context, widget.files),
+            onPressed: () => _handleDone(),
             child: Text(
-              "DONE",
+              _isRendering ? "..." : "DONE",
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w900,
@@ -292,383 +298,258 @@ class _StoryEditPageState extends State<StoryEditPage> {
     );
   }
 
+  Future<File?> _downloadLogo(String? url) async {
+    if (url == null || url.isEmpty) return null;
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final tempDir = await getTemporaryDirectory();
+        final fileName = "story_logo_${DateTime.now().millisecondsSinceEpoch}${p.extension(url)}";
+        final file = File(p.join(tempDir.path, fileName));
+        await file.writeAsBytes(response.bodyBytes);
+        return file;
+      }
+    } catch (e) {
+      debugPrint("⚠️ Failed to download logo: $e");
+    }
+    return null;
+  }
+
+  Future<void> _handleDone() async {
+    if (_isRendering) return;
+
+    setState(() => _isRendering = true);
+
+    File? logoFile;
+    try {
+      final List<File> renderedFiles = [];
+      
+      // Get preview size for offset mapping
+      final RenderBox? renderBox = _previewAreaKey.currentContext?.findRenderObject() as RenderBox?;
+      final Size previewSize = renderBox?.size ?? const Size(360, 640);
+
+      // Download logo first
+      String? logoUrl;
+      try {
+        final profileController = Get.find<MyProfileController>();
+        logoUrl = profileController.onboardingData.value?.logo;
+      } catch (_) {}
+      
+      logoFile = await _downloadLogo(logoUrl);
+
+      for (int i = 0; i < widget.files.length; i++) {
+        debugPrint("🎨 Rendering story ${i + 1}/${widget.files.length}...");
+        
+        final track = _musicController.currentTrack.value;
+        String? audioPath = track?.url;
+        
+        Duration finalTrimStart = track?.trimStart ?? Duration.zero;
+        Duration requestedTrimEnd = track?.trimEnd ?? (finalTrimStart + const Duration(seconds: 15));
+        
+        Duration finalTrimEnd = requestedTrimEnd;
+        if (finalTrimEnd - finalTrimStart > const Duration(seconds: 15)) {
+          finalTrimEnd = finalTrimStart + const Duration(seconds: 15);
+        }
+
+        final result = await RenderingService.renderStory(
+          mediaFile: widget.files[i],
+          logoFile: logoFile, 
+          logoOffset: _logoPosition,
+          previewSize: previewSize,
+          brightness: _brightness,
+          contrast: _contrast,
+          saturation: _saturation,
+          audioPath: audioPath,
+          audioVolume: track?.volume ?? 0.5,
+          trimStart: finalTrimStart,
+          trimEnd: finalTrimEnd,
+          rotation: _rotation,
+        );
+
+        if (result != null) {
+          renderedFiles.add(result);
+        } else {
+          renderedFiles.add(widget.files[i]);
+        }
+      }
+
+      if (mounted) {
+        // NAVIGATE DIRECTLY TO FINAL PREVIEW
+        Get.to(() => StoryFinalPreviewPage(files: renderedFiles));
+      }
+    } catch (e) {
+      debugPrint("❌ Error during final story render: $e");
+      if (mounted) {
+        Get.snackbar("Error", "Failed to prepare high-quality rendering.");
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRendering = false);
+      }
+    }
+  }
+
   Widget _buildPreviewArea() {
-    return Column(
+    return Stack(
       children: [
-        SizedBox(height: 10.h),
-        // Progress Bars
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 50.w),
-          child: Row(
-            children: List.generate(
-              widget.files.length > 0 ? widget.files.length : 3,
-              (index) => Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 2.w),
-                  child: _buildProgressBar(index == _currentPage),
+        Column(
+          children: [
+            SizedBox(height: 10.h),
+            // Progress Bars
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 50.w),
+              child: Row(
+                children: List.generate(
+                  widget.files.length > 0 ? widget.files.length : 3,
+                  (index) => Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 2.w),
+                      child: _buildProgressBar(index == _currentPage),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        SizedBox(height: 15.h),
-        // Image Container
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Container(
-                margin: EdgeInsets.symmetric(horizontal: 20.w),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.zero,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.zero,
-                        child: LayoutBuilder(
-                          builder: (context, innerConstraints) {
-                            final w = innerConstraints.maxWidth;
-                            final h = innerConstraints.maxHeight;
-
-                            Widget content = Transform(
-                              alignment: Alignment.center,
-                              transform: Matrix4.identity()
-                                ..rotateZ(_rotation * 3.14159 / 180)
-                                ..scale(
-                                  _flipHorizontal ? -1.0 : 1.0,
-                                  _flipVertical ? -1.0 : 1.0,
-                                ),
-                              child: PageView.builder(
-                                controller: _pageController,
-                                itemCount: widget.files.isNotEmpty
-                                    ? widget.files.length
-                                    : 1,
-                                onPageChanged: (index) {
-                                  setState(() => _currentPage = index);
-                                },
-                                itemBuilder: (context, index) {
-                                  return ColorFiltered(
-                                    colorFilter: ColorFilter.matrix(
-                                      _getCombinedMatrix(),
-                                    ),
-                                    child: widget.files.isNotEmpty
-                                        ? Image.file(
-                                            widget.files[index],
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Image.network(
-                                            "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe",
-                                            fit: BoxFit.cover,
-                                          ),
-                                  );
-                                },
-                              ),
-                            );
-
-                            if (_activeTool != StoryEditTool.crop) {
-                              content = Transform(
-                                alignment: Alignment.topLeft,
-                                transform: Matrix4.identity()
-                                  ..scale(
-                                    1.0 / _cropRect.width,
-                                    1.0 / _cropRect.height,
-                                  )
-                                  ..translate(
-                                    -_cropRect.left * w,
-                                    -_cropRect.top * h,
-                                  ),
-                                child: content,
-                              );
-                            }
-                            return content;
-                          },
+            SizedBox(height: 15.h),
+            // Image Container
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Container(
+                    key: _previewAreaKey,
+                    margin: EdgeInsets.symmetric(horizontal: 20.w),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.zero,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
-                      ),
+                      ],
                     ),
-                    if (_selectedFrameIndex != -1)
-                      Positioned.fill(
-                        child: LayoutBuilder(
-                          builder: (context, frameConstraints) {
-                            final fw = frameConstraints.maxWidth;
-                            final fh = frameConstraints.maxHeight;
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.zero,
+                            child: LayoutBuilder(
+                              builder: (context, innerConstraints) {
+                                final w = innerConstraints.maxWidth;
+                                final h = innerConstraints.maxHeight;
 
-                            final adjustedRect = _frameRect.inflate(
-                              _frameEdgeAdjustment,
-                            );
-                            final fRect = Rect.fromLTWH(
-                              adjustedRect.left * fw,
-                              adjustedRect.top * fh,
-                              adjustedRect.width * fw,
-                              adjustedRect.height * fh,
-                            );
-
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Positioned(
-                                  left: fRect.left,
-                                  top: fRect.top,
-                                  width: fRect.width,
-                                  height: fRect.height,
-                                  child: GestureDetector(
-                                    onPanUpdate: (details) {
-                                      if (_activeTool == StoryEditTool.frame) {
-                                        setState(() {
-                                          double dx = details.delta.dx / fw;
-                                          double dy = details.delta.dy / fh;
-                                          _frameRect = Rect.fromLTWH(
-                                            (_frameRect.left + dx).clamp(
-                                              -0.5,
-                                              1.5,
-                                            ),
-                                            (_frameRect.top + dy).clamp(
-                                              -0.5,
-                                              1.5,
-                                            ),
-                                            _frameRect.width,
-                                            _frameRect.height,
-                                          );
-                                        });
-                                      }
+                                Widget content = Transform(
+                                  alignment: Alignment.center,
+                                  transform: Matrix4.identity()
+                                    ..rotateZ(_rotation * 3.14159 / 180)
+                                    ..scale(
+                                      _flipHorizontal ? -1.0 : 1.0,
+                                      _flipVertical ? -1.0 : 1.0,
+                                    ),
+                                  child: PageView.builder(
+                                    controller: _pageController,
+                                    itemCount: widget.files.isNotEmpty
+                                        ? widget.files.length
+                                        : 1,
+                                    onPageChanged: (index) {
+                                      setState(() => _currentPage = index);
                                     },
-                                    child: IgnorePointer(
-                                      ignoring:
-                                          _activeTool != StoryEditTool.frame,
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.zero,
-                                        child: Image.asset(
-                                          _frameAssets[_selectedFrameIndex],
-                                          fit: BoxFit.fill,
-                                          cacheWidth: (fw * 2)
-                                              .toInt(), // High quality frame
+                                    itemBuilder: (context, index) {
+                                      return Center(
+                                        child: ColorFiltered(
+                                          colorFilter: ColorFilter.matrix(
+                                            _getCombinedMatrix(),
+                                          ),
+                                          child: widget.files.isNotEmpty
+                                              ? Image.file(
+                                                  widget.files[index],
+                                                  fit: BoxFit.contain,
+                                                  alignment: Alignment.center,
+                                                )
+                                              : Image.network(
+                                                  "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe",
+                                                  fit: BoxFit.contain,
+                                                  alignment: Alignment.center,
+                                                ),
                                         ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (_activeTool == StoryEditTool.frame) ...[
-                                  // Guide border
-                                  Positioned(
-                                    left: fRect.left,
-                                    top: fRect.top,
-                                    width: fRect.width,
-                                    height: fRect.height,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Colors.blue.withOpacity(0.5),
-                                          width: 1.w,
-                                          style: BorderStyle.none,
-                                        ), // Custom dashed design could be added here
-                                      ),
-                                    ),
-                                  ),
-                                  // Corner Handles
-                                  _buildCropHandle(
-                                    fRect.topLeft,
-                                    (d) => _updateFrameRect(
-                                      d,
-                                      fw,
-                                      fh,
-                                      isTop: true,
-                                      isLeft: true,
-                                    ),
-                                  ),
-                                  _buildCropHandle(
-                                    fRect.topRight,
-                                    (d) => _updateFrameRect(
-                                      d,
-                                      fw,
-                                      fh,
-                                      isTop: true,
-                                      isLeft: false,
-                                    ),
-                                  ),
-                                  _buildCropHandle(
-                                    fRect.bottomLeft,
-                                    (d) => _updateFrameRect(
-                                      d,
-                                      fw,
-                                      fh,
-                                      isTop: false,
-                                      isLeft: true,
-                                    ),
-                                  ),
-                                  _buildCropHandle(
-                                    fRect.bottomRight,
-                                    (d) => _updateFrameRect(
-                                      d,
-                                      fw,
-                                      fh,
-                                      isTop: false,
-                                      isLeft: false,
-                                    ),
-                                  ),
-
-                                  if (!_lockFrameAspectRatio) ...[
-                                    // Side Handles
-                                    _buildCropHandle(
-                                      Offset(fRect.center.dx, fRect.top),
-                                      (d) => _updateFrameRect(
-                                        d,
-                                        fw,
-                                        fh,
-                                        isTop: true,
-                                        isLeft: null,
-                                      ),
-                                    ),
-                                    _buildCropHandle(
-                                      Offset(fRect.center.dx, fRect.bottom),
-                                      (d) => _updateFrameRect(
-                                        d,
-                                        fw,
-                                        fh,
-                                        isTop: false,
-                                        isLeft: null,
-                                      ),
-                                    ),
-                                    _buildCropHandle(
-                                      Offset(fRect.left, fRect.center.dy),
-                                      (d) => _updateFrameRect(
-                                        d,
-                                        fw,
-                                        fh,
-                                        isTop: null,
-                                        isLeft: true,
-                                      ),
-                                    ),
-                                    _buildCropHandle(
-                                      Offset(fRect.right, fRect.center.dy),
-                                      (d) => _updateFrameRect(
-                                        d,
-                                        fw,
-                                        fh,
-                                        isTop: null,
-                                        isLeft: false,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    if (_activeTool == StoryEditTool.crop)
-                      Positioned.fill(
-                        child: LayoutBuilder(
-                          builder: (context, cropConstraints) {
-                            final w = cropConstraints.maxWidth;
-                            final h = cropConstraints.maxHeight;
-
-                            final rect = Rect.fromLTWH(
-                              _cropRect.left * w,
-                              _cropRect.top * h,
-                              _cropRect.width * w,
-                              _cropRect.height * h,
-                            );
-
-                            return Stack(
-                              children: [
-                                GestureDetector(
-                                  onPanUpdate: (details) {
-                                    setState(() {
-                                      double dx = details.delta.dx / w;
-                                      double dy = details.delta.dy / h;
-
-                                      _cropRect = Rect.fromLTWH(
-                                        (_cropRect.left + dx).clamp(
-                                          0.0,
-                                          1.0 - _cropRect.width,
-                                        ),
-                                        (_cropRect.top + dy).clamp(
-                                          0.0,
-                                          1.0 - _cropRect.height,
-                                        ),
-                                        _cropRect.width,
-                                        _cropRect.height,
                                       );
-                                    });
-                                  },
-                                  child: CustomPaint(
-                                    size: Size(w, h),
-                                    painter: CropPainter(rect),
-                                    child: Container(),
+                                    },
                                   ),
-                                ),
-                                // Handles
-                                _buildCropHandle(
-                                  rect.topLeft,
-                                  (d) => _updateCropRect(
-                                    d,
-                                    w,
-                                    h,
-                                    isTop: true,
-                                    isLeft: true,
-                                  ),
-                                ),
-                                _buildCropHandle(
-                                  rect.topRight,
-                                  (d) => _updateCropRect(
-                                    d,
-                                    w,
-                                    h,
-                                    isTop: true,
-                                    isLeft: false,
-                                  ),
-                                ),
-                                _buildCropHandle(
-                                  rect.bottomLeft,
-                                  (d) => _updateCropRect(
-                                    d,
-                                    w,
-                                    h,
-                                    isTop: false,
-                                    isLeft: true,
-                                  ),
-                                ),
-                                _buildCropHandle(
-                                  rect.bottomRight,
-                                  (d) => _updateCropRect(
-                                    d,
-                                    w,
-                                    h,
-                                    isTop: false,
-                                    isLeft: false,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                                );
+
+                                // Only apply zoom/crop transform if we are NOT currently in the crop tool
+                                // AND the crop rect is actually smaller than the full image.
+                                if (_activeTool != StoryEditTool.crop && 
+                                   (_cropRect.width < 0.99 || _cropRect.height < 0.99 || _cropRect.left > 0.01 || _cropRect.top > 0.01)) {
+                                  content = Transform(
+                                    alignment: Alignment.topLeft,
+                                    transform: Matrix4.identity()
+                                      ..scale(
+                                        1.0 / _cropRect.width,
+                                        1.0 / _cropRect.height,
+                                      )
+                                      ..translate(
+                                        -_cropRect.left * w,
+                                        -_cropRect.top * h,
+                                      ),
+                                    child: content,
+                                  );
+                                }
+                                return content;
+                              },
+                            ),
+                          ),
                         ),
-                      ),
-                  // ─── Logo Overlay ────────────────────────────────────────
-                  _buildLogoOverlay(),
-                  ],
-                ),
-              );
-            },
-          ),
+                        // Draggable Logo
+                        _buildLogoOverlay(),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Music Bar
+            _buildMusicBar(),
+            SizedBox(height: 8.h),
+          ],
         ),
-        // ─── Music Bar ────────────────────────────────────────────────
-        _buildMusicBar(),
-        SizedBox(height: 8.h),
+        // Rendering Overlay
+        if (_isRendering)
+          Container(
+            color: Colors.black54,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 20.h),
+                  Text(
+                    "Processing Your Story...",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  Text(
+                    "Applying filters and mixing audio",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  /// Positioned logo overlay shown at the bottom-center of the story preview.
+  /// Positioned logo overlay that the user can drag around the preview area.
   Widget _buildLogoOverlay() {
-    // Try to get the logo URL from profile controller
     String? logoUrl;
     try {
       final profileController = Get.find<MyProfileController>();
@@ -677,10 +558,14 @@ class _StoryEditPageState extends State<StoryEditPage> {
     } catch (_) {}
 
     return Positioned(
-      bottom: 16.h,
-      left: 0,
-      right: 0,
-      child: Center(
+      left: _logoPosition.dx,
+      top: _logoPosition.dy,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            _logoPosition += details.delta;
+          });
+        },
         child: Container(
           width: 64.r,
           height: 64.r,
@@ -715,6 +600,12 @@ class _StoryEditPageState extends State<StoryEditPage> {
   Widget _buildMusicBar() {
     return Obx(() {
       final track = _musicController.currentTrack.value;
+      
+      // HIDE if no music is selected OR if a tool (Adjust, Filter, etc.) is active
+      if (track == null || _activeTool != null) {
+        return const SizedBox.shrink();
+      }
+
       return Container(
         margin: EdgeInsets.symmetric(horizontal: 20.w),
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
@@ -831,7 +722,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                builder: (_) => const MusicSelectionSheet(),
+                builder: (_) => const MusicSelectionSheet(controllerTag: 'story_music'),
               );
             }),
           ],

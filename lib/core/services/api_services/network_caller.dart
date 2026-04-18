@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:clip_frame/core/services/auth_service.dart';
 import 'package:http_parser/http_parser.dart'; // For MediaType
 import 'package:path/path.dart' as p;
 import 'dart:io';
@@ -55,10 +56,26 @@ class NetworkCaller {
           responseBody: decodedJson,
         );
       } else if (response.statusCode == 401) {
-        // If it's already a refresh call, don't try again to avoid infinite loop
         if (!isRefreshCall) {
-          print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
+          debugPrint(
+            "⛔ [NetworkCaller] Unauthorized (401). Attempting to refresh token...",
+          );
+          bool isRefreshed = await AuthService.refreshToken();
+          if (isRefreshed) {
+            final newToken = await AuthService.getToken();
+            debugPrint("📥 [NetworkCaller] Retrying original GET request...");
+            return await getRequest(
+              url: url,
+              token: newToken,
+              showDialog: showDialog,
+              isRefreshCall: true, // Mark as retry to avoid infinite loops
+            );
+          } else {
+            debugPrint("❌ [NetworkCaller] Refresh failed. Forcing logout.");
+            AuthService.forceLogout();
+          }
         }
+
         final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
           isSuccess: false,
@@ -188,7 +205,24 @@ class NetworkCaller {
         );
       } else if (response.statusCode == 401) {
         if (!isRefreshCall && !isFromLogin) {
-          print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
+          debugPrint(
+            "⛔ [NetworkCaller] Unauthorized (401). Attempting to refresh token...",
+          );
+          bool isRefreshed = await AuthService.refreshToken();
+          if (isRefreshed) {
+            final newToken = await AuthService.getToken();
+            debugPrint("📥 [NetworkCaller] Retrying original POST request...");
+            return await postRequest(
+              url: url,
+              body: body,
+              token: newToken,
+              showDialog: showDialog,
+              isRefreshCall: true,
+            );
+          } else {
+            debugPrint("❌ [NetworkCaller] Refresh failed. Forcing logout.");
+            AuthService.forceLogout();
+          }
         }
         final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
@@ -298,7 +332,23 @@ class NetworkCaller {
         );
       } else if (response.statusCode == 401) {
         if (!isRefreshCall) {
-          print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
+          debugPrint(
+            "⛔ [NetworkCaller] Unauthorized (401). Attempting to refresh token...",
+          );
+          bool isRefreshed = await AuthService.refreshToken();
+          if (isRefreshed) {
+            final newToken = await AuthService.getToken();
+            debugPrint("📥 [NetworkCaller] Retrying original PUT request...");
+            return await putRequest(
+              url: url,
+              body: body,
+              token: newToken,
+              isRefreshCall: true,
+            );
+          } else {
+            debugPrint("❌ [NetworkCaller] Refresh failed. Forcing logout.");
+            AuthService.forceLogout();
+          }
         }
         final decodedJson = _safeDecode(response.body);
         return NetworkResponse(
@@ -343,6 +393,7 @@ class NetworkCaller {
     required String url,
     Map<String, dynamic>? body,
     String? token,
+    bool isRefreshCall = false,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -363,6 +414,32 @@ class NetworkCaller {
           statusCode: response.statusCode,
           isSuccess: true,
           responseBody: decodedJson,
+        );
+      } else if (response.statusCode == 401) {
+        if (!isRefreshCall) {
+          debugPrint(
+            "⛔ [NetworkCaller] Unauthorized (401). Attempting to refresh token...",
+          );
+          bool isRefreshed = await AuthService.refreshToken();
+          if (isRefreshed) {
+            final newToken = await AuthService.getToken();
+            debugPrint("📥 [NetworkCaller] Retrying original PATCH request...");
+            return await patchRequest(
+              url: url,
+              body: body,
+              token: newToken,
+              isRefreshCall: true,
+            );
+          } else {
+            debugPrint("❌ [NetworkCaller] Refresh failed. Forcing logout.");
+            AuthService.forceLogout();
+          }
+        }
+        final decodedJson = _safeDecode(response.body);
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          errorMessage: _unAuthorizeMessage,
         );
       } else if (response.statusCode >= 500) {
         String msg =
@@ -426,7 +503,22 @@ class NetworkCaller {
         );
       } else if (response.statusCode == 401) {
         if (!isRefreshCall) {
-          print("⛔ [NetworkCaller] Unauthorized (401). Should handle refresh.");
+          debugPrint(
+            "⛔ [NetworkCaller] Unauthorized (401). Attempting to refresh token...",
+          );
+          bool isRefreshed = await AuthService.refreshToken();
+          if (isRefreshed) {
+            final newToken = await AuthService.getToken();
+            debugPrint("📥 [NetworkCaller] Retrying original DELETE request...");
+            return await deleteRequest(
+              url: url,
+              token: newToken,
+              isRefreshCall: true,
+            );
+          } else {
+            debugPrint("❌ [NetworkCaller] Refresh failed. Forcing logout.");
+            AuthService.forceLogout();
+          }
         }
         final decodedJson = response.body.isNotEmpty
             ? _safeDecode(response.body)
@@ -479,6 +571,7 @@ class NetworkCaller {
     required List<File> files,
     String? token,
     bool wrapInData = true,
+    bool isRefreshCall = false,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -553,6 +646,38 @@ class NetworkCaller {
           isSuccess: true,
           responseBody: decodedJson,
         );
+      } else if (response.statusCode == 401) {
+        if (!isRefreshCall) {
+          debugPrint(
+            "⛔ [NetworkCaller] Unauthorized (401). Attempting to refresh token...",
+          );
+          bool isRefreshed = await AuthService.refreshToken();
+          if (isRefreshed) {
+            final newToken = await AuthService.getToken();
+            debugPrint(
+              "📥 [NetworkCaller] Retrying original MULTIPART LIST request...",
+            );
+            return await postMultipartRequestList(
+              url: url,
+              body: body,
+              fileKey: fileKey,
+              files: files,
+              token: newToken,
+              wrapInData: wrapInData,
+              isRefreshCall: true,
+            );
+          } else {
+            debugPrint("❌ [NetworkCaller] Refresh failed. Forcing logout.");
+            AuthService.forceLogout();
+          }
+        }
+        final decodedJson = _safeDecode(response.body);
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseBody: decodedJson,
+          errorMessage: _unAuthorizeMessage,
+        );
       } else if (response.statusCode >= 500) {
         String msg =
             "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
@@ -594,6 +719,7 @@ class NetworkCaller {
     required File file,
     String? token,
     bool wrapInData = true,
+    bool isRefreshCall = false,
   }) async {
     try {
       Uri uri = Uri.parse(url);
@@ -661,6 +787,38 @@ class NetworkCaller {
           statusCode: response.statusCode,
           isSuccess: true,
           responseBody: decodedJson,
+        );
+      } else if (response.statusCode == 401) {
+        if (!isRefreshCall) {
+          debugPrint(
+            "⛔ [NetworkCaller] Unauthorized (401). Attempting to refresh token...",
+          );
+          bool isRefreshed = await AuthService.refreshToken();
+          if (isRefreshed) {
+            final newToken = await AuthService.getToken();
+            debugPrint(
+              "📥 [NetworkCaller] Retrying original MULTIPART request...",
+            );
+            return await postMultipartRequest(
+              url: url,
+              body: body,
+              fileKey: fileKey,
+              file: file,
+              token: newToken,
+              wrapInData: wrapInData,
+              isRefreshCall: true,
+            );
+          } else {
+            debugPrint("❌ [NetworkCaller] Refresh failed. Forcing logout.");
+            AuthService.forceLogout();
+          }
+        }
+        final decodedJson = _safeDecode(response.body);
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseBody: decodedJson,
+          errorMessage: _unAuthorizeMessage,
         );
       } else if (response.statusCode >= 500) {
         return NetworkResponse(

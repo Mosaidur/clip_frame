@@ -907,6 +907,20 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
         processMinute,
       );
 
+      // VALIDATION: Ensure scheduled time is in the future
+      if (scheduledDateTime.isBefore(DateTime.now())) {
+        Get.snackbar(
+          "Invalid Schedule",
+          "You cannot schedule a post in the past. Please select a future date and time.",
+          backgroundColor: Colors.orange.shade800,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+          margin: EdgeInsets.all(15.w),
+        );
+        setState(() => isApiLoading = false);
+        return;
+      }
+
       final String formattedDate =
           "${scheduledDateTime.year}-${scheduledDateTime.month.toString().padLeft(2, '0')}-${scheduledDateTime.day.toString().padLeft(2, '0')}";
       final String formattedTime =

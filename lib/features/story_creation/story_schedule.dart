@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
@@ -162,31 +164,6 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                         "You have successfully scheduled ${widget.files.length} ${widget.files.length > 1 ? 'stories' : 'story'} content.",
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 12.sp, color: Colors.black54),
-                      ),
-                      SizedBox(height: 18.h),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16.r),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Image.file(
-                              widget.files[0],
-                              height: 180.h,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                            // Only show play icon for video files
-                            if (isVideo)
-                              Container(
-                                padding: EdgeInsets.all(8.r),
-                                decoration: const BoxDecoration(
-                                  color: Colors.black45,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 36.r),
-                              ),
-                          ],
-                        ),
                       ),
                       SizedBox(height: 18.h),
                       _successDetailRow("Platform:", Icons.devices_rounded, selectedPlatform),
@@ -679,10 +656,43 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(18.r),
-                    child: Image.file(
-                      widget.files[index],
-                      fit: BoxFit.contain, // Show exact size without cropping
-                    ),
+                    child: _isVideoFile(widget.files[index])
+                        ? FutureBuilder<Uint8List?>(
+                            future: VideoThumbnail.thumbnailData(
+                              video: widget.files[index].path,
+                              imageFormat: ImageFormat.JPEG,
+                              maxWidth: 500,
+                              quality: 75,
+                            ),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData && snapshot.data != null) {
+                                return Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Image.memory(
+                                      snapshot.data!,
+                                      fit: BoxFit.contain,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                    ),
+                                    Container(
+                                      padding: EdgeInsets.all(8.r),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.3),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40.r),
+                                    ),
+                                  ],
+                                );
+                              }
+                              return const Center(child: CircularProgressIndicator(color: Colors.pink));
+                            },
+                          )
+                        : Image.file(
+                            widget.files[index],
+                            fit: BoxFit.contain, // Show exact size without cropping
+                          ),
                   ),
                 ),
               );

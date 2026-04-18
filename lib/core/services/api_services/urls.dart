@@ -41,6 +41,7 @@ class Urls {
   //plane api
   static const String getPlaneUrl = "$baseUrl/api/v1/subscription/plans";
   static const String createSubscriptionUrl = "$baseUrl/api/v1/subscription/create";
+  static const String weeklyChecklistUrl = "$baseUrl/api/v1/subscription/weekly-checklist";
 
   //social integration
 

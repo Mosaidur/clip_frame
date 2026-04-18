@@ -22,6 +22,9 @@ class VideoMusicController extends GetxController {
     _setupAudioSession();
   }
 
+  final RxDouble downloadProgress = 0.0.obs;
+  final RxString musicDownloadError = "".obs;
+
   Future<void> _setupAudioSession() async {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration(
@@ -47,12 +50,19 @@ class VideoMusicController extends GetxController {
     });
   }
 
-  Future<void> setMusic(String url, String title) async {
+  Future<void> setMusic(String url, String title, {bool isRemote = false}) async {
     try {
       isMusicLoading.value = true;
+      musicDownloadError.value = "";
       await _audioPlayer.stop();
       
-      final duration = await _audioPlayer.setFilePath(url);
+      Duration? duration;
+      if (isRemote) {
+        // STREAMING: Start playing directly from URL while we download in background
+        duration = await _audioPlayer.setUrl(url);
+      } else {
+        duration = await _audioPlayer.setFilePath(url);
+      }
       
       if (duration != null) {
         currentTrack.value = MusicTrack(
@@ -66,6 +76,7 @@ class VideoMusicController extends GetxController {
       }
     } catch (e) {
       debugPrint("⛔ Error setting music: $e");
+      musicDownloadError.value = "Could not load music.";
       Get.snackbar("Error", "Could not load music file.");
     } finally {
       isMusicLoading.value = false;
@@ -76,31 +87,65 @@ class VideoMusicController extends GetxController {
     try {
       isMusicLoading.value = true;
       loadingTrackUrl.value = url;
+      downloadProgress.value = 0.0;
+      musicDownloadError.value = "";
       
-      // Get temporary directory
+      // 1. START STREAMING IMMEDIATELY for better UX
+      await setMusic(url, title, isRemote: true);
+
+      // 2. CHECK CACHE
       final tempDir = await getTemporaryDirectory();
-      // Use URL hash or title to avoid conflicts, but keeping it simple
-      final fileName = "${title.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.mp3";
+      // Use a stable filename based on URL to avoid redundant downloads
+      final uri = Uri.parse(url);
+      final cleanTitle = title.replaceAll(RegExp(r'[^\w\s]+'), '_').replaceAll(' ', '_');
+      final fileName = "cache_${uri.pathSegments.last.contains('.') ? uri.pathSegments.last : '$cleanTitle.mp3'}";
       final filePath = path.join(tempDir.path, fileName);
-      
       final file = File(filePath);
-      
-      debugPrint("🚀 Downloading music: $url");
-      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 30));
+
+      if (await file.exists()) {
+        debugPrint("⚡ Music found in cache: $filePath");
+        // Update track source to local file once found
+        currentTrack.value = currentTrack.value?.copyWith(url: filePath);
+        downloadProgress.value = 1.0;
+        return;
+      }
+
+      // 3. DOWNLOAD IN BACKGROUND (Increase timeout to 60s)
+      debugPrint("🚀 Downloading music in background: $url");
+      final client = http.Client();
+      final request = http.Request('GET', Uri.parse(url));
+      final response = await client.send(request).timeout(const Duration(seconds: 60));
       
       if (response.statusCode == 200) {
-        await file.writeAsBytes(response.bodyBytes);
+        final List<int> bytes = [];
+        final totalLength = response.contentLength ?? 0;
+        int downloaded = 0;
+
+        await for (var chunk in response.stream) {
+          bytes.addAll(chunk);
+          downloaded += chunk.length;
+          if (totalLength > 0) {
+            downloadProgress.value = downloaded / totalLength;
+          }
+        }
+
+        await file.writeAsBytes(bytes);
         debugPrint("✅ Music downloaded to: $filePath");
         
-        await setMusic(filePath, title);
+        // Update the current track to use the local file (critical for FFmpeg render later)
+        if (currentTrack.value?.url == url) {
+          currentTrack.value = currentTrack.value?.copyWith(url: filePath);
+        }
       } else {
         throw Exception("Failed to download music. Status: ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("⛔ Error downloading music: $e");
       String msg = "Failed to download background music.";
-      if (e is TimeoutException) msg = "Download timed out. Please check your internet.";
-      Get.snackbar("Download Error", msg);
+      if (e is TimeoutException) msg = "Download timed out. High quality audio might be unavailable.";
+      musicDownloadError.value = msg;
+      // Don't show snackbar if streaming is already working
+      if (!isPlaying.value) Get.snackbar("Download Error", msg);
     } finally {
       isMusicLoading.value = false;
       loadingTrackUrl.value = "";

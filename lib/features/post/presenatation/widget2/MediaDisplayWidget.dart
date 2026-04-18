@@ -1,13 +1,12 @@
 
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 class MediaDisplayWidget extends StatefulWidget {
   final String videoUrl;
   final bool autoPlay;
-
-
 
   const MediaDisplayWidget({super.key, required this.videoUrl, this.autoPlay = true, });
 
@@ -18,20 +17,40 @@ class MediaDisplayWidget extends StatefulWidget {
 class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
   late VideoPlayerController _controller;
   bool _isControlsVisible = false;
+  bool _hasError = false;
+  String _errorMessage = "";
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.network(widget.videoUrl)
-      ..initialize().then((_) {
-        setState(() {});
-        if (widget.autoPlay) {    // <-- play only if enabled
-          _controller.play();
-        }else {
-          _controller.pause();  // <-- ensure paused when false
-        }
-        _controller.setLooping(true);
-      });
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
+    try {
+      if (widget.videoUrl.startsWith('http')) {
+        _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      } else {
+        _controller = VideoPlayerController.file(File(widget.videoUrl));
+      }
+
+      await _controller.initialize();
+      _controller.setLooping(true);
+      
+      if (widget.autoPlay) {
+        _controller.play();
+      }
+      
+      if (mounted) setState(() => _hasError = false);
+    } catch (e) {
+      debugPrint("❌ Video Error: $e");
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = e.toString();
+        });
+      }
+    }
   }
 
   @override
@@ -67,18 +86,41 @@ class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
           alignment: Alignment.center,
           children: [
             /// Video
-            _controller.value.isInitialized
-                ? SizedBox.expand(
-                  child: FittedBox(
-                              fit: BoxFit.contain, // Changed from cover to contain for full frame
-                              child: SizedBox(
-                  width: _controller.value.size.width,
-                  height: _controller.value.size.height,
-                  child: VideoPlayer(_controller),
-                              ),
-                            ),
-                )
-                : const Center(child: CircularProgressIndicator()),
+            _hasError
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.white, size: 50),
+                        const SizedBox(height: 10),
+                        const Text(
+                          "Failed to load video",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _hasError = false;
+                            });
+                            _initializePlayer();
+                          },
+                          child: const Text("Retry", style: TextStyle(color: Colors.pink)),
+                        ),
+                      ],
+                    ),
+                  )
+                : _controller.value.isInitialized
+                    ? SizedBox.expand(
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: SizedBox(
+                            width: _controller.value.size.width,
+                            height: _controller.value.size.height,
+                            child: VideoPlayer(_controller),
+                          ),
+                        ),
+                      )
+                    : const Center(child: CircularProgressIndicator()),
       
             /// Controls Overlay
             if (_isControlsVisible && _controller.value.isInitialized)

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
@@ -86,19 +87,20 @@ class SchedulePostWidget extends StatelessWidget {
                 ),
               ),
 
-              // Play Button Icon (Center) - Larger and more transparent
-              if (_isVideo(post))
+              // Play Button Icon (Center) - Only show if video and media is present
+              if (_isVideo(post) && (post.imageUrl.isNotEmpty || post.mediaUrls.isNotEmpty))
                 Container(
-                  width: 65.r,
-                  height: 65.r,
+                  width: 50.r,
+                  height: 50.r,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.25),
+                    color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
                   ),
                   child: Icon(
                     Icons.play_arrow_rounded,
                     color: Colors.white,
-                    size: 45.r,
+                    size: 35.r,
                   ),
                 ),
 
@@ -301,11 +303,30 @@ class SchedulePostWidget extends StatelessWidget {
   }
 
   Widget _buildImage(String url) {
-    return Image.network(
-      url,
-      width: double.infinity,
-      fit: BoxFit.contain, // Maintain EXACT size and ratio
-      errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.network(
+            url,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildPlaceholder(),
+          ),
+        ),
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.black.withOpacity(0.2)),
+          ),
+        ),
+        Center(
+          child: Image.network(
+            url,
+            width: double.infinity,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+          ),
+        ),
+      ],
     );
   }
 
@@ -340,11 +361,33 @@ class SchedulePostWidget extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 230.h,
-      color: const Color(0xFFF1F5F9),
-      child: Icon(
-        Icons.image_outlined,
-        size: 50.r,
-        color: const Color(0xFFCBD5E1),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFE5DDF9), Color(0xFFF1F5F9), Color(0xFFEFE2C2)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.image_outlined,
+              size: 40.r,
+              color: Colors.black.withOpacity(0.1),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              "Media Processing...",
+              style: TextStyle(
+                fontSize: 10.sp,
+                color: Colors.black.withOpacity(0.2),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -390,10 +433,11 @@ class SchedulePostWidget extends StatelessWidget {
       ),
       child: Center(
         child: Image.network(
-          "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Instagram_icon.png/600px-Instagram_icon.png",
+          "https://cdn-icons-png.flaticon.com/512/174/174855.png",
           width: 18.r,
           height: 18.r,
           fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const Icon(Icons.camera_alt, size: 14, color: Colors.pink),
         ),
       ),
     );

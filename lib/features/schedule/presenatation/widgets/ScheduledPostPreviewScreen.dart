@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:clip_frame/features/post/presenatation/widget2/MediaDisplayWidget.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
@@ -23,14 +24,11 @@ class _ScheduledPostPreviewScreenState
 
   @override
   Widget build(BuildContext context) {
-    final bool isVideo =
-        _isVideoUrl(widget.post.imageUrl) ||
-        widget.post.contentType.toLowerCase() == 'reel' ||
-        widget.post.contentType.toLowerCase() == 'story';
-
     final List<String> mediaUrls = widget.post.mediaUrls.isNotEmpty
         ? widget.post.mediaUrls
         : (widget.post.imageUrl.isNotEmpty ? [widget.post.imageUrl] : []);
+
+    final bool isVideo = mediaUrls.isNotEmpty && _isVideoUrl(mediaUrls[0]);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -38,11 +36,36 @@ class _ScheduledPostPreviewScreenState
         children: [
           // Media Content
           mediaUrls.isEmpty
-              ? const Center(
-                  child: Icon(
-                    Icons.broken_image,
-                    color: Colors.white,
-                    size: 50,
+              ? Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFEFE2C2), Color(0xFFF1F5F9), Color(0xFFE5DDF9)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.image_outlined,
+                          color: Colors.black.withOpacity(0.05),
+                          size: 80.r,
+                        ),
+                        SizedBox(height: 15.h),
+                        Text(
+                          "Media is being prepared...",
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.15),
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : Center(

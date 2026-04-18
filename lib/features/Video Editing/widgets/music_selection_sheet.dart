@@ -19,10 +19,13 @@ class MusicSelectionSheet extends StatelessWidget {
       {"title": "Upbeat Corporate", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"},
       {"title": "Relaxing Lo-Fi", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"},
       {"title": "Tech Future", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"},
+      {"title": "Cinematic Epic", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"},
+      {"title": "Summer Vibe", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3"},
+      {"title": "Acoustic Gold", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3"},
     ];
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
+      height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
@@ -49,7 +52,17 @@ class MusicSelectionSheet extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 20),
+          Obx(() => controller.musicDownloadError.isNotEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    controller.musicDownloadError.value,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : const SizedBox.shrink()),
+          const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -70,7 +83,7 @@ class MusicSelectionSheet extends StatelessWidget {
                           result.files.single.path!,
                           result.files.single.name,
                         );
-                        Navigator.pop(context);
+                        if (context.mounted) Navigator.pop(context);
                       }
                     },
                   ),
@@ -89,7 +102,7 @@ class MusicSelectionSheet extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 20),
           const Divider(),
           Expanded(
             child: ListView.builder(
@@ -109,6 +122,7 @@ class MusicSelectionSheet extends StatelessWidget {
                   trailing: Obx(() {
                     final isThisLoading = controller.loadingTrackUrl.value == track["url"];
                     final isAnyLoading = controller.isMusicLoading.value;
+                    final progress = controller.downloadProgress.value;
                     
                     return TextButton(
                       onPressed: isAnyLoading
@@ -123,13 +137,24 @@ class MusicSelectionSheet extends StatelessWidget {
                               }
                             },
                       child: isThisLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFF6C63FF),
-                              ),
+                          ? Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: CircularProgressIndicator(
+                                    value: progress > 0 ? progress : null,
+                                    strokeWidth: 2,
+                                    color: const Color(0xFF6C63FF),
+                                  ),
+                                ),
+                                if (progress > 0)
+                                  Text(
+                                    "${(progress * 100).toInt()}%",
+                                    style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+                                  ),
+                              ],
                             )
                           : const Text("Use"),
                     );

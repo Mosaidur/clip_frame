@@ -72,17 +72,38 @@ class ScheduleController extends GetxController {
   Future<void> loadAllData() async {
     if (isLoading.value) return;
 
-    isLoading.value = true;
+    // SILENT REFRESH: Only show blocking loader if we have NO data yet
+    if (scheduledPosts.isEmpty && historyPosts.isEmpty) {
+      isLoading.value = true;
+    }
     errorMessage.value = '';
 
     try {
-      print("🚀 [ScheduleController] Starting to fetch all data...");
-      await fetchSchedules("scheduled", skipLoading: true);
-      await fetchSchedules("draft", skipLoading: true); // Added draft fetch
-      await fetchSchedules("published", skipLoading: true);
+      print("🚀 [ScheduleController] Starting parallel fetch for all data...");
+      
+      final results = await Future.wait([
+        _fetchStatusData("scheduled"),
+        _fetchStatusData("draft"),
+        _fetchStatusData("published"),
+      ]);
+
+      final List<SchedulePost> fetchedSchedules = (results[0] ?? []).cast<SchedulePost>();
+      final List<SchedulePost> fetchedDrafts = (results[1] ?? []).cast<SchedulePost>();
+      final List<HistoryPost> fetchedHistory = (results[2] ?? []).cast<HistoryPost>();
+
+      // Update Observables in one go to prevent UI flickering
+      scheduledPosts.assignAll([...fetchedSchedules, ...fetchedDrafts]);
+      historyPosts.assignAll(fetchedHistory);
+
+      // Persist to Cache
+      await DatabaseService.savePosts([...fetchedSchedules, ...fetchedDrafts]);
+      
+      // Sync Notifications
+      _syncNotifications(fetchedSchedules);
+
       print("✅ [ScheduleController] All data fetching process completed.");
     } catch (e) {
-      print("⛔ [ScheduleController] Error in _loadAllData: $e");
+      print("⛔ [ScheduleController] Error in loadAllData: $e");
       errorMessage.value = "Failed to load data: $e";
     } finally {
       isLoading.value = false;
@@ -90,101 +111,48 @@ class ScheduleController extends GetxController {
     }
   }
 
-  Future<void> fetchSchedules(String status, {bool skipLoading = false}) async {
-    if (!skipLoading) isLoading.value = true;
-    errorMessage.value = '';
-
-    print("📡 [ScheduleController] Preparing to fetch $status...");
+  /// Internal helper to fetch and parse data without updating the UI directly
+  Future<List<dynamic>?> _fetchStatusData(String status) async {
+    print("📡 [ScheduleController] Background fetching $status...");
     final String? token = await AuthService.getToken();
+    if (token == null) return null;
 
     String baseUrlClean = Urls.schedulingUrl.split('?')[0];
     String url = "$baseUrlClean?status=$status";
 
-    print("📡 [ScheduleController] Fetching $status from: $url");
-
-    if (token == null) {
-      print("⛔ [ScheduleController] Token is null, cannot fetch $status.");
-      if (!skipLoading) isLoading.value = false;
-      return;
-    }
-
     try {
       final response = await NetworkCaller.getRequest(url: url, token: token);
+      if (response.isSuccess && response.responseBody != null && response.responseBody!['data'] != null) {
+        var responseData = response.responseBody!['data'];
+        List<dynamic> listData = [];
 
-      print(
-        "📥 [ScheduleController] Response for $status: ${response.statusCode}",
-      );
-
-      if (response.isSuccess) {
-        lastSyncedAt.value = DateTime.now();
-        if (response.responseBody != null &&
-            response.responseBody!['data'] != null) {
-          var responseData = response.responseBody!['data'];
-
-          List<dynamic> listData = [];
-
-          if (responseData is Map && responseData['data'] != null) {
-            listData = responseData['data'];
-          } else if (responseData is List) {
-            listData = responseData;
-          }
-
-          print(
-            "📦 [ScheduleController] Parsed ${listData.length} items for $status",
-          );
-
-          if (status == "scheduled") {
-            final posts = listData.map((json) {
-              if (json is Map<String, dynamic>) {
-                json['status'] = 'scheduled';
-              }
-              return SchedulePost.fromJson(json);
-            }).toList();
-
-            scheduledPosts.assignAll(posts);
-            // Save to cache
-            await DatabaseService.savePosts(posts);
-            // Schedule notifications for newly fetched scheduled posts
-            _syncNotifications(posts);
-          } else if (status == "draft") {
-            // Append drafts to scheduled posts
-            List<SchedulePost> drafts = listData.map((json) {
-              if (json is Map<String, dynamic>) {
-                json['status'] = 'draft';
-              }
-              return SchedulePost.fromJson(json);
-            }).toList();
-            scheduledPosts.addAll(drafts);
-            // Save to cache
-            await DatabaseService.savePosts(drafts);
-          } else if (status == "published") {
-            historyPosts.assignAll(
-              listData.map((json) {
-                if (json is Map<String, dynamic>) {
-                  json['status'] = 'published';
-                }
-                return HistoryPost.fromJson(json);
-              }).toList(),
-            );
-          }
-        } else {
-          print(
-            "⚠️ [ScheduleController] Response body or data is null for $status",
-          );
+        if (responseData is Map && responseData['data'] != null) {
+          listData = responseData['data'];
+        } else if (responseData is List) {
+          listData = responseData;
         }
-      } else {
-        print(
-          "⛔ [ScheduleController] Fetch failed for $status: ${response.errorMessage}",
-        );
-        errorMessage.value =
-            response.errorMessage ?? 'Failed to fetch schedules';
+
+        if (status == "published") {
+          return listData.map((json) {
+            if (json is Map<String, dynamic>) json['status'] = 'published';
+            return HistoryPost.fromJson(json);
+          }).toList();
+        } else {
+          return listData.map((json) {
+            if (json is Map<String, dynamic>) json['status'] = status;
+            return SchedulePost.fromJson(json);
+          }).toList();
+        }
       }
     } catch (e) {
-      print("⛔ [ScheduleController] Exception in fetchSchedules ($status): $e");
-      errorMessage.value = "Error: $e";
+      print("⛔ [ScheduleController] Error fetching $status: $e");
     }
+    return null;
+  }
 
-    if (!skipLoading) isLoading.value = false;
+  @Deprecated("Use loadAllData for optimized fetching")
+  Future<void> fetchSchedules(String status, {bool skipLoading = false}) async {
+    await loadAllData(); 
   }
 
   void _syncNotifications(List<SchedulePost> posts) {

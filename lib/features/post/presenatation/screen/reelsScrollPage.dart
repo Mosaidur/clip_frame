@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 import 'package:shimmer/shimmer.dart';
@@ -114,44 +115,52 @@ class _ReelsscrollpageState extends State<Reelsscrollpage> {
       );
     }
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            scrollDirection: Axis.vertical,
-            itemCount: templates.length,
-            itemBuilder: (context, index) {
-              final template = templates[index];
-              final videoUrl =
-                  (template.steps != null && template.steps!.isNotEmpty)
-                  ? template.steps![0].url ?? ""
-                  : "";
-
-              return ReelsScrollContnet(
-                template: template,
-                templateId: template.id ?? "",
-                videoUrl: videoUrl,
-                category: template.category ?? "General",
-                format: "MP4",
-                title: template.title ?? "Untitled Reel",
-                tags: template.hashtags ?? [],
-                musicTitle: "Original Audio",
-                profileImageUrl:
-                    template.thumbnail ?? template.createdBy?.email,
-              );
-            },
-          ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 20,
-            child: CustomBackButton(
-              onPressed: () => Get.back(),
-              backgroundColor: Colors.black26,
-              iconColor: Colors.white,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              scrollDirection: Axis.vertical,
+              itemCount: templates.length,
+              itemBuilder: (context, index) {
+                final template = templates[index];
+                final videoUrl =
+                    (template.steps != null && template.steps!.isNotEmpty)
+                    ? template.steps![0].url ?? ""
+                    : "";
+  
+                return ReelsScrollContnet(
+                  template: template,
+                  templateId: template.id ?? "",
+                  videoUrl: videoUrl,
+                  category: template.category ?? "General",
+                  format: "MP4",
+                  title: template.title ?? "Untitled Reel",
+                  tags: template.hashtags ?? [],
+                  musicTitle: "Original Audio",
+                  profileImageUrl:
+                      template.thumbnail ?? template.createdBy?.email,
+                );
+              },
             ),
-          ),
-        ],
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              left: 20,
+              child: CustomBackButton(
+                onPressed: () => Get.back(),
+                backgroundColor: Colors.black26,
+                iconColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
