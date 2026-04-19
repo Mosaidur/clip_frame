@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -73,7 +72,7 @@ class MusicSelectionSheet extends StatelessWidget {
                     icon: Icons.folder_open,
                     title: "Local Files",
                     onTap: () async {
-                      FilePickerResult? result = await FilePicker.platform.pickFiles(
+                      FilePickerResult? result = await FilePicker.pickFiles(
                         type: FileType.audio,
                         allowMultiple: false,
                       );
@@ -181,7 +180,7 @@ class MusicSelectionSheet extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFF5F5F7),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [

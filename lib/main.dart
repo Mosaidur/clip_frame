@@ -1,4 +1,3 @@
-import 'package:camera/camera.dart';
 import 'package:clip_frame/splashScreen/controllers/language_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -69,7 +68,7 @@ void main() async {
     try {
       Workmanager().initialize(
         callbackDispatcher,
-        isInDebugMode: true, // Set to false in production
+        isInDebugMode: false, // Set to false in production
       );
 
       // Register a periodic task for syncing
