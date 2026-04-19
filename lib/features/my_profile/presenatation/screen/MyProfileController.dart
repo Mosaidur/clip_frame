@@ -68,6 +68,10 @@ class MyProfileController extends GetxController {
   ];
 
   final List<String> availableAudiences = [
+    "local",
+    "tourist",
+    "online",
+    "all",
     "General Audience",
     "Students",
     "Professionals",
@@ -146,6 +150,16 @@ class MyProfileController extends GetxController {
   void removeTargetAudience(String audience) {
     if (!targetAudienceToRemove.contains(audience)) {
       targetAudienceToRemove.add(audience);
+    }
+    selectedAudiences.remove(audience);
+  }
+
+  void addTargetAudience(String audience) {
+    if (!selectedAudiences.contains(audience)) {
+      selectedAudiences.add(audience);
+    }
+    if (targetAudienceToRemove.contains(audience)) {
+      targetAudienceToRemove.remove(audience);
     }
   }
 
@@ -397,7 +411,8 @@ class MyProfileController extends GetxController {
         if (phone != null) 'phone': phone,
         if (businessCategory != null) 'businessCategory': businessCategory,
         if (businessName != null) 'businessName': businessName,
-        if (businessDescription != null) 'description': businessDescription,
+        if (businessDescription != null) 'businessDescription': businessDescription,
+        if (businessDescription != null) 'description': businessDescription, // Fallback for some endpoints
         if (timezone != null) 'timezone': cleanTz,
         'preferredLanguages': langCodes,
       };
@@ -417,6 +432,7 @@ class MyProfileController extends GetxController {
         if (businessDescription != null)
           "businessDescription": businessDescription,
         "preferredLanguages": langCodes,
+        "targetAudience": selectedAudiences, // Send the full list for reliable sync
         if (toAdd.isNotEmpty) "addTargetAudience": toAdd,
         if (toRemove.isNotEmpty) "removeTargetAudience": toRemove,
       };

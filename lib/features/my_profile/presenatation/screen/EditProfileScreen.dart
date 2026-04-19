@@ -388,39 +388,64 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         const SizedBox(height: 24),
 
                         // Current Target Audience (with remove option)
-                        Obx(() {
-                          final audiences =
-                              controller.onboardingData.value?.targetAudience
-                                  .where(
-                                    (a) => !controller.targetAudienceToRemove
-                                        .contains(a),
-                                  )
-                                  .toList() ??
-                              [];
-                          if (audiences.isEmpty) return const SizedBox.shrink();
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildLabel("Current Target Audience".tr),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                children: audiences.map((audience) {
-                                  return Chip(
-                                    label: Text(audience.tr),
-                                    onDeleted: () => controller
-                                        .removeTargetAudience(audience),
-                                    deleteIcon: const Icon(
-                                      Icons.close,
-                                      size: 16,
-                                    ),
-                                  );
-                                }).toList(),
+                        // Target Audience Selection
+                        _buildLabel("Target Audience".tr),
+                        const SizedBox(height: 8),
+                        Obx(
+                          () => DropdownButtonFormField<String>(
+                            key: UniqueKey(), // Force fresh widget on each rebuild to clear internal value state
+                            isExpanded: true,
+                            value: null,
+                            hint: Text("Add Target Audience".tr),
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
                               ),
-                              const SizedBox(height: 16),
-                            ],
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                            ),
+                            items: controller.availableAudiences
+                                .where((a) => !controller.selectedAudiences.contains(a))
+                                .map((a) => DropdownMenuItem(
+                                      value: a,
+                                      child: Text(a.tr),
+                                    ))
+                                .toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                controller.addTargetAudience(val);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Obx(() {
+                          if (controller.selectedAudiences.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: controller.selectedAudiences.map((audience) {
+                              return Chip(
+                                label: Text(audience.tr),
+                                onDeleted: () =>
+                                    controller.removeTargetAudience(audience),
+                                deleteIcon: const Icon(
+                                  Icons.close,
+                                  size: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                backgroundColor: const Color(0xFFB38FFC).withOpacity(0.1),
+                                labelStyle: const TextStyle(fontSize: 12),
+                              );
+                            }).toList(),
                           );
                         }),
+                        const SizedBox(height: 24),
 
 
                         // Timezone Selection

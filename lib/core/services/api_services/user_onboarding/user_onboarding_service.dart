@@ -61,10 +61,10 @@ class UserOnboardingService {
     final response = await NetworkCaller.postMultipartRequest(
       url: Urls.userOnboardingUrl,
       body: body,
-      fileKey: 'logo', // Changed back to 'logo' to test if 'image' was wrong
+      fileKey: 'logo',
       file: logoFile,
       token: token,
-      wrapInData: false, // Send individual fields
+      wrapInData: true, // Use data-wrapping for cleaner backend parsing
     );
     return response.isSuccess;
   }

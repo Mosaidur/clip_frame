@@ -84,39 +84,16 @@ class NetworkCaller {
           errorMessage: _unAuthorizeMessage,
         );
       } else if (response.statusCode >= 500) {
-        String msg =
-            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
         if (showDialog) {
-          Get.snackbar(
-            "Under Maintenance".tr,
-            msg.tr,
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: const Color(0xFFB38FFC).withOpacity(0.9),
-            colorText: Colors.white,
-            icon: const Icon(
-              Icons.settings_suggest_outlined,
-              color: Colors.white,
-            ),
-            margin: const EdgeInsets.all(15),
-            borderRadius: 15,
-            duration: const Duration(seconds: 4),
-            boxShadows: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          );
+          _showPremiumError('under_maintenance'.tr, 'server_maintenance_msg'.tr);
         }
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
-          errorMessage: msg,
+          errorMessage: "server_maintenance_msg".tr,
         );
       } else {
         final decodedJson = _safeDecode(response.body);
-        // Try to extract error message from 'message' field first, then 'data' if it's a String
         String? errorMsg;
         if (decodedJson != null) {
           if (decodedJson['message'] != null &&
@@ -129,15 +106,7 @@ class NetworkCaller {
         }
 
         if (showDialog) {
-          Get.snackbar(
-            "Error",
-            errorMsg ?? _defaultErrorMessage,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.redAccent,
-            colorText: Colors.white,
-            margin: const EdgeInsets.all(10),
-            borderRadius: 10,
-          );
+          _showPremiumError("error".tr, errorMsg ?? "something_went_wrong".tr);
         }
 
         return NetworkResponse(
@@ -181,11 +150,6 @@ class NetworkCaller {
       // Add Authorization header if token is provided
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
-        debugPrint(
-          "🚀 DEBUG: Token added to headers: ${token.substring(0, 5)}...",
-        );
-      } else {
-        debugPrint("🚀 DEBUG: No token provided to NetworkCaller.");
       }
 
       _logRequest(url, body, headers);
@@ -231,39 +195,16 @@ class NetworkCaller {
           errorMessage: _unAuthorizeMessage,
         );
       } else if (response.statusCode >= 500) {
-        String msg =
-            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
         if (showDialog) {
-          Get.snackbar(
-            "Under Maintenance".tr,
-            msg.tr,
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: const Color(0xFFB38FFC).withOpacity(0.9),
-            colorText: Colors.white,
-            icon: const Icon(
-              Icons.settings_suggest_outlined,
-              color: Colors.white,
-            ),
-            margin: const EdgeInsets.all(15),
-            borderRadius: 15,
-            duration: const Duration(seconds: 4),
-            boxShadows: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          );
+          _showPremiumError('under_maintenance'.tr, 'server_maintenance_msg'.tr);
         }
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
-          errorMessage: msg,
+          errorMessage: "server_maintenance_msg".tr,
         );
       } else {
         final decodedJson = _safeDecode(response.body);
-        // Try to extract error message from 'message' field first, then 'data' if it's a String
         String? errorMsg;
         if (decodedJson != null) {
           if (decodedJson['message'] != null &&
@@ -276,15 +217,7 @@ class NetworkCaller {
         }
 
         if (showDialog) {
-          Get.snackbar(
-            "Error",
-            errorMsg ?? _defaultErrorMessage,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.redAccent,
-            colorText: Colors.white,
-            margin: const EdgeInsets.all(10),
-            borderRadius: 10,
-          );
+          _showPremiumError("error".tr, errorMsg ?? "something_went_wrong".tr);
         }
 
         return NetworkResponse(
@@ -357,12 +290,10 @@ class NetworkCaller {
           errorMessage: _unAuthorizeMessage,
         );
       } else if (response.statusCode >= 500) {
-        String msg =
-            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
-          errorMessage: msg,
+          errorMessage: "server_maintenance_msg".tr,
         );
       } else {
         final decodedJson = _safeDecode(response.body);
@@ -442,12 +373,10 @@ class NetworkCaller {
           errorMessage: _unAuthorizeMessage,
         );
       } else if (response.statusCode >= 500) {
-        String msg =
-            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
-          errorMessage: msg,
+          errorMessage: "server_maintenance_msg".tr,
         );
       } else {
         final decodedJson = _safeDecode(response.body);
@@ -530,12 +459,10 @@ class NetworkCaller {
           errorMessage: _unAuthorizeMessage,
         );
       } else if (response.statusCode >= 500) {
-        String msg =
-            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
-          errorMessage: msg,
+          errorMessage: "server_maintenance_msg".tr,
         );
       } else {
         final decodedJson = response.body.isNotEmpty
@@ -679,12 +606,10 @@ class NetworkCaller {
           errorMessage: _unAuthorizeMessage,
         );
       } else if (response.statusCode >= 500) {
-        String msg =
-            "We're currently performing some server maintenance to improve your experience. Please try again in a few minutes.";
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
-          errorMessage: msg,
+          errorMessage: "server_maintenance_msg".tr,
         );
       } else {
         final decodedJson = _safeDecode(response.body);
@@ -824,8 +749,7 @@ class NetworkCaller {
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
-          errorMessage:
-              "Server is temporarily unavailable (Error ${response.statusCode}). Please try again later.",
+          errorMessage: "server_maintenance_msg".tr,
         );
       } else {
         final decodedJson = _safeDecode(response.body);
@@ -882,7 +806,6 @@ class NetworkCaller {
       if (file != null && fileKey != null) {
         final fileName = p.basename(file.path);
         final mimeType = fileName.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg';
-        // final fileSizeMB = (await file.length()) / (1024 * 1024);
 
         request.files.add(
           await http.MultipartFile.fromPath(
@@ -919,8 +842,7 @@ class NetworkCaller {
         return NetworkResponse(
           isSuccess: false,
           statusCode: response.statusCode,
-          errorMessage:
-              "Server is temporarily unavailable (Error ${response.statusCode}). Please try again later.",
+          errorMessage: "server_maintenance_msg".tr,
         );
       } else {
         final decodedJson = _safeDecode(response.body);
@@ -972,9 +894,50 @@ class NetworkCaller {
     );
   }
 
-  // static Future<void> _onUnAuthorize() async {
-  //   await AuthController.clearData();
-  //   Navigator.of(TaskManager.navigator.currentContext!)
-  //       .pushNamedAndRemoveUntil(SignInScreen.name, (predicate) => false);
-  // }
+  static void _showPremiumError(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.white,
+      colorText: Colors.black87,
+      icon: Container(
+        margin: const EdgeInsets.only(left: 10),
+        padding: const EdgeInsets.all(8),
+        decoration: const BoxDecoration(
+          color: Color(0xFFFF277F),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.error_outline_rounded,
+          color: Colors.white,
+          size: 18,
+        ),
+      ),
+      margin: const EdgeInsets.all(20),
+      borderRadius: 16,
+      duration: const Duration(seconds: 4),
+      isDismissible: true,
+      boxShadows: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 20,
+          spreadRadius: 2,
+          offset: const Offset(0, 10),
+        ),
+      ],
+      borderWidth: 1,
+      borderColor: Colors.grey.withOpacity(0.1),
+      mainButton: TextButton(
+        onPressed: () => Get.back(),
+        child: Text(
+          "OK".tr,
+          style: const TextStyle(
+            color: Color(0xFFFF277F),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
 }
