@@ -28,7 +28,7 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   bool _scheduledSuccess = false;
   bool _showCongratulation = false;
   bool _isApiLoading = false;
-  DateTime _selectedDate = DateTime.now();
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   String _selectedTimeMode = "Time";
   int _selectedHour = 5;
@@ -347,16 +347,9 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
   }
 
   Widget _buildSuggestedDialog() {
-    // Determine the next 3 upcoming dates dynamically
+    // Always suggest starting from tomorrow
     final now = DateTime.now();
-    final DateTime suggestedTimeToday = DateTime(now.year, now.month, now.day, 17, 0); // 5:00 PM today
-
-    DateTime startDate;
-    if (suggestedTimeToday.isBefore(now)) {
-      startDate = now.add(const Duration(days: 1));
-    } else {
-      startDate = now;
-    }
+    final startDate = now.add(const Duration(days: 1));
 
     final upcomingDates = List.generate(widget.files.length, (i) => startDate.add(Duration(days: i)));
     final suggestedTime = "05:00 PM";
@@ -427,6 +420,10 @@ class _StorySchedulePageState extends State<StorySchedulePage> {
                       setState(() {
                         // Apply first suggested date to the overall selection
                         _selectedDate = upcomingDates[0];
+                        _selectedHour = 5;
+                        _selectedMinute = 0;
+                        _period = "PM";
+                        _focusedMonth = DateTime(_selectedDate.year, _selectedDate.month);
                         _showSuggestedDialog = false;
                       });
                     }),

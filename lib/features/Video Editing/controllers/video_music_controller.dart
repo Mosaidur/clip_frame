@@ -203,6 +203,11 @@ class VideoMusicController extends GetxController {
     isPlaying.value = false;
   }
 
+  void stopSync() {
+    _audioPlayer.stop();
+    isPlaying.value = false;
+  }
+
   
 
   void resumeSync() {

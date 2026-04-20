@@ -236,6 +236,22 @@ class HomePage extends StatelessWidget {
             ),
           ),
 
+          // Backdrop detector for closing the menu on outside click
+          Obx(() {
+            if (!controller.isExpanded.value) return const SizedBox.shrink();
+            return GestureDetector(
+              onTap: () {
+                debugPrint('Backdrop tapped, collapsing FAB');
+                controller.toggleExpand();
+              },
+              child: Container(
+                color: Colors.transparent,
+                width: double.infinity,
+                height: double.infinity,
+              ),
+            );
+          }),
+
           // Floating Menu Items (Positioned based on image layout)
           Obx(
             () => IgnorePointer(

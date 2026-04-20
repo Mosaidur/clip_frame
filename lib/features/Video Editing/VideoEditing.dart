@@ -402,6 +402,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
 
   @override
   void dispose() {
+    musicController.stopSync();
     _controller.dispose();
     timelineScrollController.dispose();
     super.dispose();
@@ -2346,6 +2347,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
       if (mounted) {
         if (initialized) {
           initialized = false;
+          musicController.pauseSync();
           _controller.removeListener(_videoListener);
           _controller.pause();
           _controller.dispose();

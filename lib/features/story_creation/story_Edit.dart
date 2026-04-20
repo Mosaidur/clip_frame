@@ -375,6 +375,7 @@ class _StoryEditPageState extends State<StoryEditPage> {
 
       if (mounted) {
         // NAVIGATE DIRECTLY TO FINAL PREVIEW
+        _musicController.pauseSync();
         Get.to(() => StoryFinalPreviewPage(files: renderedFiles));
       }
     } catch (e) {

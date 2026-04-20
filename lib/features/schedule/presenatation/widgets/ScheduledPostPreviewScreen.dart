@@ -4,6 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:clip_frame/features/post/presenatation/widget2/MediaDisplayWidget.dart';
 import 'package:clip_frame/features/schedule/data/model.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class ScheduledPostPreviewScreen extends StatefulWidget {
@@ -69,13 +70,14 @@ class _ScheduledPostPreviewScreenState
                     ),
                   ),
                 )
-              : Center(
+              : SizedBox.expand(
                   child: mediaUrls.length > 1
                       ? _buildCarousel(mediaUrls)
                       : isVideo
                       ? MediaDisplayWidget(
                           videoUrl: mediaUrls[0],
                           autoPlay: true,
+                          fit: BoxFit.cover,
                         )
                       : _buildSingleImage(mediaUrls[0]),
                 ),
@@ -108,10 +110,11 @@ class _ScheduledPostPreviewScreenState
                         mediaUrls.length > 1
                             ? "CAROUSEL"
                             : widget.post.contentType.toUpperCase(),
-                        style: const TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: 10.sp,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
                         ),
                       ),
                     ),
@@ -121,23 +124,24 @@ class _ScheduledPostPreviewScreenState
             ),
           ),
 
-          // Indicators for Carousel
+          // Indicators for Carousel (moved slightly lower)
           if (mediaUrls.length > 1)
             Positioned(
-              top: 100, // Below top bar
+              top: MediaQuery.of(context).padding.top + 70.h,
               left: 0,
               right: 0,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: mediaUrls.asMap().entries.map((entry) {
-                  return Container(
-                    width: 8.0,
-                    height: 8.0,
-                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: _current == entry.key ? 20.w : 6.w,
+                    height: 6.w,
+                    margin: const EdgeInsets.symmetric(horizontal: 3.0),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(3),
                       color: Colors.white.withOpacity(
-                        _current == entry.key ? 0.9 : 0.3,
+                        _current == entry.key ? 1.0 : 0.4,
                       ),
                     ),
                   );
@@ -151,12 +155,17 @@ class _ScheduledPostPreviewScreenState
             bottom: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.fromLTRB(20.w, 40.h, 20.w, 20.h),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                  stops: const [0.0, 0.4, 1.0],
+                  colors: [
+                    Colors.black.withOpacity(0.9),
+                    Colors.black.withOpacity(0.4),
+                    Colors.transparent,
+                  ],
                 ),
               ),
               child: SafeArea(
@@ -201,14 +210,14 @@ class _ScheduledPostPreviewScreenState
                                   .toList(),
                             ),
                           ],
-                          if (widget.post.title.length > 100 || widget.post.tags.isNotEmpty)
+                          if (widget.post.title.length > 60 || widget.post.tags.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
+                              padding: EdgeInsets.only(top: 8.h),
                               child: Text(
                                 _isExpanded ? "See Less" : "See More",
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 14,
+                                style: GoogleFonts.poppins(
+                                  color: const Color(0xFFFF277F),
+                                  fontSize: 13.sp,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -219,41 +228,45 @@ class _ScheduledPostPreviewScreenState
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.calendar_today,
-                          color: Colors.white70,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.post.scheduleTime,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10.r),
+                            border: Border.all(color: Colors.white12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.calendar_today_rounded, color: Colors.white70, size: 12.sp),
+                              SizedBox(width: 8.w),
+                              Text(
+                                widget.post.scheduleTime,
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white70,
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(
-                              widget.post.status,
-                            ).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(5),
+                            color: _getStatusColor(widget.post.status).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10.r),
                             border: Border.all(
-                              color: _getStatusColor(widget.post.status),
-                              width: 1,
+                              color: _getStatusColor(widget.post.status).withOpacity(0.5),
                             ),
                           ),
                           child: Text(
                             widget.post.status.toUpperCase(),
-                            style: TextStyle(
+                            style: GoogleFonts.poppins(
                               color: _getStatusColor(widget.post.status),
-                              fontSize: 10,
+                              fontSize: 10.sp,
                               fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
@@ -295,7 +308,7 @@ class _ScheduledPostPreviewScreenState
               maxScale: 4.0,
               child: Image.network(
                 url,
-                fit: BoxFit.contain, // Maintain original aspect ratio
+                fit: BoxFit.cover, 
                 alignment: Alignment.center,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -320,7 +333,7 @@ class _ScheduledPostPreviewScreenState
       items: urls.map((url) => _buildSingleImage(url)).toList(),
       carouselController: _carouselController,
       options: CarouselOptions(
-        height: screenWidth, // Force a square container
+        height: MediaQuery.of(context).size.height, 
         viewportFraction: 1.0,
         clipBehavior: Clip.hardEdge, // Prevent bleeding of adjacent images
         enableInfiniteScroll: false,

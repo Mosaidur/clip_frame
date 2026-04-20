@@ -43,7 +43,7 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   int selectedHour = 5;
   int selectedMinute = 0;
   String period = "PM";
-  int selectedDateIndex = -1;
+  int selectedDateIndex = -1; // Will be set in initState
   DateTime focusedMonth = DateTime.now();
   bool isApiLoading = false;
 
@@ -67,6 +67,18 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.postToEdit == null) {
+        // Set default selection to tomorrow
+        final tomorrow = DateTime.now().add(const Duration(days: 1));
+        final controller = Get.find<ContentCreationController>();
+        controller.scheduledDate.value = tomorrow;
+        
+        setState(() {
+          focusedMonth = DateTime(tomorrow.year, tomorrow.month);
+          final firstDay = DateTime(tomorrow.year, tomorrow.month, 1);
+          final offset = firstDay.weekday - 1;
+          selectedDateIndex = tomorrow.day + offset - 1;
+        });
+
         _showSuggestedDialog();
       }
     });
@@ -148,28 +160,11 @@ class _SchedulePostScreenState extends State<SchedulePostScreen> {
   }
 
   void _showSuggestedDialog() {
-    // Determine the next upcoming day/date dynamically (e.g., tomorrow at 5 PM)
+    // Always suggest tomorrow at 5:00 PM
     final now = DateTime.now();
-    final DateTime suggestedDateTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      17,
-      0,
-    ); // 5:00 PM today
+    final upcomingDate = now.add(const Duration(days: 1));
 
-    DateTime upcomingDate;
-    if (suggestedDateTime.isBefore(now)) {
-      // If 5:00 PM today has passed, suggest tomorrow
-      upcomingDate = now.add(const Duration(days: 1));
-    } else {
-      upcomingDate = now;
-    }
-
-    final suggestedDay = DateFormat('EEEE').format(upcomingDate);
     final suggestedTime = "05:00 PM";
-
-    // Format the date like "Tuesday, 21 Apr"
     final formattedDate = DateFormat('EEEE, d MMM').format(upcomingDate);
 
     // Parse time "05:00 PM" for calculations

@@ -7,8 +7,14 @@ import 'package:video_player/video_player.dart';
 class MediaDisplayWidget extends StatefulWidget {
   final String videoUrl;
   final bool autoPlay;
+  final BoxFit fit;
 
-  const MediaDisplayWidget({super.key, required this.videoUrl, this.autoPlay = true, });
+  const MediaDisplayWidget({
+    super.key,
+    required this.videoUrl,
+    this.autoPlay = true,
+    this.fit = BoxFit.cover,
+  });
 
   @override
   State<MediaDisplayWidget> createState() => _MediaDisplayWidgetState();
@@ -19,6 +25,10 @@ class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
   bool _isControlsVisible = false;
   bool _hasError = false;
   String _errorMessage = "";
+
+  void _videoListener() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
@@ -34,6 +44,7 @@ class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
         _controller = VideoPlayerController.file(File(widget.videoUrl));
       }
 
+      _controller.addListener(_videoListener);
       await _controller.initialize();
       _controller.setLooping(true);
       
@@ -55,8 +66,19 @@ class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
 
   @override
   void dispose() {
+    _controller.removeListener(_videoListener);
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant MediaDisplayWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _controller.removeListener(_videoListener);
+      _controller.dispose();
+      _initializePlayer();
+    }
   }
 
   void _togglePlayPause() {
@@ -112,7 +134,7 @@ class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
                 : _controller.value.isInitialized
                     ? SizedBox.expand(
                         child: FittedBox(
-                          fit: BoxFit.contain,
+                          fit: widget.fit,
                           child: SizedBox(
                             width: _controller.value.size.width,
                             height: _controller.value.size.height,

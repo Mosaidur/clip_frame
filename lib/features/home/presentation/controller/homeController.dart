@@ -72,6 +72,10 @@ class HomeController extends GetxController
   // Change bottom nav page
   void changePage(int index) {
     debugPrint('Changing page to index: $index');
+    if (isExpanded.value) {
+      toggleExpand();
+    }
+    
     selectedIndex.value = index;
 
     // Trigger data refresh if navigating to Schedules tab
