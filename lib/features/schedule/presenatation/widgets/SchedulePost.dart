@@ -15,6 +15,10 @@ import '../../data/model.dart';
 
 class SchedulePostWidget extends StatelessWidget {
   final SchedulePost post;
+  
+  // Static cache to store generated thumbnails and avoid re-processing
+  static final Map<String, Uint8List> _thumbnailCache = {};
+
   const SchedulePostWidget({super.key, required this.post});
 
   bool _isVideo(SchedulePost post) {
@@ -83,7 +87,11 @@ class SchedulePostWidget extends StatelessWidget {
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(28.r),
                   ),
-                  child: _buildMediaContent(),
+                  child: SizedBox(
+                    height: 250.h,
+                    width: double.infinity,
+                    child: _buildMediaContent(),
+                  ),
                 ),
               ),
 
@@ -224,7 +232,7 @@ class SchedulePostWidget extends StatelessWidget {
           CarouselSlider(
             items: mediaUrls.map((url) => _buildImage(url)).toList(),
             options: CarouselOptions(
-              height: 230.h, // Consistent height for the list view
+              height: 300.h, // Consistent height for the list view
               viewportFraction: 1.0,
               enableInfiniteScroll: false,
             ),
@@ -253,8 +261,13 @@ class SchedulePostWidget extends StatelessWidget {
       return _buildImage(post.thumbnailUrl!);
     }
 
-    // 2. If no thumbnail, check if main URL is video and generate locally
+    // 2. If no thumbnail, check if main URL is video and generate locally (with caching)
     if (_isVideo(post)) {
+      // Check cache first
+      if (_thumbnailCache.containsKey(post.imageUrl)) {
+        return _buildThumbnailStack(_thumbnailCache[post.imageUrl]!);
+      }
+
       return FutureBuilder<Uint8List?>(
         future: VideoThumbnail.thumbnailData(
           video: post.imageUrl,
@@ -266,28 +279,15 @@ class SchedulePostWidget extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Container(
               width: double.infinity,
-              height: 200.h,
+              height: 300.h,
               color: Colors.black12,
               child: const Center(child: CircularProgressIndicator()),
             );
           }
           if (snapshot.hasData && snapshot.data != null) {
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                Image.memory(
-                  snapshot.data!,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                ),
-                Icon(
-                  Icons.play_circle_outline,
-                  color: Colors.white,
-                  size: 40.r,
-                ),
-              ],
-            );
+            // Save to cache for next time
+            _thumbnailCache[post.imageUrl] = snapshot.data!;
+            return _buildThumbnailStack(snapshot.data!);
           }
           return _buildPlaceholder();
         },
@@ -300,6 +300,25 @@ class SchedulePostWidget extends StatelessWidget {
     }
 
     return _buildPlaceholder();
+  }
+
+  Widget _buildThumbnailStack(Uint8List data) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Image.memory(
+          data,
+          width: double.infinity,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+        ),
+        Icon(
+          Icons.play_circle_outline,
+          color: Colors.white,
+          size: 40.r,
+        ),
+      ],
+    );
   }
 
   Widget _buildImage(String url) {
@@ -346,7 +365,7 @@ class SchedulePostWidget extends StatelessWidget {
             return Image.memory(
               snapshot.data!,
               fit: BoxFit.cover,
-              height: 230.h,
+              height: 300.h,
               width: double.infinity,
             );
           }
@@ -360,7 +379,7 @@ class SchedulePostWidget extends StatelessWidget {
   Widget _buildPlaceholder() {
     return Container(
       width: double.infinity,
-      height: 230.h,
+      height: 300.h,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFFE5DDF9), Color(0xFFF1F5F9), Color(0xFFEFE2C2)],

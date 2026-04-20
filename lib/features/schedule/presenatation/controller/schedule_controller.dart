@@ -19,14 +19,12 @@ class ScheduleController extends GetxController {
 
   // Add selected tab state
   var selectedTab = 0.obs;
-  Timer? _refreshTimer;
 
   @override
   void onInit() {
     super.onInit();
     print("🔥 [ScheduleController] onInit called");
     _loadFromCache();
-    _startPolling();
   }
 
   Future<void> _loadFromCache() async {
@@ -45,20 +43,10 @@ class ScheduleController extends GetxController {
     }
   }
 
-  void _startPolling() {
-    print("⏲️ [ScheduleController] Starting polling timer (30s)");
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (!isLoading.value) {
-        print("⏲️ [ScheduleController] Auto-refreshing data...");
-        loadAllData();
-      }
-    });
-  }
 
   @override
   void onClose() {
-    _refreshTimer?.cancel();
-    print("⏲️ [ScheduleController] Polling timer cancelled");
+    print("⏲️ [ScheduleController] Controller closing - cleaning up");
     super.onClose();
   }
 

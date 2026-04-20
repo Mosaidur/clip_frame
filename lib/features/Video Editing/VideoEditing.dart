@@ -14,6 +14,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:get/get.dart';
 import 'AiVideoEditPage.dart';
+import 'CaptionGeneratorPage.dart';
 import 'ProfessionalCamera.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
@@ -2352,7 +2353,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AiVideoEditPage(videoFile: File(res)),
+            builder: (context) => CaptionGeneratorPage(videoFile: File(res)),
           ),
         );
       }
@@ -3586,10 +3587,12 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
                                           if (track == null) {
                                             Get.bottomSheet(
                                               const MusicSelectionSheet(),
+                                              isScrollControlled: true,
                                             );
                                           } else {
                                             Get.bottomSheet(
                                               const AudioSettingsSheet(),
+                                              isScrollControlled: true,
                                             );
                                           }
                                         },

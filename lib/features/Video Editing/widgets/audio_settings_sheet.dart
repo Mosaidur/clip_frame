@@ -34,7 +34,6 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
     final double maxDurationMs = track.totalDuration.inMilliseconds.toDouble();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
@@ -42,10 +41,12 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
           topRight: Radius.circular(30),
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Center(
             child: Container(
               width: 40,
@@ -178,8 +179,9 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
           const SizedBox(height: 10),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _formatMs(int ms) {
     final Duration d = Duration(milliseconds: ms);

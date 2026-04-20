@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:clip_frame/core/model/content_template_model.dart';
+import 'package:clip_frame/core/services/api_services/content_service.dart';
 import 'package:clip_frame/core/services/api_services/content_template_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -14,6 +15,7 @@ class ContentCreationController extends GetxController {
   var postTemplates = <ContentTemplateModel>[].obs;
   var storyTemplates = <ContentTemplateModel>[].obs;
   var isLoading = false.obs;
+  var isGeneratingCaption = false.obs;
 
   @override
   void onInit() {
@@ -180,6 +182,10 @@ class ContentCreationController extends GetxController {
   // Hashtags selected or edited
   final RxList<String> hashtags = <String>[].obs;
 
+  // AI Generated Results
+  final RxList<String> aiGeneratedEmojis = <String>[].obs;
+  final RxList<String> aiGeneratedHashtags = <String>[].obs;
+
   // Is media an image or video
   final RxBool isImage = false.obs;
 
@@ -213,5 +219,57 @@ class ContentCreationController extends GetxController {
     if (newHashtags != null) {
       hashtags.assignAll(newHashtags);
     }
+  }
+
+  Future<bool> generateAICaption({
+    String? selectedTone,
+    String? userSuggestions,
+  }) async {
+    if (templateId.value.isEmpty) {
+      Get.snackbar("Error", "Please select a template first");
+      return false;
+    }
+
+    isGeneratingCaption.value = true;
+    try {
+      final response = await ContentService.generateAICaption(
+        templateId: templateId.value,
+        tone: selectedTone,
+        suggestions: userSuggestions,
+      );
+
+      if (response.isSuccess && response.responseBody != null) {
+        final data = response.responseBody!['data'];
+        if (data != null) {
+          caption.value = data['caption'] ?? '';
+          
+          if (data['emojis'] != null && data['emojis'] is List) {
+            aiGeneratedEmojis.assignAll(
+              (data['emojis'] as List).map((e) => e.toString()).toList(),
+            );
+          }
+          
+          if (data['hashtags'] != null && data['hashtags'] is List) {
+            aiGeneratedHashtags.assignAll(
+              (data['hashtags'] as List).map((h) => h.toString()).toList(),
+            );
+          }
+          return true;
+        }
+      } else {
+        Get.snackbar(
+          "Generation Failed",
+          response.errorMessage ?? "Could not generate caption",
+          backgroundColor: Colors.red.withOpacity(0.1),
+          colorText: Colors.red,
+        );
+      }
+    } catch (e) {
+      debugPrint("⛔ [ContentCreationController] AI Generation Error: $e");
+      Get.snackbar("Error", "An unexpected error occurred");
+    } finally {
+      isGeneratingCaption.value = false;
+    }
+    return false;
   }
 }

@@ -167,4 +167,43 @@ class ContentService {
       );
     }
   }
+
+  static Future<NetworkResponse> generateAICaption({
+    required String templateId,
+    String? tone,
+    String? suggestions,
+  }) async {
+    try {
+      final token = await AuthService.getToken();
+      final Map<String, dynamic> body = {
+        "templateId": templateId,
+      };
+
+      if (tone != null && tone.isNotEmpty) {
+        body["tone"] = tone;
+      }
+      if (suggestions != null && suggestions.isNotEmpty) {
+        body["suggestions"] = suggestions;
+      }
+
+      debugPrint(
+        "🚀 [ContentService] Generating AI caption for template: $templateId with tone: $tone",
+      );
+
+      final response = await NetworkCaller.postRequest(
+        url: Urls.generateCaptionUrl,
+        body: body,
+        token: token,
+      );
+
+      return response;
+    } catch (e) {
+      debugPrint("⛔ [ContentService] Error generating AI caption: $e");
+      return NetworkResponse(
+        isSuccess: false,
+        statusCode: -1,
+        errorMessage: e.toString(),
+      );
+    }
+  }
 }

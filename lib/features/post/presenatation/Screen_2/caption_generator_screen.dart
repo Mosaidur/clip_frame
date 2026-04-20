@@ -99,18 +99,30 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
                 SizedBox(height: 20.h),
                 _buildCardSection(),
                 SizedBox(height: 20.h),
-                _buildSuggestionSection("Emoji Suggestions", [
-                  "🍕",
-                  "🧀",
-                  "🌮",
-                  "🥩",
-                ], true),
-                SizedBox(height: 15.h),
-                _buildSuggestionSection("Hashtag Suggestions", [
-                  "#Foodielover",
-                  "#Foodielover",
-                  "#Foodielover",
-                ], true),
+                Obx(
+                  () {
+                    final controller = Get.find<ContentCreationController>();
+                    return Column(
+                      children: [
+                        _buildSuggestionSection(
+                          "Emoji Suggestions",
+                          controller.aiGeneratedEmojis.isEmpty
+                              ? ["🍕", "🧀", " taco ", "🥩"]
+                              : controller.aiGeneratedEmojis,
+                          false,
+                        ),
+                        SizedBox(height: 15.h),
+                        _buildSuggestionSection(
+                          "Hashtag Suggestions",
+                          controller.aiGeneratedHashtags.isEmpty
+                              ? ["#Foodielover", "#Foodielover", "#Foodielover"]
+                              : controller.aiGeneratedHashtags,
+                          false,
+                        ),
+                      ],
+                    );
+                  },
+                ),
                 SizedBox(height: 20.h),
                 _buildToggleSection(),
                 SizedBox(height: 30.h),
@@ -154,11 +166,34 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildLabel("Your Generated Caption"),
-              Icon(
-                Icons.refresh_rounded,
-                color: const Color(0xFF007AFF),
-                size: 20.sp,
-              ),
+              Obx(() {
+                final controller = Get.find<ContentCreationController>();
+                return controller.isGeneratingCaption.value
+                    ? SizedBox(
+                        width: 20.sp,
+                        height: 20.sp,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF007AFF),
+                        ),
+                      )
+                    : GestureDetector(
+                        onTap: () async {
+                          final success = await controller.generateAICaption(
+                            selectedTone: selectedTone,
+                            userSuggestions: _captionController.text,
+                          );
+                          if (success) {
+                            _captionController.text = controller.caption.value;
+                          }
+                        },
+                        child: Icon(
+                          Icons.refresh_rounded,
+                          color: const Color(0xFF007AFF),
+                          size: 20.sp,
+                        ),
+                      );
+              }),
             ],
           ),
           SizedBox(height: 10.h),
@@ -246,10 +281,18 @@ class _CaptionGeneratorScreenState extends State<CaptionGeneratorScreen> {
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: Colors.black12),
       ),
-      child: Text(
-        "“Check out our sizzling lunch specials! 🍕🍕 Come hungry, leave happy. #FoodieLove“",
-        style: TextStyle(fontSize: 14.sp, color: Colors.black87, height: 1.4),
-      ),
+      child: Obx(() {
+        final controller = Get.find<ContentCreationController>();
+        String displayText = controller.caption.value;
+        if (displayText.isEmpty) {
+          displayText =
+              "“Your AI generated caption will appear here once you hit refresh...“";
+        }
+        return Text(
+          displayText,
+          style: TextStyle(fontSize: 14.sp, color: Colors.black87, height: 1.4),
+        );
+      }),
     );
   }
 

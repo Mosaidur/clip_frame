@@ -21,6 +21,7 @@ class _ScheduledPostPreviewScreenState
   int _current = 0;
   final CarouselSliderController _carouselController =
       CarouselSliderController();
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -163,32 +164,58 @@ class _ScheduledPostPreviewScreenState
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.post.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    if (widget.post.tags.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: widget.post.tags
-                            .map(
-                              (tag) => Text(
-                                '#${tag.replaceAll('#', '')}',
-                                style: const TextStyle(
-                                  color: Color(0xFF007AFF),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isExpanded = !_isExpanded;
+                        });
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.post.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: _isExpanded ? null : 3,
+                            overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                          ),
+                          if (_isExpanded && widget.post.tags.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: widget.post.tags
+                                  .map(
+                                    (tag) => Text(
+                                      '#${tag.replaceAll('#', '')}',
+                                      style: const TextStyle(
+                                        color: Color(0xFF007AFF),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ],
+                          if (widget.post.title.length > 100 || widget.post.tags.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                _isExpanded ? "See Less" : "See More",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            )
-                            .toList(),
+                            ),
+                        ],
                       ),
-                    ],
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [

@@ -18,6 +18,14 @@ class CaptionGeneratorPage extends StatefulWidget {
 class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
   final TextEditingController _captionController = TextEditingController();
   final TextEditingController _hashtagController = TextEditingController();
+  String selectedTone = "BOLD";
+  final List<String> tones = [
+    "BOLD",
+    "PROFESSIONAL",
+    "FRIENDLY",
+    "WITTY",
+    "INSPIRATIONAL",
+  ];
 
   @override
   void initState() {
@@ -94,6 +102,40 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                       ),
                       SizedBox(height: 30.h),
 
+                      // Tone Selection
+                      _buildSectionHeader("Select Tone", showRefresh: false),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 4.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedTone,
+                            isExpanded: true,
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                            items: tones.map((tone) {
+                              return DropdownMenuItem(
+                                value: tone,
+                                child: Text(
+                                  tone,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (v) => setState(() => selectedTone = v!),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20.h),
+
                       // Caption Input Card
                       Container(
                         padding: EdgeInsets.all(20.r),
@@ -104,13 +146,54 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              "Write Caption",
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Write Caption",
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                Obx(() {
+                                  final controller =
+                                      Get.find<ContentCreationController>();
+                                  return controller.isGeneratingCaption.value
+                                      ? SizedBox(
+                                        width: 16.sp,
+                                        height: 16.sp,
+                                        child: const CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Color(0xFF0080FF),
+                                        ),
+                                      )
+                                      : GestureDetector(
+                                        onTap: () async {
+                                          final success = await controller
+                                              .generateAICaption(
+                                                selectedTone: selectedTone,
+                                                userSuggestions:
+                                                    _captionController.text,
+                                              );
+                                          if (success) {
+                                            _captionController.text =
+                                                controller.caption.value;
+                                            _hashtagController.text =
+                                                controller
+                                                    .aiGeneratedHashtags
+                                                    .join(' ');
+                                          }
+                                        },
+                                        child: Icon(
+                                          Icons.auto_awesome,
+                                          color: const Color(0xFF0080FF),
+                                          size: 20.sp,
+                                        ),
+                                      );
+                                }),
+                              ],
                             ),
                             SizedBox(height: 10.h),
                             TextField(
@@ -195,27 +278,29 @@ class _CaptionGeneratorPageState extends State<CaptionGeneratorPage> {
 
                       // Emoji Quick Select
                       _buildSectionHeader("Quick Emoji", showRefresh: false),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(15.r),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8E1FF),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                        child: Wrap(
-                          spacing: 10.w,
-                          runSpacing: 10.h,
-                          children: [
-                            _buildEmojiTile("🍕"),
-                            _buildEmojiTile("🔥"),
-                            _buildEmojiTile("❤️"),
-                            _buildEmojiTile("🙌"),
-                            _buildEmojiTile("✨"),
-                            _buildEmojiTile("🎬"),
-                            _buildEmojiTile("😎"),
-                          ],
-                        ),
-                      ),
+                      Obx(() {
+                        final controller =
+                            Get.find<ContentCreationController>();
+                        final emojiList = controller.aiGeneratedEmojis.isEmpty
+                            ? ["🍕", "🔥", "❤️", "🙌", "✨", "🎬", "😎"]
+                            : controller.aiGeneratedEmojis;
+                        return Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(15.r),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8E1FF),
+                            borderRadius: BorderRadius.circular(15.r),
+                          ),
+                          child: Wrap(
+                            spacing: 10.w,
+                            runSpacing: 10.h,
+                            children:
+                                emojiList
+                                    .map((emoji) => _buildEmojiTile(emoji))
+                                    .toList(),
+                          ),
+                        );
+                      }),
 
                       SizedBox(height: 40.h),
 
