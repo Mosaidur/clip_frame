@@ -5,6 +5,8 @@ import 'package:clip_frame/features/post/presenatation/widget2/MediaDisplayWidge
 import 'package:clip_frame/features/schedule/data/model.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 class ScheduledPostPreviewScreen extends StatefulWidget {
@@ -78,6 +80,7 @@ class _ScheduledPostPreviewScreenState
                           videoUrl: mediaUrls[0],
                           autoPlay: true,
                           fit: BoxFit.cover,
+                          isMinimal: widget.post.contentType.toLowerCase() == 'story',
                         )
                       : _buildSingleImage(mediaUrls[0]),
                 ),
@@ -289,11 +292,7 @@ class _ScheduledPostPreviewScreenState
         children: [
           // Blurred background
           Positioned.fill(
-            child: Image.network(
-              url,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(color: Colors.black),
-            ),
+            child: _buildImageWithCache(url, BoxFit.cover),
           ),
           Positioned.fill(
             child: BackdropFilter(
@@ -306,20 +305,7 @@ class _ScheduledPostPreviewScreenState
             child: InteractiveViewer(
               minScale: 1.0,
               maxScale: 4.0,
-              child: Image.network(
-                url,
-                fit: BoxFit.cover, 
-                alignment: Alignment.center,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) => const Center(
-                  child: Icon(Icons.broken_image, color: Colors.white, size: 50),
-                ),
-              ),
+              child: _buildImageWithCache(url, BoxFit.cover),
             ),
           ),
         ],
@@ -360,6 +346,25 @@ class _ScheduledPostPreviewScreenState
       default:
         return Colors.orange;
     }
+  }
+
+  Widget _buildImageWithCache(String url, BoxFit fit) {
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: fit,
+      placeholder: (context, url) => Shimmer.fromColors(
+        baseColor: Colors.black26,
+        highlightColor: Colors.black12,
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: Colors.white,
+        ),
+      ),
+      errorWidget: (context, url, error) => const Center(
+        child: Icon(Icons.broken_image, color: Colors.white, size: 50),
+      ),
+    );
   }
 
   bool _isVideoUrl(String url) {

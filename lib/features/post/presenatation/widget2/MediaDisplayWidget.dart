@@ -3,17 +3,23 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MediaDisplayWidget extends StatefulWidget {
   final String videoUrl;
   final bool autoPlay;
   final BoxFit fit;
 
+  final bool isMinimal;
+  final VoidCallback? onTap;
+
   const MediaDisplayWidget({
     super.key,
     required this.videoUrl,
     this.autoPlay = true,
     this.fit = BoxFit.cover,
+    this.isMinimal = false,
+    this.onTap,
   });
 
   @override
@@ -101,9 +107,15 @@ class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
   Widget build(BuildContext context) {
     return Material(
       child: GestureDetector(
-        onTap: () => setState(() {
-          _isControlsVisible = !_isControlsVisible;
-        }),
+        onTap: () {
+          if (widget.onTap != null) {
+            widget.onTap!();
+          } else {
+            setState(() {
+              _isControlsVisible = !_isControlsVisible;
+            });
+          }
+        },
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -142,7 +154,15 @@ class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
                           ),
                         ),
                       )
-                    : const Center(child: CircularProgressIndicator()),
+                    : Shimmer.fromColors(
+                        baseColor: Colors.black26,
+                        highlightColor: Colors.black12,
+                        child: Container(
+                          width: double.infinity,
+                          height: double.infinity,
+                          color: Colors.white,
+                        ),
+                      ),
       
             /// Controls Overlay
             if (_isControlsVisible && _controller.value.isInitialized)
@@ -152,70 +172,73 @@ class _MediaDisplayWidgetState extends State<MediaDisplayWidget> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      /// Play / Pause / Skip
+                      /// Play / Pause / Skip (Skip hidden in minimal)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.replay_10, color: Colors.white, size: 36),
-                            onPressed: _skipBackward,
-                          ),
+                          if (!widget.isMinimal)
+                            IconButton(
+                              icon: const Icon(Icons.replay_10, color: Colors.white, size: 36),
+                              onPressed: _skipBackward,
+                            ),
                           IconButton(
                             icon: Icon(
                               _controller.value.isPlaying
                                   ? Icons.pause_circle_filled
                                   : Icons.play_circle_filled,
                               color: Colors.white,
-                              size: 60,
+                              size: widget.isMinimal ? 70 : 60,
                             ),
                             onPressed: _togglePlayPause,
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.forward_10, color: Colors.white, size: 36),
-                            onPressed: _skipForward,
-                          ),
+                          if (!widget.isMinimal)
+                            IconButton(
+                              icon: const Icon(Icons.forward_10, color: Colors.white, size: 36),
+                              onPressed: _skipForward,
+                            ),
                         ],
                       ),
       
-                      /// Slider
-                      ValueListenableBuilder(
-                        valueListenable: _controller,
-                        builder: (context, VideoPlayerValue value, child) {
-                          final position = value.position;
-                          final duration = value.duration;
-      
-                          return Column(
-                            children: [
-                              Slider(
-                                activeColor: Colors.pink,
-                                inactiveColor: Colors.white54,
-                                min: 0,
-                                max: duration.inMilliseconds.toDouble(),
-                                value: position.inMilliseconds.clamp(0, duration.inMilliseconds).toDouble(),
-                                onChanged: (v) {
-                                  _controller.seekTo(Duration(milliseconds: v.toInt()));
-                                },
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      _formatDuration(position),
-                                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                                    ),
-                                    Text(
-                                      _formatDuration(duration),
-                                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                                    ),
-                                  ],
+                      /// Slider (Hidden in minimal)
+                      if (!widget.isMinimal)
+                        ValueListenableBuilder(
+                          valueListenable: _controller,
+                          builder: (context, VideoPlayerValue value, child) {
+                            final position = value.position;
+                            final duration = value.duration;
+        
+                            return Column(
+                              children: [
+                                Slider(
+                                  activeColor: Colors.pink,
+                                  inactiveColor: Colors.white54,
+                                  min: 0,
+                                  max: duration.inMilliseconds.toDouble(),
+                                  value: position.inMilliseconds.clamp(0, duration.inMilliseconds).toDouble(),
+                                  onChanged: (v) {
+                                    _controller.seekTo(Duration(milliseconds: v.toInt()));
+                                  },
                                 ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _formatDuration(position),
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                      ),
+                                      Text(
+                                        _formatDuration(duration),
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),

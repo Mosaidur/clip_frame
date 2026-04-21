@@ -71,7 +71,7 @@ class ScheduleScreenPage extends StatelessWidget {
                       Expanded(
                         child: Obx(() {
                           if (controller.isLoading.value) {
-                            return _buildShimmerLoading();
+                            return _buildShimmerLoading(controller);
                           }
 
                           if (controller.errorMessage.isNotEmpty) {
@@ -247,23 +247,160 @@ class ScheduleScreenPage extends StatelessWidget {
     );
   }
 
-  Widget _buildShimmerLoading() {
+  Widget _buildShimmerLoading(ScheduleController controller) {
     return Shimmer.fromColors(
       baseColor: Colors.grey[200]!,
       highlightColor: Colors.grey[100]!,
       child: ListView.builder(
-        itemCount: 3,
-        itemBuilder: (_, __) => Padding(
-          padding: EdgeInsets.only(bottom: 15.h),
-          child: Container(
+        itemCount: 4,
+        padding: EdgeInsets.zero,
+        physics: const NeverScrollableScrollPhysics(),
+        itemBuilder: (_, __) {
+          if (controller.selectedTab.value == 0) {
+            return _buildScheduledShimmer();
+          } else {
+            return _buildHistoryShimmer();
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildScheduledShimmer() {
+    return Container(
+      margin: EdgeInsets.only(bottom: 25.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28.r),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image placeholder
+          Container(
             height: 250.h,
             width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24.r),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
             ),
           ),
-        ),
+          // Content placeholders
+          Padding(
+            padding: EdgeInsets.fromLTRB(18.w, 14.h, 18.w, 18.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 16.h,
+                  width: 200.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Container(
+                  height: 12.h,
+                  width: 120.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                Container(
+                  height: 16.h,
+                  width: 150.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryShimmer() {
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(12.r),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Thumbnail placeholder
+          Container(
+            width: 100.w,
+            height: 140.h,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+          ),
+          SizedBox(width: 15.w),
+          // Content placeholders
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 16.h,
+                  width: 150.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Container(
+                  height: 12.h,
+                  width: 100.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                SizedBox(height: 15.h),
+                Container(
+                  height: 14.h,
+                  width: 80.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Container(
+                  height: 22.h,
+                  width: 60.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                SizedBox(height: 15.h),
+                Container(
+                  height: 6.h,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(3.r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

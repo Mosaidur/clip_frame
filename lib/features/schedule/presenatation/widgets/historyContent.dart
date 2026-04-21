@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:typed_data';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../data/model.dart';
 
 class HistoryContentWidget extends StatelessWidget {
@@ -149,12 +151,13 @@ class HistoryContentWidget extends StatelessWidget {
     }
 
     if (post.imageUrl.isNotEmpty) {
-      return Image.network(
-        post.imageUrl,
+      return CachedNetworkImage(
+        imageUrl: post.imageUrl,
         width: 100.w,
         height: 140.h,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildPlaceholder(),
       );
     }
 
@@ -162,14 +165,16 @@ class HistoryContentWidget extends StatelessWidget {
   }
 
   Widget _buildPlaceholder() {
-    return Container(
-      width: 100.w,
-      height: 140.h,
-      color: const Color(0xFFF1F5F9),
-      child: Icon(
-        Icons.image_outlined,
-        size: 30.r,
-        color: const Color(0xFFCBD5E1),
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: 100.w,
+        height: 140.h,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.r),
+        ),
       ),
     );
   }

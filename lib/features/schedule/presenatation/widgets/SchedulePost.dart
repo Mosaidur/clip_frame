@@ -11,6 +11,8 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../data/model.dart';
 
 class SchedulePostWidget extends StatelessWidget {
@@ -26,7 +28,7 @@ class SchedulePostWidget extends StatelessWidget {
 
     // Check content type first
     final type = post.contentType.toLowerCase();
-    if (type == 'reel' || type == 'story') return true;
+    if (type == 'reel') return true;
 
     // Fallback to URL check
     try {
@@ -277,11 +279,19 @@ class SchedulePostWidget extends StatelessWidget {
         ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Container(
-              width: double.infinity,
-              height: 300.h,
-              color: Colors.black12,
-              child: const Center(child: CircularProgressIndicator()),
+            return Shimmer.fromColors(
+              baseColor: Colors.grey[200]!,
+              highlightColor: Colors.grey[100]!,
+              child: Container(
+                width: double.infinity,
+                height: 300.h,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(28.r),
+                  ),
+                ),
+              ),
             );
           }
           if (snapshot.hasData && snapshot.data != null) {
@@ -338,11 +348,13 @@ class SchedulePostWidget extends StatelessWidget {
           ),
         ),
         Center(
-          child: Image.network(
-            url,
+          child: CachedNetworkImage(
+            imageUrl: url,
             width: double.infinity,
+            height: 300.h,
             fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+            placeholder: (context, url) => _buildPlaceholder(),
+            errorWidget: (context, url, error) => _buildPlaceholder(),
           ),
         ),
       ],
