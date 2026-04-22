@@ -1,21 +1,21 @@
 import 'dart:io';
-import 'package:gal/gal.dart';
+
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
-import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit_config.dart';
+
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:clip_frame/features/post/presenatation/controller/content_creation_controller.dart';
 import 'package:get/get.dart';
-import 'AiVideoEditPage.dart';
+
 import 'CaptionGeneratorPage.dart';
-import 'ProfessionalCamera.dart';
+
 import 'package:clip_frame/core/widgets/custom_back_button.dart';
 
 // Music System Imports
@@ -2069,7 +2069,7 @@ class _AdvancedVideoEditorPageState extends State<AdvancedVideoEditorPage> {
 
   Future<void> pickAndAddAudio() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.audio,
       );
 

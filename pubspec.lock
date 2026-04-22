@@ -69,26 +69,26 @@ packages:
     dependency: "direct main"
     description:
       name: camera
-      sha256: dfa8fc5a1adaeb95e7a54d86a5bd56f4bb0e035515354c8ac6d262e35cec2ec8
+      sha256: "034c38cb8014d29698dcae6d20276688a1bf74e6487dfeb274d70ea05d5f7777"
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.6"
-  camera_android:
+    version: "0.12.0+1"
+  camera_android_camerax:
     dependency: transitive
     description:
-      name: camera_android
-      sha256: "50c0d1c4b122163e3d7cdfcd6d4cd8078aac27d0f1cd1e7b3fa69e6b3f06f4b7"
+      name: camera_android_camerax
+      sha256: b5064cf25a2787d122d0bf12e77c7b1033a2b983d0730e3091f770ee376efde5
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.10+14"
+    version: "0.7.2"
   camera_avfoundation:
     dependency: transitive
     description:
       name: camera_avfoundation
-      sha256: "035b90c1e33c2efad7548f402572078f6e514d4f82be0a315cd6c6af7e855aa8"
+      sha256: "90e4cc3fde331581a3b2d35d83be41dbb7393af0ab857eb27b732174289cb96d"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.22+6"
+    version: "0.10.1"
   camera_platform_interface:
     dependency: transitive
     description:
@@ -237,10 +237,10 @@ packages:
     dependency: "direct main"
     description:
       name: file_picker
-      sha256: d974b6ba2606371ac71dd94254beefb6fa81185bde0b59bdc1df09885da85fde
+      sha256: f13a03000d942e476bc1ff0a736d2e9de711d2f89a95cd4c1d88f861c3348387
       url: "https://pub.dev"
     source: hosted
-    version: "10.3.8"
+    version: "11.0.2"
   file_selector_linux:
     dependency: transitive
     description:
@@ -439,10 +439,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_stripe
-      sha256: a474b283f4b07e8973687514bf48762e618073b0d6b7acc45cea9a60466d4f8c
+      sha256: "03ec6f6af8d53dcced0534d2b52840ac4331d9320870c4167957133b2aa45194"
       url: "https://pub.dev"
     source: hosted
-    version: "11.5.0"
+    version: "12.6.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -457,10 +457,10 @@ packages:
     dependency: transitive
     description:
       name: freezed_annotation
-      sha256: c2e2d632dd9b8a2b7751117abcfc2b4888ecfe181bd9fca7170d9ef02e595fe2
+      sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.4"
+    version: "3.1.0"
   gal:
     dependency: "direct main"
     description:
@@ -673,18 +673,18 @@ packages:
     dependency: transitive
     description:
       name: matcher
-      sha256: "12956d0ad8390bbcc63ca2e1469c0619946ccb52809807067a7020d57e647aa6"
+      sha256: dc58c723c3c24bf8d3e2d3ad3f2f9d7bd9cf43ec6feaa64181775e60190153f2
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.18"
+    version: "0.12.17"
   material_color_utilities:
     dependency: transitive
     description:
       name: material_color_utilities
-      sha256: "9c337007e82b1889149c82ed242ed1cb24a66044e30979c44912381e9be4c48b"
+      sha256: f7142bb1154231d7ea5f96bc7bde4bda2a0945d2806bb11670e30b850d56bdec
       url: "https://pub.dev"
     source: hosted
-    version: "0.13.0"
+    version: "0.11.1"
   media_store_plus:
     dependency: "direct main"
     description:
@@ -1022,26 +1022,26 @@ packages:
     dependency: transitive
     description:
       name: stripe_android
-      sha256: a666352e0c20753ecd8feebb5944882bf597167be4f020641266515a495bd55f
+      sha256: "596b2c2f18b6be571a99ef3dffe812ee7c99e134753234fd9110964b48e206c9"
       url: "https://pub.dev"
     source: hosted
-    version: "11.5.0"
+    version: "12.6.0"
   stripe_ios:
     dependency: transitive
     description:
       name: stripe_ios
-      sha256: "0f7afed3ac61e544e7525da9b692b23d93e762d56f6c9aa7f77fc6d9a686a65d"
+      sha256: e228c8e8a2e16770bd043a7f93ec26f559763188110dd81baf1aa146a3fd28ab
       url: "https://pub.dev"
     source: hosted
-    version: "11.5.0"
+    version: "12.6.0"
   stripe_platform_interface:
     dependency: transitive
     description:
       name: stripe_platform_interface
-      sha256: "23c10f3875da07f85a6196fcb676e64c767ad2d04ec73ba4e941ac797a4ee4d3"
+      sha256: fddc7f83f38674358faa67064695397641957923b9c730eda8bdc8acc477f9f6
       url: "https://pub.dev"
     source: hosted
-    version: "11.5.0"
+    version: "12.6.0"
   stylish_bottom_bar:
     dependency: "direct main"
     description:
@@ -1070,10 +1070,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "19a78f63e83d3a61f00826d09bc2f60e191bf3504183c001262be6ac75589fb8"
+      sha256: ab2726c1a94d3176a45960b6234466ec367179b87dd74f1611adb1f3b5fb9d55
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.8"
+    version: "0.7.7"
   timezone:
     dependency: transitive
     description:
