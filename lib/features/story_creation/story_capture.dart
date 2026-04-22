@@ -136,49 +136,35 @@ class _StoryCapturePageState extends State<StoryCapturePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_hasError) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          elevation: 0,
-          leading: const CustomBackButton(iconColor: Colors.white),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, color: Colors.red, size: 50.r),
-              SizedBox(height: 10.h),
-              Text(
-                "Failed to initialize camera.\nPlease check your permissions.",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 16.sp),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (!_isReady || _controller == null) {
-      return const Scaffold(backgroundColor: Colors.black, body: Center(child: CircularProgressIndicator()));
-    }
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 1. Camera Preview
+          // 1. Camera Preview or Fallback Message
           SizedBox.expand(
             child: Stack(
               fit: StackFit.expand,
               children: [
                 Center(
-                  child: AspectRatio(
-                    aspectRatio: 1 / (_controller!.value.aspectRatio),
-                    child: CameraPreview(_controller!),
-                  ),
+                  child: _hasError
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.camera_alt_outlined, color: Colors.white54, size: 50.r),
+                            SizedBox(height: 10.h),
+                            Text(
+                              "Camera unavailable.\nYou can pick from gallery.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white54, fontSize: 16.sp),
+                            ),
+                          ],
+                        )
+                      : (!_isReady || _controller == null)
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : AspectRatio(
+                              aspectRatio: 1 / (_controller!.value.aspectRatio),
+                              child: CameraPreview(_controller!),
+                            ),
                 ),
               ],
             ),
