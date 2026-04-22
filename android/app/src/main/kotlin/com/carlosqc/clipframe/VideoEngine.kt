@@ -1,4 +1,4 @@
-package com.carlosqc.clipframe
+package com.carlosqc.clipframeapp
 
 import android.content.Context
 import android.graphics.Bitmap

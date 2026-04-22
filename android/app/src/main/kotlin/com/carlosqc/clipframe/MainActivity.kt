@@ -1,4 +1,4 @@
-package com.carlosqc.clipframe
+package com.carlosqc.clipframeapp
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
